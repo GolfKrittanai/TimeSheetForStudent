@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://rice:Rice@2020@203.159.95.167:4406/db_timesheet_pond_golf"
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  studentId  String    @unique
+  name       String
+  password   String
+  role       String    @default("student") // admin / student
+  timesheets TimeSheet[]
+}
+
+model TimeSheet {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  hour      Int
+  activity  String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
