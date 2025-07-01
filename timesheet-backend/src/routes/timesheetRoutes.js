@@ -1,25 +1,33 @@
 const express = require('express');
-const {
-  getTimesheets,
-  createTimesheet,
-  updateTimesheet,
-  deleteTimesheet,
-} = require('../controllers/timesheetController');
-
-const { authenticateToken } = require('../middlewares/authMiddleware');
-const { authorizeRoles } = require('../middlewares/roleMiddleware');
-
 const router = express.Router();
 
-// 🔐 ต้อง login ก่อนทุก endpoint
-router.use(authenticateToken);
+const prisma = require('../prismaClient');
+const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// 🔹 STUDENT: ดู / เพิ่มของตัวเอง
-router.get('/', authorizeRoles('STUDENT', 'ADMIN'), getTimesheets);
-router.post('/', authorizeRoles('STUDENT'), createTimesheet);
+// นักศึกษาดู Timesheet ของตัวเอง
+router.get('/', authenticateToken, authorizeRoles('student'), async (req, res) => {
+  const timesheets = await prisma.timeSheet.findMany({
+    where: { userId: req.user.id },
+  });
+  res.json(timesheets);
+});
 
-// 🔹 ADMIN: แก้ไข / ลบ timesheet ของใครก็ได้
-router.put('/:id', authorizeRoles('ADMIN'), updateTimesheet);
-router.delete('/:id', authorizeRoles('ADMIN'), deleteTimesheet);
+// นักศึกษาบันทึก Timesheet
+router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) => {
+  const { date, checkInTime, checkOutTime } = req.body;
+  try {
+    const newTimesheet = await prisma.timeSheet.create({
+      data: {
+        userId: req.user.id,
+        date: new Date(date),
+        checkInTime: new Date(checkInTime),
+        checkOutTime: new Date(checkOutTime),
+      },
+    });
+    res.status(201).json(newTimesheet);
+  } catch (error) {
+    res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
+  }
+});
 
 module.exports = router;

@@ -8,29 +8,28 @@ generator client {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  studentId    String   @unique
-  password     String
+  id           Int       @id @default(autoincrement())
+  studentId    String    @unique
   fullName     String
-  role         Role     @default(STUDENT)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  passwordHash String
+  role         Role      @default(student)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   timesheets   TimeSheet[]
 }
 
 model TimeSheet {
   id          Int      @id @default(autoincrement())
-  date        DateTime
-  startTime   String
-  endTime     String
-  description String?
   user        User     @relation(fields: [userId], references: [id])
   userId      Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  date        DateTime
+  checkInTime DateTime
+  checkOutTime DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 enum Role {
-  ADMIN
-  STUDENT
+  admin
+  student
 }

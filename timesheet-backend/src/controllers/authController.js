@@ -1,24 +1,61 @@
 const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../utils/jwtUtils');
+const generateToken = require('../utils/generateToken');
+
+async function register(req, res) {
+  const { studentId, fullName, email, password } = req.body;
+  if (!studentId || !fullName || !password) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { studentId } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        studentId,
+        fullName,
+        passwordHash,
+        role: 'student',
+      },
+    });
+
+    return res.status(201).json({
+      id: user.id,
+      studentId: user.studentId,
+      fullName: user.fullName,
+      role: user.role,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
+  }
+}
 
 async function login(req, res) {
   const { studentId, password } = req.body;
-
   if (!studentId || !password) {
-    return res.status(400).json({ message: 'studentId and password required' });
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
   }
 
   try {
     const user = await prisma.user.findUnique({ where: { studentId } });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+    }
 
-    const token = generateToken({ id: user.id, role: user.role, studentId: user.studentId });
+    const token = generateToken({ id: user.id, role: user.role });
 
-    res.json({
+    return res.json({
       token,
       user: {
         id: user.id,
@@ -28,8 +65,8 @@ async function login(req, res) {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
   }
 }
 
-module.exports = { login };
+module.exports = { register, login };
