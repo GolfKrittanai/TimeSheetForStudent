@@ -1,21 +1,30 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { studentId, role }
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
-  const login = (userData, token) => {
-    setUser(userData);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      setToken(token);
+      setUser(JSON.parse(user));
+    }
+  }, []);
+
+  const login = (token, user) => {
     setToken(token);
+    setUser(user);
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const logout = () => {
-    setUser(null);
     setToken(null);
+    setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
@@ -25,7 +34,6 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-// hook
 export const useAuth = () => useContext(AuthContext);

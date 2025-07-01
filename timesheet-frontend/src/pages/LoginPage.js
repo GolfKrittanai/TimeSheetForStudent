@@ -1,70 +1,64 @@
 import React from 'react';
+import { Box, Typography, TextField, Button } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { TextField, Button, Box, Typography } from '@mui/material';
-import { login as loginAPI } from '../services/authService';
-import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
-  const navigate = useNavigate();
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const formik = useFormik({
-    initialValues: {
-      studentId: '',
-      password: '',
-    },
+    initialValues: { studentId: '', password: '' },
     validationSchema: Yup.object({
       studentId: Yup.string().required('กรุณากรอกรหัสนักศึกษา'),
       password: Yup.string().required('กรุณากรอกรหัสผ่าน'),
     }),
     onSubmit: async (values) => {
       try {
-        const res = await loginAPI(values);
-        const { token, user } = res.data;
-        login(user, token);
-
-        if (user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/student');
-        }
+        const res = await loginUser(values);
+        login(res.data.token, res.data.user);
+        navigate(res.data.user.role === 'admin' ? '/admin' : '/student');
       } catch (err) {
-        alert(err.response?.data?.message || 'เข้าสู่ระบบไม่สำเร็จ');
+        alert('เข้าสู่ระบบไม่สำเร็จ');
       }
     },
   });
 
   return (
-    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
-      <Typography variant="h5" align="center" gutterBottom>
+    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 10 }}>
+      <Typography variant="h4" gutterBottom>
         เข้าสู่ระบบ
       </Typography>
       <form onSubmit={formik.handleSubmit}>
         <TextField
-          fullWidth
           label="รหัสนักศึกษา"
           name="studentId"
+          fullWidth
+          margin="normal"
           value={formik.values.studentId}
           onChange={formik.handleChange}
           error={formik.touched.studentId && Boolean(formik.errors.studentId)}
           helperText={formik.touched.studentId && formik.errors.studentId}
-          margin="normal"
         />
         <TextField
-          fullWidth
           label="รหัสผ่าน"
-          type="password"
           name="password"
+          type="password"
+          fullWidth
+          margin="normal"
           value={formik.values.password}
           onChange={formik.handleChange}
           error={formik.touched.password && Boolean(formik.errors.password)}
           helperText={formik.touched.password && formik.errors.password}
-          margin="normal"
         />
-        <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
-          เข้าสู่ระบบ
+        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
+          Login
+        </Button>
+        <Button fullWidth onClick={() => navigate('/register')} sx={{ mt: 1 }}>
+          ลงทะเบียน
         </Button>
       </form>
     </Box>

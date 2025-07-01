@@ -1,27 +1,21 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/timesheet'; // เปลี่ยนตาม backend จริง
+const API_URL = process.env.REACT_APP_API;
 
-export const getMyTimeSheets = async (token) => {
-  return await axios.get(`${API_URL}/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const getMyTimeSheets = (token) => {
+  return axios.get(`${API_URL}/timesheet/me`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
 
-export const createTimeSheet = async (data, token) => {
-  return await axios.post(API_URL, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const createTimeSheet = (data, token) => {
+  return axios.post(`${API_URL}/timesheet`, data, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
 
-export const deleteTimeSheet = async (id, token) => {
-  return await axios.delete(`${API_URL}/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const deleteTimeSheet = (id, token) => {
+  return axios.delete(`${API_URL}/timesheet/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 };

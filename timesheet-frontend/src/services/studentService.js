@@ -1,21 +1,15 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/students'; // เปลี่ยนตาม backend จริง
+const API_URL = process.env.REACT_APP_API;
 
-// ดึงนักศึกษาทั้งหมด (เฉพาะ admin เข้าถึงได้)
-export const getAllStudents = async (token) => {
-  return await axios.get(API_URL, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const getAllStudents = (token) => {
+  return axios.get(`${API_URL}/students`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
 
-// ลบนักศึกษาจาก id
-export const deleteStudent = async (id, token) => {
-  return await axios.delete(`${API_URL}/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export const deleteStudent = (id, token) => {
+  return axios.delete(`${API_URL}/students/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 };
