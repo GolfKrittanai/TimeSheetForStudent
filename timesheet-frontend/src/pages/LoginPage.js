@@ -49,45 +49,49 @@ const LoginPage = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        backgroundColor: '#f4f6f8',
+        background: 'linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
       }}
     >
       <Box
         sx={{
-          maxWidth: 420,
+          maxWidth: 400,
           width: '100%',
           bgcolor: '#ffffff',
-          p: 4,
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          p: 5,
+          borderRadius: 3,
+          boxShadow:
+            '0 4px 12px rgba(0,0,0,0.1)',
+          textAlign: 'center',
         }}
       >
         <Typography
-          variant="h5"
+          variant="h4"
           sx={{
-            fontWeight: 600,
-            color: '#333',
-            textAlign: 'center',
-            mb: 1,
+            fontWeight: 700,
+            color: '#111',
+            mb: 1.5,
+            letterSpacing: '0.05em',
           }}
         >
-          ระบบ Timesheet สำหรับนักศึกษา
+          Timesheet
         </Typography>
 
         <Typography
-          variant="h6"
+          variant="subtitle1"
           sx={{
-            fontWeight: 500,
-            color: '#555',
-            textAlign: 'center',
-            mb: 3,
+            fontWeight: 400,
+            color: '#666',
+            mb: 4,
+            letterSpacing: '0.03em',
           }}
         >
-          เข้าสู่ระบบ
+          ระบบสำหรับนักศึกษา
         </Typography>
 
         <form onSubmit={formik.handleSubmit} noValidate>
@@ -102,6 +106,22 @@ const LoginPage = () => {
             error={formik.touched.studentId && Boolean(formik.errors.studentId)}
             helperText={formik.touched.studentId && formik.errors.studentId}
             autoFocus
+            InputProps={{
+              sx: {
+                borderRadius: 2,
+                bgcolor: '#fafafa',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#ccc',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#007aff',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#007aff',
+                  boxShadow: '0 0 5px 0 #007aff',
+                },
+              },
+            }}
           />
           <TextField
             label="รหัสผ่าน"
@@ -114,6 +134,22 @@ const LoginPage = () => {
             onChange={formik.handleChange}
             error={formik.touched.password && Boolean(formik.errors.password)}
             helperText={formik.touched.password && formik.errors.password}
+            InputProps={{
+              sx: {
+                borderRadius: 2,
+                bgcolor: '#fafafa',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#ccc',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#007aff',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#007aff',
+                  boxShadow: '0 0 5px 0 #007aff',
+                },
+              },
+            }}
           />
 
           {formik.errors.submit && (
@@ -127,11 +163,18 @@ const LoginPage = () => {
             fullWidth
             variant="contained"
             sx={{
-              mt: 3,
-              py: 1.3,
-              fontWeight: 600,
-              backgroundColor: '#4caf50',
-              '&:hover': { backgroundColor: '#43a047' },
+              mt: 4,
+              py: 1.5,
+              fontWeight: 700,
+              backgroundColor: '#007aff',
+              borderRadius: 3,
+              boxShadow: 'none',
+              '&:hover': {
+                backgroundColor: '#005bb5',
+                boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
+              },
+              textTransform: 'none',
+              fontSize: '1.1rem',
             }}
             disabled={formik.isSubmitting}
           >
@@ -143,8 +186,14 @@ const LoginPage = () => {
             sx={{
               mt: 2,
               textTransform: 'none',
-              color: '#4caf50',
-              fontWeight: 500,
+              color: '#007aff',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              '&:hover': {
+                backgroundColor: 'transparent',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              },
             }}
             onClick={() => navigate('/register')}
           >

@@ -82,11 +82,30 @@ router.get('/admin/summary', authenticateToken, authorizeRoles('admin'), async (
 router.get('/students/:id/timesheets', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const userId = Number(req.params.id);
   try {
+    // ดึงข้อมูลนักศึกษา
+    const student = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        studentId: true,
+        fullName: true,
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: 'ไม่พบนักศึกษา' });
+    }
+
+    // ดึง Timesheet ของนักศึกษา
     const timesheets = await prisma.timeSheet.findMany({
       where: { userId },
       orderBy: { date: 'desc' },
     });
-    res.json(timesheets);
+
+    // ส่ง response กลับพร้อมข้อมูลนักศึกษา
+    res.json({
+      student,
+      timesheets,
+    });
   } catch (error) {
     res.status(500).json({ message: 'ไม่สามารถโหลด Timesheet ได้', error });
   }

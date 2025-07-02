@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   Box,
-  IconButton,
   Divider,
 } from '@mui/material';
 import {
@@ -13,7 +12,6 @@ import {
   ListAlt as TimesheetIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
-
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,42 +36,57 @@ function Navbar() {
         mb: 3,
       }}
     >
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Toolbar
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          px: { xs: 2, sm: 4 },
+          py: 1.5,
+        }}
+      >
         {/* ซ้าย: ชื่อระบบ + ผู้ใช้ */}
         <Box>
-          <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1976d2' }}>
             TimeSheet System
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {user.name} ({user.role})
+            {user.fullName} ({user.role})
           </Typography>
         </Box>
 
-        {/* ขวา: เมนูปุ่มต่าง ๆ */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* ขวา: ปุ่มเมนู */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {user.role === 'admin' && (
             <Button
-              startIcon={<DashboardIcon />}
               onClick={() => navigate('/admin')}
-              sx={{ textTransform: 'none', color: '#4caf50' }}
+              startIcon={<DashboardIcon />}
+              sx={{
+                textTransform: 'none',
+                color: '#1976d2',
+                fontWeight: 500,
+              }}
             >
               Admin Dashboard
             </Button>
           )}
           {user.role === 'student' && (
             <Button
-              startIcon={<TimesheetIcon />}
               onClick={() => navigate('/student')}
-              sx={{ textTransform: 'none', color: '#4caf50' }}
+              startIcon={<TimesheetIcon />}
+              sx={{
+                textTransform: 'none',
+                color: '#1976d2',
+                fontWeight: 500,
+              }}
             >
               My Timesheet
             </Button>
           )}
-          <Divider orientation="vertical" flexItem />
+          <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
           <Button
-            startIcon={<LogoutIcon />}
             onClick={handleLogout}
-            sx={{ textTransform: 'none', color: 'error.main' }}
+            startIcon={<LogoutIcon />}
+            sx={{ textTransform: 'none', color: 'error.main', fontWeight: 500 }}
           >
             Logout
           </Button>
