@@ -1,5 +1,11 @@
 import React from 'react';
-import { Box, Typography, TextField, Button, Alert } from '@mui/material';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+} from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { loginUser } from '../services/authService';
@@ -22,7 +28,6 @@ const LoginPage = () => {
     onSubmit: async (values, { setSubmitting, setErrors }) => {
       try {
         const res = await loginUser(values);
-
         login({ token: res.data.token, user: res.data.user });
 
         if (res.data.user.role === 'admin') {
@@ -44,35 +49,43 @@ const LoginPage = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2196f3 0%, #21cbf3 100%)',
+        backgroundColor: '#f4f6f8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 2,
+        p: 2,
       }}
     >
       <Box
         sx={{
-          maxWidth: 400,
+          maxWidth: 420,
           width: '100%',
-          bgcolor: 'background.paper',
+          bgcolor: '#ffffff',
           p: 4,
-          borderRadius: 3,
-          boxShadow: 6,
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
         <Typography
           variant="h5"
-          gutterBottom
-          sx={{ fontWeight: 'bold', color: '#1976d2', textAlign: 'center', mb: 2 }}
+          sx={{
+            fontWeight: 600,
+            color: '#333',
+            textAlign: 'center',
+            mb: 1,
+          }}
         >
           ระบบ Timesheet สำหรับนักศึกษา
         </Typography>
 
         <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ fontWeight: 'bold', color: '#1976d2', textAlign: 'center', mb: 4 }}
+          variant="h6"
+          sx={{
+            fontWeight: 500,
+            color: '#555',
+            textAlign: 'center',
+            mb: 3,
+          }}
         >
           เข้าสู่ระบบ
         </Typography>
@@ -83,6 +96,7 @@ const LoginPage = () => {
             name="studentId"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.studentId}
             onChange={formik.handleChange}
             error={formik.touched.studentId && Boolean(formik.errors.studentId)}
@@ -95,6 +109,7 @@ const LoginPage = () => {
             type="password"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.password}
             onChange={formik.handleChange}
             error={formik.touched.password && Boolean(formik.errors.password)}
@@ -111,14 +126,26 @@ const LoginPage = () => {
             type="submit"
             fullWidth
             variant="contained"
-            sx={{ mt: 3, py: 1.5, fontWeight: 'bold' }}
+            sx={{
+              mt: 3,
+              py: 1.3,
+              fontWeight: 600,
+              backgroundColor: '#4caf50',
+              '&:hover': { backgroundColor: '#43a047' },
+            }}
             disabled={formik.isSubmitting}
           >
             เข้าสู่ระบบ
           </Button>
+
           <Button
             fullWidth
-            sx={{ mt: 1, textTransform: 'none' }}
+            sx={{
+              mt: 2,
+              textTransform: 'none',
+              color: '#4caf50',
+              fontWeight: 500,
+            }}
             onClick={() => navigate('/register')}
           >
             ลงทะเบียน
