@@ -49,18 +49,20 @@ function StudentDashboard() {
   // กำหนด Formik สำหรับจัดการฟอร์มบันทึก TimeSheet
   const formik = useFormik({
     initialValues: {
-      date: '',       // วันที่
-      checkInTime: '',  // เวลาเข้า (แก้ชื่อให้ตรง backend)
-      checkOutTime: '', // เวลาออก (แก้ชื่อให้ตรง backend)
+      date: '',          // วันที่
+      checkInTime: '',   // เวลาเข้า (ตรงกับ backend)
+      checkOutTime: '',  // เวลาออก (ตรงกับ backend)
+      activity: '',      // กิจกรรม (เพิ่มฟิลด์นี้)
     },
     validationSchema: Yup.object({
       date: Yup.string().required('กรุณาเลือกวันที่'), // ตรวจสอบว่าต้องกรอกวันที่
       checkInTime: Yup.string().required('กรุณากรอกเวลาเข้า'), // เวลาเข้า ต้องกรอก
       checkOutTime: Yup.string().required('กรุณากรอกเวลาออก'), // เวลาออก ต้องกรอก
+      activity: Yup.string().required('กรุณากรอกกิจกรรม'), // กิจกรรม ต้องกรอก
     }),
     onSubmit: async (values, { resetForm }) => {
       try {
-        await createTimeSheet(values, token); // เรียก API บันทึก TimeSheet ใหม่
+        await createTimeSheet(values, token); // เรียก API บันทึก TimeSheet ใหม่ พร้อมส่ง activity
         fetchData(); // โหลดข้อมูล TimeSheet ใหม่เพื่ออัพเดตตาราง
         resetForm(); // ล้างฟอร์มหลังบันทึกเสร็จ
       } catch {
@@ -124,6 +126,19 @@ function StudentDashboard() {
             helperText={formik.touched.checkOutTime && formik.errors.checkOutTime}
             sx={{ mb: 2 }}
           />
+          {/* กิจกรรม */}
+          <TextField
+            label="กิจกรรม"
+            name="activity"
+            fullWidth
+            multiline
+            rows={3}
+            value={formik.values.activity}
+            onChange={formik.handleChange}
+            error={formik.touched.activity && Boolean(formik.errors.activity)}
+            helperText={formik.touched.activity && formik.errors.activity}
+            sx={{ mb: 2 }}
+          />
 
           <Button variant="contained" type="submit" fullWidth>
             บันทึก TimeSheet {/* ปุ่มส่งข้อมูลฟอร์ม */}
@@ -138,6 +153,7 @@ function StudentDashboard() {
               <TableCell>วันที่</TableCell>
               <TableCell>เวลาเข้า</TableCell>
               <TableCell>เวลาออก</TableCell>
+              <TableCell>กิจกรรม</TableCell> {/* เพิ่มคอลัมน์กิจกรรม */}
               <TableCell>ลบ</TableCell>
             </TableRow>
           </TableHead>
@@ -147,6 +163,7 @@ function StudentDashboard() {
                 <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(t.checkInTime).toLocaleTimeString()}</TableCell>
                 <TableCell>{new Date(t.checkOutTime).toLocaleTimeString()}</TableCell>
+                <TableCell>{t.activity}</TableCell> {/* แสดงกิจกรรม */}
                 <TableCell>
                   <Button
                     variant="outlined"
