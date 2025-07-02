@@ -41,4 +41,23 @@ router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) 
 });
 
 
+router.delete('/:id', authenticateToken, authorizeRoles('student'), async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  try {
+    // ตรวจสอบว่า Timesheet นี้เป็นของ user ที่ login จริงไหม
+    const timesheet = await prisma.timeSheet.findUnique({ where: { id } });
+    if (!timesheet || timesheet.userId !== req.user.id) {
+      return res.status(404).json({ message: 'ไม่พบ Timesheet หรือไม่มีสิทธิ์ลบ' });
+    }
+
+    await prisma.timeSheet.delete({ where: { id } });
+    res.json({ message: 'ลบ Timesheet เรียบร้อย' });
+  } catch (error) {
+    console.error('ลบ Timesheet error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบ Timesheet', error });
+  }
+});
+
+
 module.exports = router;

@@ -22,6 +22,7 @@ function AdminDashboard() {
   // ฟังก์ชันโหลดรายชื่อนักศึกษาจาก API
   const fetchStudents = async () => {
     try {
+      console.log('token:', token);
       const res = await getAllStudents(token); // เรียก API พร้อมส่ง token
       setStudents(res.data); // เก็บข้อมูลลง state
     } catch (err) {

@@ -1,15 +1,19 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API;
-
 export const getAllStudents = (token) => {
-  return axios.get(`${API_URL}/students`, {
+  return axios.get('/api/users/students', {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
 export const deleteStudent = (id, token) => {
-  return axios.delete(`${API_URL}/students/${id}`, {
+  return axios.delete(`/api/users/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const getMyProfile = (token) => {
+  return axios.get('/api/users/me', {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
