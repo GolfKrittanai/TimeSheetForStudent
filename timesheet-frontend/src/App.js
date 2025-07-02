@@ -11,20 +11,24 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
+      <Route 
+        path="/" 
+        element={
+          !user ? <LoginPage /> : 
+          user.role === 'admin' ? <Navigate to="/admin" /> : 
+          <Navigate to="/student" />
+        } 
+      />
       <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/admin"
-        element={
-          user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />
-        }
+        element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />}
       />
       <Route
         path="/student"
-        element={
-          user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/" />
-        }
+        element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/" />}
       />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }

@@ -49,16 +49,14 @@ function StudentDashboard() {
   // กำหนด Formik สำหรับจัดการฟอร์มบันทึก TimeSheet
   const formik = useFormik({
     initialValues: {
-      date: '', // วันที่
-      timeIn: '', // เวลาเข้า
-      timeOut: '', // เวลาออก
-      activity: '', // กิจกรรมที่ทำ
+      date: '',       // วันที่
+      checkInTime: '',  // เวลาเข้า (แก้ชื่อให้ตรง backend)
+      checkOutTime: '', // เวลาออก (แก้ชื่อให้ตรง backend)
     },
     validationSchema: Yup.object({
       date: Yup.string().required('กรุณาเลือกวันที่'), // ตรวจสอบว่าต้องกรอกวันที่
-      timeIn: Yup.string().required('กรุณากรอกเวลาเข้า'), // เวลาเข้า ต้องกรอก
-      timeOut: Yup.string().required('กรุณากรอกเวลาออก'), // เวลาออก ต้องกรอก
-      activity: Yup.string().required('กรุณากรอกกิจกรรม'), // กิจกรรม ต้องกรอก
+      checkInTime: Yup.string().required('กรุณากรอกเวลาเข้า'), // เวลาเข้า ต้องกรอก
+      checkOutTime: Yup.string().required('กรุณากรอกเวลาออก'), // เวลาออก ต้องกรอก
     }),
     onSubmit: async (values, { resetForm }) => {
       try {
@@ -82,7 +80,7 @@ function StudentDashboard() {
       <Navbar /> {/* แถบนำทางด้านบน */}
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
-          TimeSheet ของ {user?.name} {/* แสดงชื่อผู้ใช้ */}
+          TimeSheet ของ {user?.fullName} {/* แสดงชื่อผู้ใช้ */}
         </Typography>
 
         {/* ฟอร์มบันทึก TimeSheet */}
@@ -103,41 +101,30 @@ function StudentDashboard() {
           {/* เวลาเข้า */}
           <TextField
             label="เวลาเข้า"
-            name="timeIn"
+            name="checkInTime"
             type="time"
             fullWidth
             InputLabelProps={{ shrink: true }}
-            value={formik.values.timeIn}
+            value={formik.values.checkInTime}
             onChange={formik.handleChange}
-            error={formik.touched.timeIn && Boolean(formik.errors.timeIn)}
-            helperText={formik.touched.timeIn && formik.errors.timeIn}
+            error={formik.touched.checkInTime && Boolean(formik.errors.checkInTime)}
+            helperText={formik.touched.checkInTime && formik.errors.checkInTime}
             sx={{ mb: 2 }}
           />
           {/* เวลาออก */}
           <TextField
             label="เวลาออก"
-            name="timeOut"
+            name="checkOutTime"
             type="time"
             fullWidth
             InputLabelProps={{ shrink: true }}
-            value={formik.values.timeOut}
+            value={formik.values.checkOutTime}
             onChange={formik.handleChange}
-            error={formik.touched.timeOut && Boolean(formik.errors.timeOut)}
-            helperText={formik.touched.timeOut && formik.errors.timeOut}
+            error={formik.touched.checkOutTime && Boolean(formik.errors.checkOutTime)}
+            helperText={formik.touched.checkOutTime && formik.errors.checkOutTime}
             sx={{ mb: 2 }}
           />
-          {/* กิจกรรม */}
-          <TextField
-            label="กิจกรรมที่ทำ"
-            name="activity"
-            fullWidth
-            multiline // ให้กรอกหลายบรรทัดได้
-            value={formik.values.activity}
-            onChange={formik.handleChange}
-            error={formik.touched.activity && Boolean(formik.errors.activity)}
-            helperText={formik.touched.activity && formik.errors.activity}
-            sx={{ mb: 2 }}
-          />
+
           <Button variant="contained" type="submit" fullWidth>
             บันทึก TimeSheet {/* ปุ่มส่งข้อมูลฟอร์ม */}
           </Button>
@@ -151,17 +138,15 @@ function StudentDashboard() {
               <TableCell>วันที่</TableCell>
               <TableCell>เวลาเข้า</TableCell>
               <TableCell>เวลาออก</TableCell>
-              <TableCell>กิจกรรม</TableCell>
               <TableCell>ลบ</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {timeSheets.map((t) => (
               <TableRow key={t.id}>
-                <TableCell>{t.date}</TableCell>
-                <TableCell>{t.timeIn}</TableCell>
-                <TableCell>{t.timeOut}</TableCell>
-                <TableCell>{t.activity}</TableCell>
+                <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(t.checkInTime).toLocaleTimeString()}</TableCell>
+                <TableCell>{new Date(t.checkOutTime).toLocaleTimeString()}</TableCell>
                 <TableCell>
                   <Button
                     variant="outlined"

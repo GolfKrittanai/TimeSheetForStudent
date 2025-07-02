@@ -77,7 +77,7 @@ function AdminDashboard() {
               {students.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell>{s.studentId}</TableCell>
-                  <TableCell>{s.name}</TableCell>
+                  <TableCell>{s.fullName}</TableCell> {/* แก้ชื่อจาก name เป็น fullName */}
                   <TableCell>{s.role}</TableCell>
                   <TableCell>
                     {/* ปุ่มลบ สำหรับลบนักศึกษาคนนี้ */}
