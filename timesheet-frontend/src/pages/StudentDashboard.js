@@ -13,7 +13,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
   Paper,
   Tooltip,
@@ -23,7 +22,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   AccessTime as AccessTimeIcon,
-  Description as DescriptionIcon,
 } from '@mui/icons-material';
 
 import {
@@ -39,12 +37,10 @@ function StudentDashboard() {
   const [timeSheets, setTimeSheets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Dialog แก้ไข
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
 
-  // โหลด Timesheets
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -60,7 +56,6 @@ function StudentDashboard() {
     fetchData();
   }, []);
 
-  // ลบ Timesheet
   const handleDelete = async (id) => {
     if (!window.confirm('ต้องการลบ TimeSheet นี้ใช่หรือไม่?')) return;
 
@@ -72,7 +67,6 @@ function StudentDashboard() {
     }
   };
 
-  // ฟอร์มบันทึก Timesheet ใหม่
   const [formData, setFormData] = useState({
     date: '',
     checkInTime: '',
@@ -109,7 +103,6 @@ function StudentDashboard() {
     }
   };
 
-  // เปิด dialog แก้ไข
   const handleEditOpen = (timesheet) => {
     setEditData({
       id: timesheet.id,
@@ -127,7 +120,6 @@ function StudentDashboard() {
     setEditErrors({});
   };
 
-  // ฟอร์มแก้ไข timesheet
   const [editErrors, setEditErrors] = useState({});
 
   const validateEditForm = () => {
@@ -172,27 +164,51 @@ function StudentDashboard() {
   return (
     <>
       <Navbar />
-      <Box sx={{ p: 4, maxWidth: 1100, mx: 'auto', backgroundColor: '#f4f6f8' }}>
+      <Box
+        sx={{
+          minHeight: '90vh',
+          backgroundColor: '#f5f7fa',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pt: 6,
+          px: 2,
+          pb: 6,
+          maxWidth: 700,
+          mx: 'auto',
+        }}
+      >
         <Typography
           variant="h4"
-          gutterBottom
-          sx={{ fontWeight: 'bold', color: '#4caf50', mb: 3 }}
+          sx={{
+            fontWeight: '700',
+            color: '#0066cc',
+            mb: 4,
+            textAlign: 'center',
+            letterSpacing: 1,
+          }}
         >
           TimeSheet ของ {user?.fullName}
         </Typography>
 
         {/* ฟอร์มเพิ่ม Timesheet */}
         <Paper
-          elevation={1}
+          elevation={4}
           sx={{
-            p: 3,
-            mb: 4,
-            bgcolor: '#ffffff',
-            borderRadius: 2,
-            border: '1px solid #e0e0e0',
-            maxWidth: 600,
+            width: '100%',
+            mb: 5,
+            p: 4,
+            borderRadius: 3,
+            backgroundColor: '#fff',
+            boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
           }}
         >
+          <Typography
+            variant="h6"
+            sx={{ mb: 3, fontWeight: 600, color: '#004a99' }}
+          >
+            เพิ่ม Timesheet ใหม่
+          </Typography>
           <form onSubmit={handleSubmit} noValidate>
             <TextField
               label="วันที่"
@@ -204,7 +220,7 @@ function StudentDashboard() {
               onChange={handleInputChange}
               error={Boolean(formErrors.date)}
               helperText={formErrors.date}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
             <TextField
               label="เวลาเข้า"
@@ -216,7 +232,7 @@ function StudentDashboard() {
               onChange={handleInputChange}
               error={Boolean(formErrors.checkInTime)}
               helperText={formErrors.checkInTime}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
             <TextField
               label="เวลาออก"
@@ -228,7 +244,7 @@ function StudentDashboard() {
               onChange={handleInputChange}
               error={Boolean(formErrors.checkOutTime)}
               helperText={formErrors.checkOutTime}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
             <TextField
               label="กิจกรรม"
@@ -240,13 +256,23 @@ function StudentDashboard() {
               onChange={handleInputChange}
               error={Boolean(formErrors.activity)}
               helperText={formErrors.activity}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
             <Button
               variant="contained"
               type="submit"
               fullWidth
-              sx={{ mt: 1, textTransform: 'none' }}
+              sx={{
+                textTransform: 'none',
+                backgroundColor: '#0066cc',
+                '&:hover': {
+                  backgroundColor: '#004a99',
+                  boxShadow: '0 6px 20px rgba(0,74,153,0.3)',
+                },
+                py: 1.5,
+                fontWeight: '700',
+                fontSize: 16,
+              }}
               startIcon={<AccessTimeIcon />}
             >
               บันทึก TimeSheet
@@ -255,27 +281,55 @@ function StudentDashboard() {
         </Paper>
 
         {/* ตาราง Timesheet */}
-        {loading ? (
-          <Box sx={{ textAlign: 'center', mt: 6 }}>
-            <CircularProgress size={48} color="primary" />
-          </Box>
-        ) : timeSheets.length === 0 ? (
-          <Typography sx={{ mt: 4, textAlign: 'center', color: 'text.disabled' }}>
-            ยังไม่มี TimeSheet
-          </Typography>
-        ) : (
-          <Paper
-            elevation={1}
-            sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0' }}
-          >
-            <Table sx={{ minWidth: 700 }}>
+        <Paper
+          elevation={4}
+          sx={{
+            width: '100%',
+            borderRadius: 3,
+            p: 2,
+            backgroundColor: '#fff',
+            boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
+          }}
+        >
+          {loading ? (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: 200,
+              }}
+            >
+              <CircularProgress size={48} color="primary" />
+            </Box>
+          ) : timeSheets.length === 0 ? (
+            <Typography
+              sx={{ textAlign: 'center', color: 'text.disabled', py: 8 }}
+              variant="subtitle1"
+            >
+              ยังไม่มี TimeSheet
+            </Typography>
+          ) : (
+            <Table sx={{ minWidth: 650 }}>
               <TableHead>
-                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                  <TableCell sx={{ fontWeight: 'bold' }}>วันที่</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>เวลาเข้า</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>เวลาออก</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>กิจกรรม</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', minWidth: 160 }}>จัดการ</TableCell>
+                <TableRow sx={{ bgcolor: '#e3f2fd' }}>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                    วันที่
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                    เวลาเข้า
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                    เวลาออก
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                    กิจกรรม
+                  </TableCell>
+                  <TableCell
+                    sx={{ fontWeight: 'bold', color: '#004a99', minWidth: 140 }}
+                  >
+                    จัดการ
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -325,12 +379,12 @@ function StudentDashboard() {
                 ))}
               </TableBody>
             </Table>
-          </Paper>
-        )}
+          )}
+        </Paper>
 
         {/* Dialog แก้ไข Timesheet */}
         <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#0066cc' }}>
             แก้ไข TimeSheet
           </DialogTitle>
           <DialogContent dividers>
@@ -394,7 +448,14 @@ function StudentDashboard() {
                 <Button
                   type="submit"
                   variant="contained"
-                  sx={{ textTransform: 'none', backgroundColor: '#4caf50' }}
+                  sx={{
+                    textTransform: 'none',
+                    backgroundColor: '#0066cc',
+                    '&:hover': {
+                      backgroundColor: '#004a99',
+                      boxShadow: '0 6px 20px rgba(0,74,153,0.3)',
+                    },
+                  }}
                   disabled={loadingEdit}
                 >
                   {loadingEdit ? 'กำลังบันทึก...' : 'บันทึก'}

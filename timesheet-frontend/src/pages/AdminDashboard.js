@@ -21,8 +21,8 @@ import {
   InputLabel,
   Paper,
   Tooltip,
+  Grid,
 } from '@mui/material';
-
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -66,7 +66,7 @@ function AdminDashboard() {
       );
       setStudents(sorted);
       setSummary(summaryRes.data);
-    } catch (err) {
+    } catch {
       alert('ไม่สามารถโหลดข้อมูลนักศึกษาได้');
     } finally {
       setLoading(false);
@@ -103,7 +103,7 @@ function AdminDashboard() {
       alert('แก้ไขข้อมูลสำเร็จ');
       setEditOpen(false);
       fetchStudents();
-    } catch (err) {
+    } catch {
       alert('แก้ไขข้อมูลไม่สำเร็จ');
     }
   };
@@ -125,191 +125,202 @@ function AdminDashboard() {
   return (
     <>
       <Navbar />
-      <Box sx={{ p: 4, maxWidth: 1100, mx: 'auto', backgroundColor: '#f4f6f8' }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ fontWeight: 'bold', color: '#4caf50', mb: 3 }}
-        >
-          รายชื่อนักศึกษาทั้งหมด
-        </Typography>
-
-        {/* Summary Box */}
-        {summary && (
-          <Box
-            sx={{
-              my: 3,
-              display: 'flex',
-              gap: 3,
-              flexWrap: 'wrap',
-              justifyContent: 'start',
-            }}
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'start',
+          backgroundColor: '#f4f6f8',
+          py: 4,
+          px: 2,
+        }}
+      >
+        <Box sx={{ width: '100%', maxWidth: 1100 }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontWeight: 'bold', color: '#333', mb: 3, textAlign: 'center' }}
           >
-            <Paper
-              elevation={1}
-              sx={{
-                p: 3,
-                minWidth: 220,
-                textAlign: 'center',
-                bgcolor: '#ffffff',
-                borderRadius: 2,
-                border: '1px solid #e0e0e0',
-              }}
-            >
-              <GroupsIcon fontSize="large" color="success" />
-              <Typography variant="subtitle1" color="textSecondary" mt={1}>
-                จำนวนนักศึกษา
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
-                {summary.totalStudents}
-              </Typography>
-            </Paper>
-            <Paper
-              elevation={1}
-              sx={{
-                p: 3,
-                minWidth: 220,
-                textAlign: 'center',
-                bgcolor: '#ffffff',
-                borderRadius: 2,
-                border: '1px solid #e0e0e0',
-              }}
-            >
-              <AccessTimeIcon fontSize="large" color="primary" />
-              <Typography variant="subtitle1" color="textSecondary" mt={1}>
-                จำนวน Timesheet
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                {summary.totalTimesheets}
-              </Typography>
-            </Paper>
-          </Box>
-        )}
+            ระบบจัดการนักศึกษา (Admin Dashboard)
+          </Typography>
 
-        {/* Table */}
-        {loading ? (
-          <Box sx={{ textAlign: 'center', mt: 6 }}>
-            <CircularProgress size={48} color="primary" />
-          </Box>
-        ) : (
-          <Paper elevation={1} sx={{ overflowX: 'auto', borderRadius: 2 }}>
-            <Table sx={{ minWidth: 700 }}>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                  <TableCell sx={{ fontWeight: 'bold' }}>รหัสนักศึกษา</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>ชื่อ-นามสกุล</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>บทบาท</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', minWidth: 240 }}>จัดการ</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {students.map((s) => (
-                  <TableRow key={s.id} hover>
-                    <TableCell>{s.studentId}</TableCell>
-                    <TableCell>{s.fullName}</TableCell>
-                    <TableCell sx={{ textTransform: 'capitalize', color: '#555' }}>
-                      {s.role}
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="แก้ไข">
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          onClick={() => handleEditOpen(s)}
-                          sx={{ mr: 1, textTransform: 'none' }}
-                          startIcon={<EditIcon />}
-                        >
-                          แก้ไข
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="ดู Timesheet">
-                        <Button
-                          variant="contained"
-                          size="small"
-                          color="success"
-                          sx={{ mr: 1, textTransform: 'none' }}
-                          onClick={() => handleViewTimesheet(s.id)}
-                          startIcon={<DescriptionIcon />}
-                        >
-                          Timesheet
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="ลบผู้ใช้">
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          onClick={() => handleDelete(s.id)}
-                          sx={{ textTransform: 'none' }}
-                          startIcon={<DeleteIcon />}
-                        >
-                          ลบ
-                        </Button>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-        )}
-
-        {/* Edit Dialog */}
-        <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ fontWeight: 'bold', color: '#4caf50' }}>
-            แก้ไขข้อมูลนักศึกษา
-          </DialogTitle>
-          <DialogContent dividers>
-            <Box
-              component="form"
-              sx={{
-                '& .MuiTextField-root': { my: 1 },
-                '& .MuiFormControl-root': { my: 1 },
-              }}
-              noValidate
-              autoComplete="off"
-            >
-              <TextField
-                label="รหัสนักศึกษา"
-                name="studentId"
-                fullWidth
-                value={formData.studentId}
-                onChange={handleChange}
-              />
-              <TextField
-                label="ชื่อ-นามสกุล"
-                name="fullName"
-                fullWidth
-                value={formData.fullName}
-                onChange={handleChange}
-              />
-              <FormControl fullWidth>
-                <InputLabel id="role-label">บทบาท</InputLabel>
-                <Select
-                  labelId="role-label"
-                  name="role"
-                  value={formData.role}
-                  label="บทบาท"
-                  onChange={handleChange}
+          {/* Summary Section */}
+          {summary && (
+            <Grid container spacing={3} justifyContent="center" sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    textAlign: 'center',
+                    bgcolor: '#fff',
+                    borderRadius: 2,
+                    border: '1px solid #ddd',
+                  }}
                 >
-                  <MenuItem value="student">Student</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                </Select>
-              </FormControl>
+                  <GroupsIcon fontSize="large" sx={{ color: '#666' }} />
+                  <Typography variant="subtitle1" color="textSecondary" mt={1}>
+                    จำนวนนักศึกษา
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+                    {summary.totalStudents}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    textAlign: 'center',
+                    bgcolor: '#fff',
+                    borderRadius: 2,
+                    border: '1px solid #ddd',
+                  }}
+                >
+                  <AccessTimeIcon fontSize="large" sx={{ color: '#666' }} />
+                  <Typography variant="subtitle1" color="textSecondary" mt={1}>
+                    Timesheets ทั้งหมด
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+                    {summary.totalTimesheets}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Table */}
+          {loading ? (
+            <Box sx={{ textAlign: 'center', mt: 6 }}>
+              <CircularProgress size={48} color="primary" />
             </Box>
-          </DialogContent>
-          <DialogActions sx={{ pr: 3, pb: 2 }}>
-            <Button onClick={handleEditClose} sx={{ textTransform: 'none' }}>
-              ยกเลิก
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              sx={{ textTransform: 'none', backgroundColor: '#4caf50' }}
+          ) : (
+            <Paper
+              elevation={1}
+              sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0' }}
             >
-              บันทึก
-            </Button>
-          </DialogActions>
-        </Dialog>
+              <Table sx={{ minWidth: 700 }}>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                    <TableCell sx={{ fontWeight: 'bold' }}>รหัสนักศึกษา</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>ชื่อ-นามสกุล</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>บทบาท</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>จัดการ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {students.map((s) => (
+                    <TableRow key={s.id} hover>
+                      <TableCell>{s.studentId}</TableCell>
+                      <TableCell>{s.fullName}</TableCell>
+                      <TableCell sx={{ textTransform: 'capitalize', color: '#555' }}>
+                        {s.role}
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="แก้ไข">
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleEditOpen(s)}
+                            sx={{ mr: 1, textTransform: 'none' }}
+                            startIcon={<EditIcon />}
+                            size="small"
+                          >
+                            แก้ไข
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="ดู Timesheet">
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="inherit"
+                            sx={{ mr: 1, textTransform: 'none' }}
+                            onClick={() => handleViewTimesheet(s.id)}
+                            startIcon={<DescriptionIcon />}
+                          >
+                            Timesheet
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="ลบผู้ใช้">
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() => handleDelete(s.id)}
+                            sx={{ textTransform: 'none' }}
+                            startIcon={<DeleteIcon />}
+                            size="small"
+                          >
+                            ลบ
+                          </Button>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          )}
+
+          {/* Dialog แก้ไข */}
+          <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ fontWeight: 'bold', color: '#333' }}>
+              แก้ไขข้อมูลนักศึกษา
+            </DialogTitle>
+            <DialogContent dividers>
+              <Box
+                component="form"
+                sx={{
+                  '& .MuiTextField-root': { my: 1 },
+                  '& .MuiFormControl-root': { my: 1 },
+                }}
+                noValidate
+                autoComplete="off"
+              >
+                <TextField
+                  label="รหัสนักศึกษา"
+                  name="studentId"
+                  fullWidth
+                  value={formData.studentId}
+                  onChange={handleChange}
+                />
+                <TextField
+                  label="ชื่อ-นามสกุล"
+                  name="fullName"
+                  fullWidth
+                  value={formData.fullName}
+                  onChange={handleChange}
+                />
+                <FormControl fullWidth>
+                  <InputLabel id="role-label">บทบาท</InputLabel>
+                  <Select
+                    labelId="role-label"
+                    name="role"
+                    value={formData.role}
+                    label="บทบาท"
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="student">Student</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ pr: 3, pb: 2 }}>
+              <Button onClick={handleEditClose} sx={{ textTransform: 'none' }}>
+                ยกเลิก
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                sx={{ textTransform: 'none', backgroundColor: '#1976d2' }}
+              >
+                บันทึก
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
       </Box>
     </>
   );
