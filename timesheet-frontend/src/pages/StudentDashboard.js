@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Navbar from '../components/Navbar'; // นำเข้า Navbar
+import Navbar from '../components/Navbar';
 import {
   Box,
   Typography,
@@ -10,99 +10,147 @@ import {
   TableRow,
   TableCell,
   TableBody,
-} from '@mui/material'; // นำเข้า UI component จาก Material UI
-import { useFormik } from 'formik'; // สำหรับจัดการฟอร์ม
-import * as Yup from 'yup'; // สำหรับตรวจสอบความถูกต้องของข้อมูลฟอร์ม
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+} from '@mui/material';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import {
   getMyTimeSheets,
   createTimeSheet,
   deleteTimeSheet,
-} from '../services/timesheetService'; // ฟังก์ชันเชื่อม API
-import { useAuth } from '../context/AuthContext'; // ดึงข้อมูลผู้ใช้และ token จาก Context
+  updateTimeSheet,
+} from '../services/timesheetService';
+import { useAuth } from '../context/AuthContext';
 
 function StudentDashboard() {
-  const { token, user } = useAuth(); // ดึง token และข้อมูลผู้ใช้จาก context
-  const [timeSheets, setTimeSheets] = useState([]); // เก็บข้อมูล TimeSheet ของผู้ใช้
+  const { token, user } = useAuth();
+  const [timeSheets, setTimeSheets] = useState([]);
 
-  // ฟังก์ชันดึงข้อมูล TimeSheet ของผู้ใช้จาก API
+  // สำหรับ dialog แก้ไข
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+
+  // โหลด timesheets
   const fetchData = async () => {
     try {
-      const res = await getMyTimeSheets(token); // เรียก API ด้วย token
-      setTimeSheets(res.data); // เก็บข้อมูล TimeSheet ที่ได้ไว้ใน state
+      const res = await getMyTimeSheets(token);
+      setTimeSheets(res.data);
     } catch (err) {
-      alert('โหลด TimeSheet ไม่สำเร็จ'); // แจ้งเตือนหากโหลดข้อมูลไม่สำเร็จ
+      alert('โหลด TimeSheet ไม่สำเร็จ');
     }
   };
 
-  // ฟังก์ชันลบ TimeSheet
-  const handleDelete = async (id) => {
-    if (!window.confirm('ต้องการลบ TimeSheet นี้ใช่หรือไม่?')) return; // ยืนยันการลบ
-
-    try {
-      await deleteTimeSheet(id, token); // เรียก API ลบ TimeSheet
-      setTimeSheets((prev) => prev.filter((t) => t.id !== id)); // ลบข้อมูลที่ลบออกจาก state
-    } catch {
-      alert('ลบไม่สำเร็จ'); // แจ้งเตือนหากลบไม่สำเร็จ
-    }
-  };
-
-  // กำหนด Formik สำหรับจัดการฟอร์มบันทึก TimeSheet
-  const formik = useFormik({
-    initialValues: {
-      date: '',          // วันที่
-      checkInTime: '',   // เวลาเข้า (ตรงกับ backend)
-      checkOutTime: '',  // เวลาออก (ตรงกับ backend)
-      activity: '',      // กิจกรรม (เพิ่มฟิลด์นี้)
-    },
-    validationSchema: Yup.object({
-      date: Yup.string().required('กรุณาเลือกวันที่'), // ตรวจสอบว่าต้องกรอกวันที่
-      checkInTime: Yup.string().required('กรุณากรอกเวลาเข้า'), // เวลาเข้า ต้องกรอก
-      checkOutTime: Yup.string().required('กรุณากรอกเวลาออก'), // เวลาออก ต้องกรอก
-      activity: Yup.string().required('กรุณากรอกกิจกรรม'), // กิจกรรม ต้องกรอก
-    }),
-    onSubmit: async (values, { resetForm }) => {
-      try {
-        await createTimeSheet(values, token); // เรียก API บันทึก TimeSheet ใหม่ พร้อมส่ง activity
-        fetchData(); // โหลดข้อมูล TimeSheet ใหม่เพื่ออัพเดตตาราง
-        resetForm(); // ล้างฟอร์มหลังบันทึกเสร็จ
-      } catch (error) {
-  console.error('API Error:', error.response ? error.response.data : error.message);
-  alert('บันทึกไม่สำเร็จ: ' + (error.response?.data?.message || error.message));
-}
-
-    },
-  });
-
-  // useEffect ทำงานตอน component แสดงผลครั้งแรก (mount)
-  // เพื่อโหลดข้อมูล TimeSheet ของผู้ใช้
   useEffect(() => {
     fetchData();
   }, []);
 
+  // ลบ timesheet
+  const handleDelete = async (id) => {
+    if (!window.confirm('ต้องการลบ TimeSheet นี้ใช่หรือไม่?')) return;
+
+    try {
+      await deleteTimeSheet(id, token);
+      setTimeSheets((prev) => prev.filter((t) => t.id !== id));
+    } catch {
+      alert('ลบไม่สำเร็จ');
+    }
+  };
+
+  // ฟอร์มบันทึก timesheet ใหม่
+  const formik = useFormik({
+    initialValues: {
+      date: '',
+      checkInTime: '',
+      checkOutTime: '',
+      activity: '',
+    },
+    validationSchema: Yup.object({
+      date: Yup.string().required('กรุณาเลือกวันที่'),
+      checkInTime: Yup.string().required('กรุณากรอกเวลาเข้า'),
+      checkOutTime: Yup.string().required('กรุณากรอกเวลาออก'),
+      activity: Yup.string().required('กรุณากรอกกิจกรรม'),
+    }),
+    onSubmit: async (values, { resetForm }) => {
+      try {
+        await createTimeSheet(values, token);
+        fetchData();
+        resetForm();
+      } catch {
+        alert('บันทึกไม่สำเร็จ');
+      }
+    },
+  });
+
+  // เปิด dialog แก้ไข พร้อมข้อมูลเดิม
+  const handleEditOpen = (timesheet) => {
+    setEditData(timesheet);
+    setEditOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditOpen(false);
+    setEditData(null);
+  };
+
+  // ฟอร์มแก้ไข timesheet (enableReinitialize สำคัญ!)
+  const editFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      date: editData ? editData.date.slice(0, 10) : '',
+      checkInTime: editData ? editData.checkInTime.slice(11, 16) : '',
+      checkOutTime: editData ? editData.checkOutTime.slice(11, 16) : '',
+      activity: editData ? editData.activity || '' : '',
+    },
+    validationSchema: Yup.object({
+      date: Yup.string().required('กรุณาเลือกวันที่'),
+      checkInTime: Yup.string().required('กรุณากรอกเวลาเข้า'),
+      checkOutTime: Yup.string().required('กรุณากรอกเวลาออก'),
+      activity: Yup.string().required('กรุณากรอกกิจกรรม'),
+    }),
+    onSubmit: async (values) => {
+      setLoadingEdit(true);
+      try {
+        await updateTimeSheet(editData.id, {
+          date: values.date,
+          checkInTime: values.checkInTime,
+          checkOutTime: values.checkOutTime,
+          activity: values.activity,
+        }, token);
+        await fetchData();
+        handleEditClose();
+      } catch {
+        alert('แก้ไขไม่สำเร็จ');
+      }
+      setLoadingEdit(false);
+    },
+  });
+
   return (
     <>
-      <Navbar /> {/* แถบนำทางด้านบน */}
+      <Navbar />
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
-          TimeSheet ของ {user?.fullName} {/* แสดงชื่อผู้ใช้ */}
+          TimeSheet ของ {user?.fullName}
         </Typography>
 
-        {/* ฟอร์มบันทึก TimeSheet */}
         <form onSubmit={formik.handleSubmit} style={{ marginBottom: '2rem' }}>
-          {/* วันที่ */}
           <TextField
             label="วันที่"
             name="date"
             type="date"
             fullWidth
-            InputLabelProps={{ shrink: true }} // ให้ป้ายชื่อเล็กและอยู่บน input เมื่อเลือกแล้ว
+            InputLabelProps={{ shrink: true }}
             value={formik.values.date}
-            onChange={formik.handleChange} // ฟังค์ชันจัดการการเปลี่ยนค่า input
-            error={formik.touched.date && Boolean(formik.errors.date)} // แสดงสถานะ error
-            helperText={formik.touched.date && formik.errors.date} // ข้อความช่วยเหลือเมื่อ error
-            sx={{ mb: 2 }} // margin bottom 2 หน่วย
+            onChange={formik.handleChange}
+            error={formik.touched.date && Boolean(formik.errors.date)}
+            helperText={formik.touched.date && formik.errors.date}
+            sx={{ mb: 2 }}
           />
-          {/* เวลาเข้า */}
           <TextField
             label="เวลาเข้า"
             name="checkInTime"
@@ -115,7 +163,6 @@ function StudentDashboard() {
             helperText={formik.touched.checkInTime && formik.errors.checkInTime}
             sx={{ mb: 2 }}
           />
-          {/* เวลาออก */}
           <TextField
             label="เวลาออก"
             name="checkOutTime"
@@ -128,7 +175,6 @@ function StudentDashboard() {
             helperText={formik.touched.checkOutTime && formik.errors.checkOutTime}
             sx={{ mb: 2 }}
           />
-          {/* กิจกรรม */}
           <TextField
             label="กิจกรรม"
             name="activity"
@@ -143,11 +189,10 @@ function StudentDashboard() {
           />
 
           <Button variant="contained" type="submit" fullWidth>
-            บันทึก TimeSheet {/* ปุ่มส่งข้อมูลฟอร์ม */}
+            บันทึก TimeSheet
           </Button>
         </form>
 
-        {/* ตารางแสดงรายการ TimeSheet */}
         <Typography variant="h6">รายการ TimeSheet</Typography>
         <Table>
           <TableHead>
@@ -155,8 +200,8 @@ function StudentDashboard() {
               <TableCell>วันที่</TableCell>
               <TableCell>เวลาเข้า</TableCell>
               <TableCell>เวลาออก</TableCell>
-              <TableCell>กิจกรรม</TableCell> {/* เพิ่มคอลัมน์กิจกรรม */}
-              <TableCell>ลบ</TableCell>
+              <TableCell>กิจกรรม</TableCell>
+              <TableCell>จัดการ</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -165,12 +210,19 @@ function StudentDashboard() {
                 <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(t.checkInTime).toLocaleTimeString()}</TableCell>
                 <TableCell>{new Date(t.checkOutTime).toLocaleTimeString()}</TableCell>
-                <TableCell>{t.activity}</TableCell> {/* แสดงกิจกรรม */}
+                <TableCell>{t.activity}</TableCell>
                 <TableCell>
                   <Button
                     variant="outlined"
+                    onClick={() => handleEditOpen(t)}
+                    sx={{ mr: 1 }}
+                  >
+                    แก้ไข
+                  </Button>
+                  <Button
+                    variant="outlined"
                     color="error"
-                    onClick={() => handleDelete(t.id)} // ลบแถวนี้
+                    onClick={() => handleDelete(t.id)}
                   >
                     ลบ
                   </Button>
@@ -180,6 +232,68 @@ function StudentDashboard() {
           </TableBody>
         </Table>
       </Box>
+
+      <Dialog open={editOpen} onClose={handleEditClose}>
+        <DialogTitle>แก้ไข TimeSheet</DialogTitle>
+        <DialogContent>
+          <form id="edit-timesheet-form" onSubmit={editFormik.handleSubmit} style={{ minWidth: 300 }}>
+            <TextField
+              label="วันที่"
+              name="date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={editFormik.values.date}
+              onChange={editFormik.handleChange}
+              error={editFormik.touched.date && Boolean(editFormik.errors.date)}
+              helperText={editFormik.touched.date && editFormik.errors.date}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="เวลาเข้า"
+              name="checkInTime"
+              type="time"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={editFormik.values.checkInTime}
+              onChange={editFormik.handleChange}
+              error={editFormik.touched.checkInTime && Boolean(editFormik.errors.checkInTime)}
+              helperText={editFormik.touched.checkInTime && editFormik.errors.checkInTime}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="เวลาออก"
+              name="checkOutTime"
+              type="time"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={editFormik.values.checkOutTime}
+              onChange={editFormik.handleChange}
+              error={editFormik.touched.checkOutTime && Boolean(editFormik.errors.checkOutTime)}
+              helperText={editFormik.touched.checkOutTime && editFormik.errors.checkOutTime}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="กิจกรรม"
+              name="activity"
+              fullWidth
+              multiline
+              rows={3}
+              value={editFormik.values.activity}
+              onChange={editFormik.handleChange}
+              error={editFormik.touched.activity && Boolean(editFormik.errors.activity)}
+              helperText={editFormik.touched.activity && editFormik.errors.activity}
+              sx={{ mb: 2 }}
+            />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleEditClose} disabled={loadingEdit}>ยกเลิก</Button>
+          <Button form="edit-timesheet-form" type="submit" variant="contained" disabled={loadingEdit}>
+            {loadingEdit ? 'กำลังบันทึก...' : 'บันทึก'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

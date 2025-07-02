@@ -5,19 +5,20 @@ import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import { useAuth } from './context/AuthContext';
+import StudentTimesheetView from './pages/StudentTimesheetView';
 
 function App() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
-          !user ? <LoginPage /> : 
-          user.role === 'admin' ? <Navigate to="/admin" /> : 
-          <Navigate to="/student" />
-        } 
+          !user ? <LoginPage /> :
+            user.role === 'admin' ? <Navigate to="/admin" /> :
+              <Navigate to="/student" />
+        }
       />
       <Route path="/register" element={<RegisterPage />} />
       <Route
@@ -29,6 +30,11 @@ function App() {
         element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/" />}
       />
       <Route path="*" element={<Navigate to="/" />} />
+
+      <Route
+        path="/admin/student/:id/timesheets"
+        element={user?.role === 'admin' ? <StudentTimesheetView /> : <Navigate to="/" />}
+      />
     </Routes>
   );
 }

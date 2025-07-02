@@ -9,7 +9,7 @@ router.get('/', authenticateToken, authorizeRoles('student'), async (req, res) =
   try {
     const timesheets = await prisma.timeSheet.findMany({
       where: { userId: req.user.id },
-      orderBy: { date: 'desc' }, // เรียงวันที่ล่าสุดก่อน
+      orderBy: { date: 'desc' },
     });
     res.json(timesheets);
   } catch (error) {
@@ -40,12 +40,11 @@ router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) 
   }
 });
 
-
+// นักศึกษาลบ Timesheet ของตัวเอง
 router.delete('/:id', authenticateToken, authorizeRoles('student'), async (req, res) => {
   const id = parseInt(req.params.id);
 
   try {
-    // ตรวจสอบว่า Timesheet นี้เป็นของ user ที่ login จริงไหม
     const timesheet = await prisma.timeSheet.findUnique({ where: { id } });
     if (!timesheet || timesheet.userId !== req.user.id) {
       return res.status(404).json({ message: 'ไม่พบ Timesheet หรือไม่มีสิทธิ์ลบ' });
@@ -59,5 +58,41 @@ router.delete('/:id', authenticateToken, authorizeRoles('student'), async (req, 
   }
 });
 
+// นักศึกษาแก้ไข Timesheet ของตัวเอง
+router.put('/:id', authenticateToken, authorizeRoles('student'), async (req, res) => {
+  const { id } = req.params;
+  const { date, checkInTime, checkOutTime, activity } = req.body;
+
+  try {
+    // Step 1: หา timesheet ที่ user เป็นเจ้าของ
+    const timesheet = await prisma.timeSheet.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!timesheet || timesheet.userId !== req.user.id) {
+      return res.status(404).json({ message: 'ไม่พบ Timesheet หรือไม่มีสิทธิ์แก้ไข' });
+    }
+
+    // Step 2: แปลงเวลารวมวันที่ก่อน update
+    const checkInDateTime = new Date(`${date}T${checkInTime}:00`);
+    const checkOutDateTime = new Date(`${date}T${checkOutTime}:00`);
+
+    // Step 3: อัพเดตข้อมูล
+    const updated = await prisma.timeSheet.update({
+      where: { id: Number(id) },
+      data: {
+        date: new Date(date),
+        checkInTime: checkInDateTime,
+        checkOutTime: checkOutDateTime,
+        activity,
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('แก้ไข Timesheet error:', error);
+    res.status(500).json({ message: 'แก้ไข Timesheet ไม่สำเร็จ', error });
+  }
+});
 
 module.exports = router;

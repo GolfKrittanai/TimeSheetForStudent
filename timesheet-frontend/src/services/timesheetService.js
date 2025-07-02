@@ -1,4 +1,3 @@
-// src/services/timesheetService.js
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API;
@@ -17,6 +16,13 @@ export const createTimeSheet = (data, token) => {
 
 export const deleteTimeSheet = (id, token) => {
   return axios.delete(`${API_URL}/timesheets/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+// เพิ่มฟังก์ชันนี้สำหรับแก้ไข Timesheet
+export const updateTimeSheet = (id, data, token) => {
+  return axios.put(`${API_URL}/timesheets/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

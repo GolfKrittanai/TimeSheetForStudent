@@ -12,8 +12,18 @@ export const deleteStudent = (id, token) => {
   });
 };
 
-export const getMyProfile = (token) => {
-  return axios.get('/api/users/me', {
+export const updateStudent = (id, data, token) => {
+  return axios.put(`/api/users/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+
+// services/studentService.js
+export const getAdminSummary = (token) => {
+  return axios.get('/api/users/admin/summary', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+
+
