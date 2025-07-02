@@ -1,29 +1,39 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';  // แก้ import ให้ถูก
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import { useAuth } from './context/AuthContext';
+import StudentTimesheetView from './pages/StudentTimesheetView';
 
 function App() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
+      <Route
+        path="/"
+        element={
+          !user ? <LoginPage /> :
+            user.role === 'admin' ? <Navigate to="/admin" /> :
+              <Navigate to="/student" />
+        }
+      />
       <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/admin"
-        element={
-          user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />
-        }
+        element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />}
       />
       <Route
         path="/student"
-        element={
-          user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/" />
-        }
+        element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/" />}
+      />
+      <Route path="*" element={<Navigate to="/" />} />
+
+      <Route
+        path="/admin/student/:id/timesheets"
+        element={user?.role === 'admin' ? <StudentTimesheetView /> : <Navigate to="/" />}
       />
     </Routes>
   );

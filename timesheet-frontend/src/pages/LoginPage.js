@@ -1,86 +1,132 @@
 import React from 'react';
-import { Box, Typography, TextField, Button } from '@mui/material'; // UI Components จาก Material UI
-import { useFormik } from 'formik'; // สำหรับจัดการฟอร์ม
-import * as Yup from 'yup'; // ตรวจสอบความถูกต้องของข้อมูลในฟอร์ม
-import { loginUser } from '../services/authService'; // ฟังก์ชันเรียก API เข้าสู่ระบบ
-import { useAuth } from '../context/AuthContext'; // ดึงฟังก์ชัน login จาก Context เพื่อบันทึก token และ user
-import { useNavigate } from 'react-router-dom'; // สำหรับเปลี่ยนหน้า
+import { Box, Typography, TextField, Button, Alert } from '@mui/material';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { loginUser } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-function LoginPage() {
-  const { login } = useAuth(); // ดึงฟังก์ชัน login มาใช้
-  const navigate = useNavigate(); // ฟังก์ชันเปลี่ยนหน้า
+const LoginPage = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  // กำหนด formik สำหรับจัดการฟอร์ม login
   const formik = useFormik({
-    initialValues: { studentId: '', password: '' }, // ค่าตั้งต้นของฟอร์ม
+    initialValues: {
+      studentId: '',
+      password: '',
+    },
     validationSchema: Yup.object({
-      // ตรวจสอบข้อมูลว่าต้องกรอกให้ครบ
       studentId: Yup.string().required('กรุณากรอกรหัสนักศึกษา'),
       password: Yup.string().required('กรุณากรอกรหัสผ่าน'),
     }),
-    onSubmit: async (values) => {
+    onSubmit: async (values, { setSubmitting, setErrors }) => {
       try {
-        // เรียก API login ส่งข้อมูลรหัสนักศึกษาและรหัสผ่าน
         const res = await loginUser(values);
 
-        // บันทึก token และข้อมูลผู้ใช้ลง Context เพื่อใช้ในแอป
-        login(res.data.token, res.data.user);
+        login({ token: res.data.token, user: res.data.user });
 
-        // เปลี่ยนหน้าไปตามบทบาทผู้ใช้ (admin หรือ student)
-        navigate(res.data.user.role === 'admin' ? '/admin' : '/student');
-      } catch (err) {
-        // หากเข้าสู่ระบบไม่สำเร็จ แจ้งเตือน
-        alert('เข้าสู่ระบบไม่สำเร็จ');
+        if (res.data.user.role === 'admin') {
+          navigate('/admin');
+        } else if (res.data.user.role === 'student') {
+          navigate('/student');
+        } else {
+          navigate('/');
+        }
+      } catch (error) {
+        setErrors({ submit: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+      } finally {
+        setSubmitting(false);
       }
     },
   });
 
   return (
-    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 10 }}>
-      {/* หัวข้อหน้าล็อกอิน */}
-      <Typography variant="h4" gutterBottom>
-        เข้าสู่ระบบ
-      </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #2196f3 0%, #21cbf3 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 2,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: 400,
+          width: '100%',
+          bgcolor: 'background.paper',
+          p: 4,
+          borderRadius: 3,
+          boxShadow: 6,
+        }}
+      >
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ fontWeight: 'bold', color: '#1976d2', textAlign: 'center', mb: 2 }}
+        >
+          ระบบ Timesheet สำหรับนักศึกษา
+        </Typography>
 
-      {/* ฟอร์มล็อกอิน */}
-      <form onSubmit={formik.handleSubmit}>
-        {/* ช่องกรอกรหัสนักศึกษา */}
-        <TextField
-          label="รหัสนักศึกษา"
-          name="studentId"
-          fullWidth
-          margin="normal"
-          value={formik.values.studentId} // เชื่อมค่าในฟอร์มกับ Formik
-          onChange={formik.handleChange} // อัพเดตค่าฟอร์มเมื่อผู้ใช้พิมพ์
-          error={formik.touched.studentId && Boolean(formik.errors.studentId)} // แสดง error ถ้าข้อมูลไม่ถูกต้อง
-          helperText={formik.touched.studentId && formik.errors.studentId}   // ข้อความแจ้งเตือน
-        />
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontWeight: 'bold', color: '#1976d2', textAlign: 'center', mb: 4 }}
+        >
+          เข้าสู่ระบบ
+        </Typography>
 
-        {/* ช่องกรอกรหัสผ่าน */}
-        <TextField
-          label="รหัสผ่าน"
-          name="password"
-          type="password" // ซ่อนรหัสผ่าน
-          fullWidth
-          margin="normal"
-          value={formik.values.password}
-          onChange={formik.handleChange}
-          error={formik.touched.password && Boolean(formik.errors.password)}
-          helperText={formik.touched.password && formik.errors.password}
-        />
+        <form onSubmit={formik.handleSubmit} noValidate>
+          <TextField
+            label="รหัสนักศึกษา"
+            name="studentId"
+            fullWidth
+            margin="normal"
+            value={formik.values.studentId}
+            onChange={formik.handleChange}
+            error={formik.touched.studentId && Boolean(formik.errors.studentId)}
+            helperText={formik.touched.studentId && formik.errors.studentId}
+            autoFocus
+          />
+          <TextField
+            label="รหัสผ่าน"
+            name="password"
+            type="password"
+            fullWidth
+            margin="normal"
+            value={formik.values.password}
+            onChange={formik.handleChange}
+            error={formik.touched.password && Boolean(formik.errors.password)}
+            helperText={formik.touched.password && formik.errors.password}
+          />
 
-        {/* ปุ่มล็อกอิน */}
-        <Button type="submit" fullWidth variant="contained" sx={{ mt: 2 }}>
-          Login
-        </Button>
+          {formik.errors.submit && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {formik.errors.submit}
+            </Alert>
+          )}
 
-        {/* ปุ่มไปหน้าลงทะเบียน */}
-        <Button fullWidth onClick={() => navigate('/register')} sx={{ mt: 1 }}>
-          ลงทะเบียน
-        </Button>
-      </form>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, py: 1.5, fontWeight: 'bold' }}
+            disabled={formik.isSubmitting}
+          >
+            เข้าสู่ระบบ
+          </Button>
+          <Button
+            fullWidth
+            sx={{ mt: 1, textTransform: 'none' }}
+            onClick={() => navigate('/register')}
+          >
+            ลงทะเบียน
+          </Button>
+        </form>
+      </Box>
     </Box>
   );
-}
+};
 
 export default LoginPage;

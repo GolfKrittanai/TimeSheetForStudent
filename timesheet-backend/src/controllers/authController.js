@@ -2,8 +2,10 @@ const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 
+// REGISTER CONTROLLER
 async function register(req, res) {
-  const { studentId, fullName, email, password } = req.body;
+  const { studentId, fullName, password } = req.body;
+
   if (!studentId || !fullName || !password) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
   }
@@ -25,19 +27,26 @@ async function register(req, res) {
       },
     });
 
+    const token = generateToken({ id: user.id, role: user.role });
+
     return res.status(201).json({
-      id: user.id,
-      studentId: user.studentId,
-      fullName: user.fullName,
-      role: user.role,
+      token,
+      user: {
+        id: user.id,
+        studentId: user.studentId,
+        fullName: user.fullName,
+        role: user.role,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลงทะเบียน', error: error.message });
   }
 }
 
+// LOGIN CONTROLLER
 async function login(req, res) {
   const { studentId, password } = req.body;
+
   if (!studentId || !password) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
   }
@@ -55,7 +64,7 @@ async function login(req, res) {
 
     const token = generateToken({ id: user.id, role: user.role });
 
-    return res.json({
+    return res.status(200).json({
       token,
       user: {
         id: user.id,
@@ -65,7 +74,7 @@ async function login(req, res) {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: error.message });
   }
 }
 

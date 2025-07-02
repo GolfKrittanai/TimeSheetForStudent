@@ -20,14 +20,17 @@ model User {
 
 model TimeSheet {
   id          Int      @id @default(autoincrement())
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      Int
   date        DateTime
   checkInTime DateTime
   checkOutTime DateTime
+  activity    String?    // เพิ่มบรรทัดนี้ ต้อง nullable หรือ required ตามการออกแบบ
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now()) @updatedAt
 }
+
+
 
 enum Role {
   admin
