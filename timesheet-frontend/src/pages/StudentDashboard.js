@@ -10,24 +10,41 @@ import {
   TableBody,
   Button,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
   Paper,
+  Tooltip,
 } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
-import TimeSheetForm from './TimeSheetForm';
-import TimeSheetEditDialog from './TimeSheetEditDialog';
+
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  AccessTime as AccessTimeIcon,
+  Description as DescriptionIcon,
+} from '@mui/icons-material';
+
 import {
   getMyTimeSheets,
+  createTimeSheet,
   deleteTimeSheet,
   updateTimeSheet,
 } from '../services/timesheetService';
+import { useAuth } from '../context/AuthContext';
 
 function StudentDashboard() {
   const { token, user } = useAuth();
   const [timeSheets, setTimeSheets] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Dialog แก้ไข
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
+  // โหลด Timesheets
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -35,94 +52,230 @@ function StudentDashboard() {
       setTimeSheets(res.data);
     } catch {
       alert('โหลด TimeSheet ไม่สำเร็จ');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // ลบ Timesheet
   const handleDelete = async (id) => {
     if (!window.confirm('ต้องการลบ TimeSheet นี้ใช่หรือไม่?')) return;
+
     try {
       await deleteTimeSheet(id, token);
-      setTimeSheets(prev => prev.filter(t => t.id !== id));
+      setTimeSheets((prev) => prev.filter((t) => t.id !== id));
     } catch {
       alert('ลบไม่สำเร็จ');
     }
   };
 
+  // ฟอร์มบันทึก Timesheet ใหม่
+  const [formData, setFormData] = useState({
+    date: '',
+    checkInTime: '',
+    checkOutTime: '',
+    activity: '',
+  });
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.date) errors.date = 'กรุณาเลือกวันที่';
+    if (!formData.checkInTime) errors.checkInTime = 'กรุณากรอกเวลาเข้า';
+    if (!formData.checkOutTime) errors.checkOutTime = 'กรุณากรอกเวลาออก';
+    if (!formData.activity) errors.activity = 'กรุณากรอกกิจกรรม';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      await createTimeSheet(formData, token);
+      fetchData();
+      setFormData({ date: '', checkInTime: '', checkOutTime: '', activity: '' });
+    } catch {
+      alert('บันทึกไม่สำเร็จ');
+    }
+  };
+
+  // เปิด dialog แก้ไข
   const handleEditOpen = (timesheet) => {
-    setEditData(timesheet);
+    setEditData({
+      id: timesheet.id,
+      date: timesheet.date.slice(0, 10),
+      checkInTime: timesheet.checkInTime.slice(11, 16),
+      checkOutTime: timesheet.checkOutTime.slice(11, 16),
+      activity: timesheet.activity || '',
+    });
     setEditOpen(true);
   };
 
   const handleEditClose = () => {
     setEditOpen(false);
     setEditData(null);
+    setEditErrors({});
   };
 
-  const handleEditSave = async (values, resetLoading) => {
+  // ฟอร์มแก้ไข timesheet
+  const [editErrors, setEditErrors] = useState({});
+
+  const validateEditForm = () => {
+    const errors = {};
+    if (!editData.date) errors.date = 'กรุณาเลือกวันที่';
+    if (!editData.checkInTime) errors.checkInTime = 'กรุณากรอกเวลาเข้า';
+    if (!editData.checkOutTime) errors.checkOutTime = 'กรุณากรอกเวลาออก';
+    if (!editData.activity) errors.activity = 'กรุณากรอกกิจกรรม';
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEditForm()) return;
+
+    setLoadingEdit(true);
     try {
-      await updateTimeSheet(editData.id, values, token);
-      alert('แก้ไข TimeSheet สำเร็จ');
-      await fetchData();
+      await updateTimeSheet(
+        editData.id,
+        {
+          date: editData.date,
+          checkInTime: editData.checkInTime,
+          checkOutTime: editData.checkOutTime,
+          activity: editData.activity,
+        },
+        token
+      );
+      fetchData();
       handleEditClose();
     } catch {
       alert('แก้ไขไม่สำเร็จ');
     }
-    resetLoading(false);
+    setLoadingEdit(false);
   };
 
   return (
     <>
       <Navbar />
-      <Box sx={{ p: 4, maxWidth: 900, mx: 'auto' }}>
+      <Box sx={{ p: 4, maxWidth: 1100, mx: 'auto', backgroundColor: '#f4f6f8' }}>
         <Typography
           variant="h4"
           gutterBottom
-          sx={{ fontWeight: 'bold', color: '#1976d2' }}
+          sx={{ fontWeight: 'bold', color: '#4caf50', mb: 3 }}
         >
           TimeSheet ของ {user?.fullName}
         </Typography>
 
         {/* ฟอร์มเพิ่ม Timesheet */}
-        <Paper sx={{ p: 3, mb: 4, boxShadow: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'medium' }}>
-            เพิ่ม TimeSheet ใหม่
-          </Typography>
-          <TimeSheetForm token={token} fetchData={fetchData} />
+        <Paper
+          elevation={1}
+          sx={{
+            p: 3,
+            mb: 4,
+            bgcolor: '#ffffff',
+            borderRadius: 2,
+            border: '1px solid #e0e0e0',
+            maxWidth: 600,
+          }}
+        >
+          <form onSubmit={handleSubmit} noValidate>
+            <TextField
+              label="วันที่"
+              name="date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={formData.date}
+              onChange={handleInputChange}
+              error={Boolean(formErrors.date)}
+              helperText={formErrors.date}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="เวลาเข้า"
+              name="checkInTime"
+              type="time"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={formData.checkInTime}
+              onChange={handleInputChange}
+              error={Boolean(formErrors.checkInTime)}
+              helperText={formErrors.checkInTime}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="เวลาออก"
+              name="checkOutTime"
+              type="time"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={formData.checkOutTime}
+              onChange={handleInputChange}
+              error={Boolean(formErrors.checkOutTime)}
+              helperText={formErrors.checkOutTime}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="กิจกรรม"
+              name="activity"
+              fullWidth
+              multiline
+              rows={3}
+              value={formData.activity}
+              onChange={handleInputChange}
+              error={Boolean(formErrors.activity)}
+              helperText={formErrors.activity}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              variant="contained"
+              type="submit"
+              fullWidth
+              sx={{ mt: 1, textTransform: 'none' }}
+              startIcon={<AccessTimeIcon />}
+            >
+              บันทึก TimeSheet
+            </Button>
+          </form>
         </Paper>
 
-        <Typography
-          variant="h6"
-          sx={{ mb: 2, fontWeight: 'medium', color: '#555' }}
-        >
-          รายการ TimeSheet
-        </Typography>
-
+        {/* ตาราง Timesheet */}
         {loading ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <CircularProgress color="primary" />
+          <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <CircularProgress size={48} color="primary" />
           </Box>
         ) : timeSheets.length === 0 ? (
-          <Typography sx={{ mt: 4, textAlign: 'center', color: '#888' }}>
+          <Typography sx={{ mt: 4, textAlign: 'center', color: 'text.disabled' }}>
             ยังไม่มี TimeSheet
           </Typography>
         ) : (
-          <Paper sx={{ overflowX: 'auto', boxShadow: 3 }}>
-            <Table sx={{ minWidth: 650 }}>
+          <Paper
+            elevation={1}
+            sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0' }}
+          >
+            <Table sx={{ minWidth: 700 }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                   <TableCell sx={{ fontWeight: 'bold' }}>วันที่</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>เวลาเข้า</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>เวลาออก</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>กิจกรรม</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', minWidth: 140 }}>
-                    จัดการ
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', minWidth: 160 }}>จัดการ</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -143,22 +296,30 @@ function StudentDashboard() {
                     </TableCell>
                     <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => handleEditOpen(t)}
-                        sx={{ mr: 1, textTransform: 'none' }}
-                      >
-                        แก้ไข
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => handleDelete(t.id)}
-                        sx={{ textTransform: 'none' }}
-                      >
-                        ลบ
-                      </Button>
+                      <Tooltip title="แก้ไข">
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => handleEditOpen(t)}
+                          sx={{ mr: 1, textTransform: 'none' }}
+                          startIcon={<EditIcon />}
+                          size="small"
+                        >
+                          แก้ไข
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="ลบ">
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => handleDelete(t.id)}
+                          sx={{ textTransform: 'none' }}
+                          startIcon={<DeleteIcon />}
+                          size="small"
+                        >
+                          ลบ
+                        </Button>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -167,12 +328,81 @@ function StudentDashboard() {
           </Paper>
         )}
 
-        <TimeSheetEditDialog
-          open={editOpen}
-          onClose={handleEditClose}
-          initialData={editData}
-          onSave={handleEditSave}
-        />
+        {/* Dialog แก้ไข Timesheet */}
+        <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#4caf50' }}>
+            แก้ไข TimeSheet
+          </DialogTitle>
+          <DialogContent dividers>
+            <Box component="form" noValidate autoComplete="off" onSubmit={handleEditSubmit}>
+              <TextField
+                label="วันที่"
+                name="date"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editData?.date || ''}
+                onChange={handleEditChange}
+                error={Boolean(editErrors.date)}
+                helperText={editErrors.date}
+                sx={{ my: 1 }}
+              />
+              <TextField
+                label="เวลาเข้า"
+                name="checkInTime"
+                type="time"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editData?.checkInTime || ''}
+                onChange={handleEditChange}
+                error={Boolean(editErrors.checkInTime)}
+                helperText={editErrors.checkInTime}
+                sx={{ my: 1 }}
+              />
+              <TextField
+                label="เวลาออก"
+                name="checkOutTime"
+                type="time"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editData?.checkOutTime || ''}
+                onChange={handleEditChange}
+                error={Boolean(editErrors.checkOutTime)}
+                helperText={editErrors.checkOutTime}
+                sx={{ my: 1 }}
+              />
+              <TextField
+                label="กิจกรรม"
+                name="activity"
+                fullWidth
+                multiline
+                rows={3}
+                value={editData?.activity || ''}
+                onChange={handleEditChange}
+                error={Boolean(editErrors.activity)}
+                helperText={editErrors.activity}
+                sx={{ my: 1 }}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button
+                  onClick={handleEditClose}
+                  sx={{ mr: 2, textTransform: 'none' }}
+                  disabled={loadingEdit}
+                >
+                  ยกเลิก
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  sx={{ textTransform: 'none', backgroundColor: '#4caf50' }}
+                  disabled={loadingEdit}
+                >
+                  {loadingEdit ? 'กำลังบันทึก...' : 'บันทึก'}
+                </Button>
+              </Box>
+            </Box>
+          </DialogContent>
+        </Dialog>
       </Box>
     </>
   );

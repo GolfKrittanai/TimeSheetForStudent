@@ -1,5 +1,19 @@
 import React from 'react';
-import { Box, Typography, TextField, Button, Alert } from '@mui/material';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  InputAdornment,
+} from '@mui/material';
+import {
+  AccountCircle,
+  Badge,
+  Lock,
+  LockReset,
+  ArrowBack,
+} from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../services/authService';
@@ -36,11 +50,9 @@ function RegisterPage() {
         });
         navigate('/', { state: { registered: true } });
       } catch (error) {
-        if (error.response?.data?.message) {
-          setErrors({ submit: error.response.data.message });
-        } else {
-          setErrors({ submit: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
-        }
+        setErrors({
+          submit: error.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+        });
       } finally {
         setSubmitting(false);
       }
@@ -51,29 +63,40 @@ function RegisterPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2196f3 0%, #21cbf3 100%)',
+        backgroundColor: '#f4f6f8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 2,
+        p: 2,
       }}
     >
       <Box
         sx={{
-          maxWidth: 400,
+          maxWidth: 420,
           width: '100%',
-          bgcolor: 'background.paper',
+          bgcolor: '#fff',
           p: 4,
-          borderRadius: 3,
-          boxShadow: 6,
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
         <Typography
-          variant="h4"
+          variant="h5"
           gutterBottom
-          sx={{ fontWeight: 'bold', color: '#1976d2', textAlign: 'center', mb: 3 }}
+          sx={{
+            fontWeight: 600,
+            color: '#333',
+            textAlign: 'center',
+          }}
         >
-          ลงทะเบียน
+          ลงทะเบียน TimeSheet
+        </Typography>
+
+        <Typography
+          variant="subtitle2"
+          sx={{ textAlign: 'center', mb: 3, color: '#777' }}
+        >
+          สำหรับนักศึกษาใหม่
         </Typography>
 
         <form onSubmit={formik.handleSubmit} noValidate>
@@ -82,21 +105,36 @@ function RegisterPage() {
             name="fullName"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.fullName}
             onChange={formik.handleChange}
             error={formik.touched.fullName && Boolean(formik.errors.fullName)}
             helperText={formik.touched.fullName && formik.errors.fullName}
-            autoFocus
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <AccountCircle sx={{ color: '#4caf50' }} />
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             label="รหัสนักศึกษา"
             name="studentId"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.studentId}
             onChange={formik.handleChange}
             error={formik.touched.studentId && Boolean(formik.errors.studentId)}
             helperText={formik.touched.studentId && formik.errors.studentId}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Badge sx={{ color: '#4caf50' }} />
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             label="รหัสผ่าน"
@@ -104,10 +142,18 @@ function RegisterPage() {
             type="password"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.password}
             onChange={formik.handleChange}
             error={formik.touched.password && Boolean(formik.errors.password)}
             helperText={formik.touched.password && formik.errors.password}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#4caf50' }} />
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             label="ยืนยันรหัสผ่าน"
@@ -115,13 +161,23 @@ function RegisterPage() {
             type="password"
             fullWidth
             margin="normal"
+            variant="outlined"
             value={formik.values.confirmPassword}
             onChange={formik.handleChange}
             error={
               formik.touched.confirmPassword &&
               Boolean(formik.errors.confirmPassword)
             }
-            helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
+            helperText={
+              formik.touched.confirmPassword && formik.errors.confirmPassword
+            }
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockReset sx={{ color: '#4caf50' }} />
+                </InputAdornment>
+              ),
+            }}
           />
 
           {formik.errors.submit && (
@@ -134,14 +190,29 @@ function RegisterPage() {
             type="submit"
             fullWidth
             variant="contained"
-            sx={{ mt: 3, py: 1.5, fontWeight: 'bold' }}
+            sx={{
+              mt: 3,
+              py: 1.3,
+              fontWeight: 600,
+              backgroundColor: '#4caf50',
+              '&:hover': {
+                backgroundColor: '#43a047',
+              },
+            }}
             disabled={formik.isSubmitting}
           >
             ลงทะเบียน
           </Button>
+
           <Button
             fullWidth
-            sx={{ mt: 1, textTransform: 'none' }}
+            startIcon={<ArrowBack />}
+            sx={{
+              mt: 2,
+              color: '#4caf50',
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
             onClick={() => navigate('/')}
           >
             กลับไปหน้าเข้าสู่ระบบ

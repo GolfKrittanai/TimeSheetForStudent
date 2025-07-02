@@ -1,47 +1,83 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button } from '@mui/material'; // UI components จาก Material UI
-import { useAuth } from '../context/AuthContext'; // ดึงข้อมูลผู้ใช้และฟังก์ชัน logout
-import { useNavigate } from 'react-router-dom'; // ใช้เปลี่ยนหน้า
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  IconButton,
+  Divider,
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  ListAlt as TimesheetIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
+
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Navbar() {
-  const { user, logout } = useAuth(); // ดึง user และ logout function จาก context
-  const navigate = useNavigate(); // ใช้เปลี่ยนหน้า
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // ฟังก์ชัน logout แล้วพากลับไปหน้า login (หน้า '/')
   const handleLogout = () => {
-    logout();       // ล้างข้อมูล user และ token
-    navigate('/');  // ไปหน้า login
+    logout();
+    navigate('/');
   };
 
-  // ถ้าไม่มี user (ยังไม่ login) ให้ไม่แสดง Navbar เลย
   if (!user) return null;
 
   return (
-    <AppBar position="static" sx={{ mb: 4 }}>
-      <Toolbar>
-        {/* แสดงชื่อระบบพร้อมชื่อผู้ใช้และบทบาท */}
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          TimeSheet System | {user.name} ({user.role})
-        </Typography>
+    <AppBar
+      position="static"
+      elevation={0}
+      sx={{
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #e0e0e0',
+        mb: 3,
+      }}
+    >
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        {/* ซ้าย: ชื่อระบบ + ผู้ใช้ */}
+        <Box>
+          <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
+            TimeSheet System
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user.name} ({user.role})
+          </Typography>
+        </Box>
 
-        {/* ถ้าเป็น admin ให้แสดงปุ่มไปหน้า admin dashboard */}
-        {user.role === 'admin' && (
-          <Button color="inherit" onClick={() => navigate('/admin')}>
-            Admin Dashboard
+        {/* ขวา: เมนูปุ่มต่าง ๆ */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {user.role === 'admin' && (
+            <Button
+              startIcon={<DashboardIcon />}
+              onClick={() => navigate('/admin')}
+              sx={{ textTransform: 'none', color: '#4caf50' }}
+            >
+              Admin Dashboard
+            </Button>
+          )}
+          {user.role === 'student' && (
+            <Button
+              startIcon={<TimesheetIcon />}
+              onClick={() => navigate('/student')}
+              sx={{ textTransform: 'none', color: '#4caf50' }}
+            >
+              My Timesheet
+            </Button>
+          )}
+          <Divider orientation="vertical" flexItem />
+          <Button
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{ textTransform: 'none', color: 'error.main' }}
+          >
+            Logout
           </Button>
-        )}
-
-        {/* ถ้าเป็น student ให้แสดงปุ่มไปหน้า student dashboard */}
-        {user.role === 'student' && (
-          <Button color="inherit" onClick={() => navigate('/student')}>
-            My TimeSheet
-          </Button>
-        )}
-
-        {/* ปุ่ม logout */}
-        <Button color="inherit" onClick={handleLogout}>
-          Logout
-        </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );
