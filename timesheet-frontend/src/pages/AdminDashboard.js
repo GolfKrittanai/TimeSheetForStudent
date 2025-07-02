@@ -19,6 +19,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Paper,
 } from '@mui/material';
 import {
   getAllStudents,
@@ -44,13 +45,16 @@ function AdminDashboard() {
   });
 
   const fetchStudents = async () => {
+    setLoading(true);
     try {
       const [studentRes, summaryRes] = await Promise.all([
         getAllStudents(token),
         getAdminSummary(token),
       ]);
-      // 🔁 เรียงตาม studentId
-      const sorted = studentRes.data.sort((a, b) => a.studentId.localeCompare(b.studentId));
+      // เรียงตาม studentId
+      const sorted = studentRes.data.sort((a, b) =>
+        a.studentId.localeCompare(b.studentId)
+      );
       setStudents(sorted);
       setSummary(summaryRes.data);
     } catch (err) {
@@ -113,113 +117,180 @@ function AdminDashboard() {
   return (
     <>
       <Navbar />
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ p: 4, maxWidth: 1000, mx: 'auto' }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontWeight: 'bold', color: '#1976d2' }}
+        >
           รายชื่อนักศึกษาทั้งหมด
         </Typography>
 
+        {/* Summary Box */}
         {summary && (
-          <Box sx={{ my: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              ข้อมูลระบบ
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 4 }}>
-              <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2 }}>
-                <Typography>จำนวนนักศึกษา</Typography>
-                <Typography variant="h5">{summary.totalStudents}</Typography>
-              </Box>
-              <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2 }}>
-                <Typography>จำนวน Timesheet</Typography>
-                <Typography variant="h5">{summary.totalTimesheets}</Typography>
-              </Box>
-            </Box>
+          <Box
+            sx={{
+              my: 3,
+              display: 'flex',
+              gap: 4,
+              flexWrap: 'wrap',
+              justifyContent: 'start',
+            }}
+          >
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                minWidth: 180,
+                textAlign: 'center',
+                bgcolor: '#e3f2fd',
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                จำนวนนักศึกษา
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0d47a1' }}>
+                {summary.totalStudents}
+              </Typography>
+            </Paper>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                minWidth: 180,
+                textAlign: 'center',
+                bgcolor: '#e8f5e9',
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                จำนวน Timesheet
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+                {summary.totalTimesheets}
+              </Typography>
+            </Paper>
           </Box>
         )}
 
+        {/* Loading */}
         {loading ? (
-          <CircularProgress />
+          <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <CircularProgress size={48} color="primary" />
+          </Box>
         ) : (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>รหัสนักศึกษา</TableCell>
-                <TableCell>ชื่อ-นามสกุล</TableCell>
-                <TableCell>บทบาท</TableCell>
-                <TableCell>จัดการ</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {students.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell>{s.studentId}</TableCell>
-                  <TableCell>{s.fullName}</TableCell>
-                  <TableCell>{s.role}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outlined"
-                      onClick={() => handleEditOpen(s)}
-                      sx={{ mr: 1 }}
-                    >
-                      แก้ไข
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      sx={{ mr: 1 }}
-                      onClick={() => handleViewTimesheet(s.id)}
-                    >
-                      ดู Timesheet
-                    </Button>
-                    <Button
-                      color="error"
-                      variant="outlined"
-                      onClick={() => handleDelete(s.id)}
-                    >
-                      ลบ
-                    </Button>
-                  </TableCell>
+          <Paper elevation={3} sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 650 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>รหัสนักศึกษา</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>ชื่อ-นามสกุล</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>บทบาท</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', minWidth: 220 }}>จัดการ</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+              <TableBody>
+                {students.map((s) => (
+                  <TableRow key={s.id} hover>
+                    <TableCell>{s.studentId}</TableCell>
+                    <TableCell>{s.fullName}</TableCell>
+                    <TableCell
+                      sx={{
+                        textTransform: 'capitalize',
+                        color: s.role === 'admin' ? '#388e3c' : '#1976d2',
+                        fontWeight: 'medium',
+                      }}
+                    >
+                      {s.role}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleEditOpen(s)}
+                        sx={{ mr: 1, textTransform: 'none' }}
+                      >
+                        แก้ไข
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        color="secondary"
+                        sx={{ mr: 1, textTransform: 'none' }}
+                        onClick={() => handleViewTimesheet(s.id)}
+                      >
+                        ดู Timesheet
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDelete(s.id)}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        ลบ
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Paper>
         )}
 
-        {/* Modal แก้ไข */}
+        {/* Edit Dialog */}
         <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
-          <DialogTitle>แก้ไขข้อมูลนักศึกษา</DialogTitle>
-          <DialogContent>
-            <TextField
-              label="รหัสนักศึกษา"
-              name="studentId"
-              fullWidth
-              margin="normal"
-              value={formData.studentId}
-              onChange={handleChange}
-            />
-            <TextField
-              label="ชื่อ-นามสกุล"
-              name="fullName"
-              fullWidth
-              margin="normal"
-              value={formData.fullName}
-              onChange={handleChange}
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>บทบาท</InputLabel>
-              <Select
-                name="role"
-                value={formData.role}
-                label="บทบาท"
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            แก้ไขข้อมูลนักศึกษา
+          </DialogTitle>
+          <DialogContent dividers>
+            <Box
+              component="form"
+              sx={{
+                '& .MuiTextField-root': { my: 1 },
+                '& .MuiFormControl-root': { my: 1 },
+              }}
+              noValidate
+              autoComplete="off"
+            >
+              <TextField
+                label="รหัสนักศึกษา"
+                name="studentId"
+                fullWidth
+                value={formData.studentId}
                 onChange={handleChange}
-              >
-                <MenuItem value="student">Student</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-              </Select>
-            </FormControl>
+              />
+              <TextField
+                label="ชื่อ-นามสกุล"
+                name="fullName"
+                fullWidth
+                value={formData.fullName}
+                onChange={handleChange}
+              />
+              <FormControl fullWidth>
+                <InputLabel id="role-label">บทบาท</InputLabel>
+                <Select
+                  labelId="role-label"
+                  name="role"
+                  value={formData.role}
+                  label="บทบาท"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="student">Student</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleEditClose}>ยกเลิก</Button>
-            <Button variant="contained" onClick={handleSave}>
+          <DialogActions sx={{ pr: 3, pb: 2 }}>
+            <Button onClick={handleEditClose} sx={{ textTransform: 'none' }}>
+              ยกเลิก
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              sx={{ textTransform: 'none' }}
+            >
               บันทึก
             </Button>
           </DialogActions>
