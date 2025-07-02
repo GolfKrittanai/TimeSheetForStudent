@@ -19,15 +19,19 @@ router.get('/', authenticateToken, authorizeRoles('student'), async (req, res) =
 
 // นักศึกษาบันทึก Timesheet
 router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) => {
-  const { date, checkInTime, checkOutTime, activity } = req.body; // เพิ่ม activity
+  const { date, checkInTime, checkOutTime, activity } = req.body;
+
   try {
+    const checkInDateTime = new Date(`${date}T${checkInTime}:00`);
+    const checkOutDateTime = new Date(`${date}T${checkOutTime}:00`);
+
     const newTimesheet = await prisma.timeSheet.create({
       data: {
         userId: req.user.id,
         date: new Date(date),
-        checkInTime: new Date(checkInTime),
-        checkOutTime: new Date(checkOutTime),
-        activity, // บันทึก activity ลง DB
+        checkInTime: checkInDateTime,
+        checkOutTime: checkOutDateTime,
+        activity,
       },
     });
     res.status(201).json(newTimesheet);
@@ -35,5 +39,6 @@ router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) 
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการบันทึก Timesheet', error });
   }
 });
+
 
 module.exports = router;

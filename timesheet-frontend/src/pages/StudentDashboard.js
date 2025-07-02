@@ -65,9 +65,11 @@ function StudentDashboard() {
         await createTimeSheet(values, token); // เรียก API บันทึก TimeSheet ใหม่ พร้อมส่ง activity
         fetchData(); // โหลดข้อมูล TimeSheet ใหม่เพื่ออัพเดตตาราง
         resetForm(); // ล้างฟอร์มหลังบันทึกเสร็จ
-      } catch {
-        alert('บันทึกไม่สำเร็จ'); // แจ้งเตือนหากบันทึกไม่สำเร็จ
-      }
+      } catch (error) {
+  console.error('API Error:', error.response ? error.response.data : error.message);
+  alert('บันทึกไม่สำเร็จ: ' + (error.response?.data?.message || error.message));
+}
+
     },
   });
 
