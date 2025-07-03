@@ -100,52 +100,6 @@ router.get('/students/:id/timesheets', authenticateToken, authorizeRoles('admin'
   }
 });
 
-// ลบ Timesheet โดย admin
-router.delete('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
-  const id = Number(req.params.id);
-  try {
-    const timesheet = await prisma.timesheet.findUnique({ where: { id } });
-    if (!timesheet) {
-      return res.status(404).json({ message: 'ไม่พบ Timesheet' });
-    }
 
-    await prisma.timesheet.delete({ where: { id } });
-    res.json({ message: 'ลบ Timesheet สำเร็จ' });
-  } catch (error) {
-    console.error('Admin ลบ Timesheet error:', error);
-    res.status(500).json({ message: 'ลบ Timesheet ไม่สำเร็จ', error: error.message });
-  }
-});
-
-// แก้ไข Timesheet โดย admin
-router.put('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
-  const id = Number(req.params.id);
-  const { date, checkInTime, checkOutTime, activity } = req.body;
-
-  try {
-    const timesheet = await prisma.timesheet.findUnique({ where: { id } });
-    if (!timesheet) {
-      return res.status(404).json({ message: 'ไม่พบ Timesheet' });
-    }
-
-    const checkInDateTime = new Date(`${date}T${checkInTime}:00`);
-    const checkOutDateTime = new Date(`${date}T${checkOutTime}:00`);
-
-    const updated = await prisma.timesheet.update({
-      where: { id },
-      data: {
-        date: new Date(date),
-        checkInTime: checkInDateTime,
-        checkOutTime: checkOutDateTime,
-        activity,
-      },
-    });
-
-    res.json(updated);
-  } catch (error) {
-    console.error('Admin แก้ไข Timesheet error:', error);
-    res.status(500).json({ message: 'แก้ไข Timesheet ไม่สำเร็จ', error: error.message });
-  }
-});
 
 module.exports = router;

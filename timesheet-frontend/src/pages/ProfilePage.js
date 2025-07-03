@@ -6,22 +6,22 @@ import {
   TextField,
   Button,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Snackbar,
-  Alert,
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
-import { getUserProfile, updateUserProfile, changePassword } from '../services/userService';
+import { useNavigate } from 'react-router-dom';
+import {
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
+} from '../services/userService';
 
 function ProfilePage() {
   const { token, user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // ฟอร์มแก้ไขข้อมูลส่วนตัว
   const [editData, setEditData] = useState({
@@ -41,9 +41,6 @@ function ProfilePage() {
   });
   const [passwordErrors, setPasswordErrors] = useState({});
   const [loadingPwd, setLoadingPwd] = useState(false);
-
-  // Snackbar success
-  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,7 +62,6 @@ function ProfilePage() {
     fetchProfile();
   }, [token]);
 
-  // Validate ฟอร์มแก้ไขข้อมูล
   const validateEdit = () => {
     const errors = {};
     if (!editData.fullName.trim()) errors.fullName = 'กรุณากรอกชื่อ-นามสกุล';
@@ -77,12 +73,12 @@ function ProfilePage() {
     return Object.keys(errors).length === 0;
   };
 
-  // Validate ฟอร์มเปลี่ยนรหัสผ่าน
   const validatePassword = () => {
     const errors = {};
     if (!passwordData.currentPassword) errors.currentPassword = 'กรุณากรอกรหัสผ่านปัจจุบัน';
     if (!passwordData.newPassword) errors.newPassword = 'กรุณากรอกรหัสผ่านใหม่';
-    else if (passwordData.newPassword.length < 6) errors.newPassword = 'รหัสผ่านใหม่ต้องอย่างน้อย 6 ตัวอักษร';
+    else if (passwordData.newPassword.length < 6)
+      errors.newPassword = 'รหัสผ่านใหม่ต้องอย่างน้อย 6 ตัวอักษร';
     if (passwordData.newPassword !== passwordData.confirmNewPassword)
       errors.confirmNewPassword = 'รหัสผ่านไม่ตรงกัน';
     setPasswordErrors(errors);
@@ -105,8 +101,8 @@ function ProfilePage() {
     setLoadingEdit(true);
     try {
       await updateUserProfile(editData, token);
-      setSuccessMsg('อัปเดตข้อมูลสำเร็จ');
-      // อัปเดตข้อมูล local user ถ้ามี context function สำหรับ update user info, สามารถเรียกได้ที่นี่
+      await Swal.fire('สำเร็จ', 'อัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+      navigate('/student'); // เปลี่ยนเป็น '/admin' ถ้า admin
     } catch (error) {
       Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตข้อมูลได้', 'error');
     }
@@ -119,8 +115,9 @@ function ProfilePage() {
     setLoadingPwd(true);
     try {
       await changePassword(passwordData.currentPassword, passwordData.newPassword, token);
-      setSuccessMsg('เปลี่ยนรหัสผ่านสำเร็จ');
+      await Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
       setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+      navigate('/student'); // หรือ '/admin'
     } catch (error) {
       Swal.fire('ผิดพลาด', error.response?.data?.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ', 'error');
     }
@@ -274,17 +271,6 @@ function ProfilePage() {
             </Paper>
           </>
         )}
-
-        <Snackbar
-          open={Boolean(successMsg)}
-          autoHideDuration={3000}
-          onClose={() => setSuccessMsg('')}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert onClose={() => setSuccessMsg('')} severity="success" sx={{ width: '100%' }}>
-            {successMsg}
-          </Alert>
-        </Snackbar>
       </Box>
     </>
   );

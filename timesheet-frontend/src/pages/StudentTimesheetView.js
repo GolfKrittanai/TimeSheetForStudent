@@ -23,6 +23,7 @@ import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { getStudentTimesheetById, updateStudentTimesheetById, deleteStudentTimesheetById } from '../services/adminService';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
 function StudentTimesheetView() {
   const { id } = useParams();
@@ -31,8 +32,6 @@ function StudentTimesheetView() {
   const [data, setData] = useState([]);
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Dialog edit state
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState({
     id: '',
@@ -49,7 +48,7 @@ function StudentTimesheetView() {
       setData(res.data.timesheets || []);
       setStudentInfo(res.data.student || null);
     } catch (err) {
-      alert('โหลดข้อมูล Timesheet ไม่สำเร็จ');
+      Swal.fire('ผิดพลาด', 'โหลดข้อมูล Timesheet ไม่สำเร็จ', 'error');
     } finally {
       setLoading(false);
     }
@@ -89,57 +88,49 @@ function StudentTimesheetView() {
         checkOutTime: checkOut.toISOString(),
         activity: editData.activity,
       }, token);
-      alert('แก้ไข Timesheet สำเร็จ');
+
+      Swal.fire('สำเร็จ', 'แก้ไข Timesheet เรียบร้อยแล้ว', 'success');
       setEditOpen(false);
       fetchTimesheet();
     } catch {
-      alert('แก้ไข Timesheet ไม่สำเร็จ');
+      Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไข Timesheet ได้', 'error');
     }
   };
 
   const handleDelete = async (timesheetId) => {
-    if (!window.confirm('ต้องการลบ Timesheet นี้ใช่หรือไม่?')) return;
-    try {
-      await deleteStudentTimesheetById(timesheetId, token);
-      alert('ลบ Timesheet สำเร็จ');
-      setData((prev) => prev.filter((t) => t.id !== timesheetId));
-    } catch {
-      alert('ลบ Timesheet ไม่สำเร็จ');
+    const result = await Swal.fire({
+      title: 'คุณแน่ใจหรือไม่?',
+      text: 'คุณต้องการลบ TimeSheet นี้ใช่หรือไม่',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteStudentTimesheetById(timesheetId, token);
+        setData((prev) => prev.filter((t) => t.id !== timesheetId));
+        Swal.fire('ลบสำเร็จ', 'TimeSheet ได้ถูกลบแล้ว', 'success');
+      } catch {
+        Swal.fire('ผิดพลาด', 'ไม่สามารถลบ Timesheet ได้', 'error');
+      }
     }
   };
 
   return (
     <>
       <Navbar />
-      <Box
-        sx={{
-          minHeight: '100vh',
-          backgroundColor: '#f4f6f8',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'start',
-          px: 2,
-          py: 4,
-        }}
-      >
+      <Box sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', display: 'flex', justifyContent: 'center', alignItems: 'start', px: 2, py: 4 }}>
         <Box sx={{ width: '100%', maxWidth: 1000 }}>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              mb: 2,
-              color: '#333',
-              textAlign: 'center',
-            }}
-          >
+          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: '#333', textAlign: 'center' }}>
             ข้อมูล TimeSheet ของนักศึกษา
           </Typography>
 
           {studentInfo && (
-            <Typography
-              variant="h6"
-              sx={{ color: '#555', textAlign: 'center', mb: 3 }}
-            >
+            <Typography variant="h6" sx={{ color: '#555', textAlign: 'center', mb: 3 }}>
               {studentInfo.fullName} (รหัส {studentInfo.studentId})
             </Typography>
           )}
@@ -153,15 +144,7 @@ function StudentTimesheetView() {
               ยังไม่มีข้อมูล TimeSheet
             </Typography>
           ) : (
-            <Paper
-              elevation={1}
-              sx={{
-                overflowX: 'auto',
-                borderRadius: 2,
-                border: '1px solid #e0e0e0',
-                backgroundColor: '#fff',
-              }}
-            >
+            <Paper elevation={1} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0', backgroundColor: '#fff' }}>
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
@@ -176,35 +159,17 @@ function StudentTimesheetView() {
                   {data.map((t) => (
                     <TableRow key={t.id} hover>
                       <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {new Date(t.checkInTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(t.checkOutTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </TableCell>
+                      <TableCell>{new Date(t.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                      <TableCell>{new Date(t.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
                       <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
-                          <IconButton
-                            color="primary"
-                            size="small"
-                            onClick={() => handleEditOpen(t)}
-                          >
+                          <IconButton color="primary" size="small" onClick={() => handleEditOpen(t)}>
                             <EditIcon />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ลบ">
-                          <IconButton
-                            color="error"
-                            size="small"
-                            onClick={() => handleDelete(t.id)}
-                          >
+                          <IconButton color="error" size="small" onClick={() => handleDelete(t.id)}>
                             <DeleteIcon />
                           </IconButton>
                         </Tooltip>
@@ -220,51 +185,14 @@ function StudentTimesheetView() {
           <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
             <DialogTitle>แก้ไข Timesheet</DialogTitle>
             <DialogContent>
-              <TextField
-                label="วันที่"
-                name="date"
-                type="date"
-                fullWidth
-                value={editData.date}
-                onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="เวลาเข้า"
-                name="checkInTime"
-                type="time"
-                fullWidth
-                value={editData.checkInTime}
-                onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="เวลาออก"
-                name="checkOutTime"
-                type="time"
-                fullWidth
-                value={editData.checkOutTime}
-                onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="กิจกรรม"
-                name="activity"
-                fullWidth
-                multiline
-                rows={3}
-                value={editData.activity}
-                onChange={handleEditChange}
-              />
+              <TextField label="วันที่" name="date" type="date" fullWidth value={editData.date} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
+              <TextField label="เวลาเข้า" name="checkInTime" type="time" fullWidth value={editData.checkInTime} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
+              <TextField label="เวลาออก" name="checkOutTime" type="time" fullWidth value={editData.checkOutTime} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
+              <TextField label="กิจกรรม" name="activity" fullWidth multiline rows={3} value={editData.activity} onChange={handleEditChange} />
             </DialogContent>
             <DialogActions>
               <Button onClick={handleEditClose}>ยกเลิก</Button>
-              <Button variant="contained" onClick={handleEditSave}>
-                บันทึก
-              </Button>
+              <Button variant="contained" onClick={handleEditSave}>บันทึก</Button>
             </DialogActions>
           </Dialog>
         </Box>
