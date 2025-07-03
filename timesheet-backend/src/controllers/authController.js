@@ -27,10 +27,9 @@ async function register(req, res) {
       },
     });
 
-    const token = generateToken({ id: user.id, role: user.role });
+    //const token = generateToken({ id: user.id, role: user.role });
 
     return res.status(201).json({
-      token,
       user: {
         id: user.id,
         studentId: user.studentId,
