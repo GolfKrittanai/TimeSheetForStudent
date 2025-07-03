@@ -16,6 +16,7 @@ import {
   TextField,
   Paper,
   Tooltip,
+  IconButton
 } from '@mui/material';
 
 import {
@@ -31,6 +32,7 @@ import {
   updateTimeSheet,
 } from '../services/timesheetService';
 import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
 function StudentDashboard() {
   const { token, user } = useAuth();
@@ -47,7 +49,7 @@ function StudentDashboard() {
       const res = await getMyTimeSheets(token);
       setTimeSheets(res.data);
     } catch {
-      alert('โหลด TimeSheet ไม่สำเร็จ');
+      Swal.fire('ผิดพลาด', 'ไม่สามารถโหลด Timesheet ได้', 'error');
     }
     setLoading(false);
   };
@@ -57,13 +59,25 @@ function StudentDashboard() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('ต้องการลบ TimeSheet นี้ใช่หรือไม่?')) return;
+    const result = await Swal.fire({
+      title: 'คุณแน่ใจหรือไม่?',
+      text: 'คุณต้องการลบ TimeSheet นี้ใช่หรือไม่',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+    });
 
-    try {
-      await deleteTimeSheet(id, token);
-      setTimeSheets((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      alert('ลบไม่สำเร็จ');
+    if (result.isConfirmed) {
+      try {
+        await deleteTimeSheet(id, token);
+        setTimeSheets((prev) => prev.filter((t) => t.id !== id));
+        Swal.fire('ลบสำเร็จ', 'TimeSheet ได้ถูกลบแล้ว', 'success');
+      } catch {
+        Swal.fire('ผิดพลาด', 'ไม่สามารถลบ TimeSheet ได้', 'error');
+      }
     }
   };
 
@@ -98,8 +112,9 @@ function StudentDashboard() {
       await createTimeSheet(formData, token);
       fetchData();
       setFormData({ date: '', checkInTime: '', checkOutTime: '', activity: '' });
+      Swal.fire('สำเร็จ', 'เพิ่ม TimeSheet เรียบร้อยแล้ว', 'success');
     } catch {
-      alert('บันทึกไม่สำเร็จ');
+      Swal.fire('ผิดพลาด', 'ไม่สามารถเพิ่ม TimeSheet ได้', 'error');
     }
   };
 
@@ -153,10 +168,11 @@ function StudentDashboard() {
         },
         token
       );
-      fetchData();
+      await fetchData();
       handleEditClose();
+      Swal.fire('บันทึกสำเร็จ', 'แก้ไข TimeSheet เรียบร้อยแล้ว', 'success');
     } catch {
-      alert('แก้ไขไม่สำเร็จ');
+      Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไข TimeSheet ได้', 'error');
     }
     setLoadingEdit(false);
   };
@@ -351,30 +367,25 @@ function StudentDashboard() {
                     <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
                     <TableCell>
                       <Tooltip title="แก้ไข">
-                        <Button
-                          variant="outlined"
+                        <IconButton
                           color="primary"
                           onClick={() => handleEditOpen(t)}
-                          sx={{ mr: 1, textTransform: 'none' }}
-                          startIcon={<EditIcon />}
                           size="small"
                         >
-                          แก้ไข
-                        </Button>
+                          <EditIcon />
+                        </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ">
-                        <Button
-                          variant="outlined"
+                        <IconButton
                           color="error"
                           onClick={() => handleDelete(t.id)}
-                          sx={{ textTransform: 'none' }}
-                          startIcon={<DeleteIcon />}
                           size="small"
                         >
-                          ลบ
-                        </Button>
+                          <DeleteIcon />
+                        </IconButton>
                       </Tooltip>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>

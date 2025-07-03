@@ -2,12 +2,12 @@ const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 
-// REGISTER CONTROLLER
+// ✅ REGISTER
 async function register(req, res) {
-  const { studentId, fullName, password } = req.body;
+  const { studentId, fullName, password, email, phone, address, role = 'student' } = req.body;
 
-  if (!studentId || !fullName || !password) {
-    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบ' });
+  if (!studentId || !fullName || !password || !email || !phone || !address) {
+    return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
 
   try {
@@ -22,28 +22,35 @@ async function register(req, res) {
       data: {
         studentId,
         fullName,
+        email,
+        phone,
+        address,
         passwordHash,
-        role: 'student',
+        role,
       },
     });
 
-    const token = generateToken({ id: user.id, role: user.role });
-
     return res.status(201).json({
-      token,
       user: {
         id: user.id,
         studentId: user.studentId,
         fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
         role: user.role,
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลงทะเบียน', error: error.message });
+    console.error('Register error:', error);
+    return res.status(500).json({
+      message: 'เกิดข้อผิดพลาดในการลงทะเบียน',
+      error: error.message,
+    });
   }
 }
 
-// LOGIN CONTROLLER
+// ✅ LOGIN
 async function login(req, res) {
   const { studentId, password } = req.body;
 
@@ -70,11 +77,18 @@ async function login(req, res) {
         id: user.id,
         studentId: user.studentId,
         fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
         role: user.role,
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: error.message });
+    console.error('Login error:', error);
+    return res.status(500).json({
+      message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
+      error: error.message,
+    });
   }
 }
 

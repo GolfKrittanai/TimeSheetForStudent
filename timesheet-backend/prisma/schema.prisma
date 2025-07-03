@@ -1,38 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model timesheet {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  date         DateTime
+  checkInTime  DateTime
+  checkOutTime DateTime
+  activity     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "TimeSheet_userId_fkey")
+
+  @@index([userId], map: "TimeSheet_userId_fkey")
 }
 
-model User {
-  id           Int       @id @default(autoincrement())
-  studentId    String    @unique
+model user {
+  id           Int         @id @default(autoincrement())
+  studentId    String      @unique(map: "User_studentId_key")
   fullName     String
   passwordHash String
-  role         Role      @default(student)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  timesheets   TimeSheet[]
+  role         user_role   @default(student)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  email        String?     @db.VarChar(255)
+  phone        String?     @db.VarChar(20)
+  address      String?     @db.VarChar(255)
+
+  timesheet    timesheet[]
 }
 
-model TimeSheet {
-  id          Int      @id @default(autoincrement())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      Int
-  date        DateTime
-  checkInTime DateTime
-  checkOutTime DateTime
-  activity    String?    // เพิ่มบรรทัดนี้ ต้อง nullable หรือ required ตามการออกแบบ
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
-}
-
-
-
-enum Role {
+enum user_role {
   admin
   student
 }
