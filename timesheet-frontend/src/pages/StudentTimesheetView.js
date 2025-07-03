@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -10,8 +10,17 @@ import {
   TableBody,
   CircularProgress,
   Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
-import { getStudentTimesheetById } from '../services/adminService';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { getStudentTimesheetById, updateStudentTimesheetById, deleteStudentTimesheetById } from '../services/adminService';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,20 +32,81 @@ function StudentTimesheetView() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTimesheet = async () => {
-      try {
-        const res = await getStudentTimesheetById(id, token);
-        setData(res.data.timesheets || []);
-        setStudentInfo(res.data.student || null);
-      } catch (err) {
-        alert('โหลดข้อมูล Timesheet ไม่สำเร็จ');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTimesheet();
+  // Dialog edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    id: '',
+    date: '',
+    checkInTime: '',
+    checkOutTime: '',
+    activity: '',
+  });
+
+  const fetchTimesheet = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getStudentTimesheetById(id, token);
+      setData(res.data.timesheets || []);
+      setStudentInfo(res.data.student || null);
+    } catch (err) {
+      alert('โหลดข้อมูล Timesheet ไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
   }, [id, token]);
+
+  useEffect(() => {
+    fetchTimesheet();
+  }, [fetchTimesheet]);
+
+  const handleEditOpen = (timesheet) => {
+    setEditData({
+      id: timesheet.id,
+      date: timesheet.date.slice(0, 10),
+      checkInTime: timesheet.checkInTime.slice(11, 16),
+      checkOutTime: timesheet.checkOutTime.slice(11, 16),
+      activity: timesheet.activity,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditOpen(false);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSave = async () => {
+    try {
+      const checkIn = new Date(`${editData.date}T${editData.checkInTime}:00`);
+      const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
+      await updateStudentTimesheetById(editData.id, {
+        date: editData.date,
+        checkInTime: checkIn.toISOString(),
+        checkOutTime: checkOut.toISOString(),
+        activity: editData.activity,
+      }, token);
+      alert('แก้ไข Timesheet สำเร็จ');
+      setEditOpen(false);
+      fetchTimesheet();
+    } catch {
+      alert('แก้ไข Timesheet ไม่สำเร็จ');
+    }
+  };
+
+  const handleDelete = async (timesheetId) => {
+    if (!window.confirm('ต้องการลบ Timesheet นี้ใช่หรือไม่?')) return;
+    try {
+      await deleteStudentTimesheetById(timesheetId, token);
+      alert('ลบ Timesheet สำเร็จ');
+      setData((prev) => prev.filter((t) => t.id !== timesheetId));
+    } catch {
+      alert('ลบ Timesheet ไม่สำเร็จ');
+    }
+  };
 
   return (
     <>
@@ -99,14 +169,13 @@ function StudentTimesheetView() {
                     <TableCell sx={{ fontWeight: 'bold' }}>เวลาเข้า</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>เวลาออก</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>กิจกรรม</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>จัดการ</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data.map((t) => (
                     <TableRow key={t.id} hover>
-                      <TableCell>
-                        {new Date(t.date).toLocaleDateString()}
-                      </TableCell>
+                      <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                       <TableCell>
                         {new Date(t.checkInTime).toLocaleTimeString([], {
                           hour: '2-digit',
@@ -119,8 +188,26 @@ function StudentTimesheetView() {
                           minute: '2-digit',
                         })}
                       </TableCell>
-                      <TableCell sx={{ whiteSpace: 'pre-line' }}>
-                        {t.activity}
+                      <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
+                      <TableCell>
+                        <Tooltip title="แก้ไข">
+                          <IconButton
+                            color="primary"
+                            size="small"
+                            onClick={() => handleEditOpen(t)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="ลบ">
+                          <IconButton
+                            color="error"
+                            size="small"
+                            onClick={() => handleDelete(t.id)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -128,6 +215,58 @@ function StudentTimesheetView() {
               </Table>
             </Paper>
           )}
+
+          {/* Dialog แก้ไข Timesheet */}
+          <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
+            <DialogTitle>แก้ไข Timesheet</DialogTitle>
+            <DialogContent>
+              <TextField
+                label="วันที่"
+                name="date"
+                type="date"
+                fullWidth
+                value={editData.date}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="เวลาเข้า"
+                name="checkInTime"
+                type="time"
+                fullWidth
+                value={editData.checkInTime}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="เวลาออก"
+                name="checkOutTime"
+                type="time"
+                fullWidth
+                value={editData.checkOutTime}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="กิจกรรม"
+                name="activity"
+                fullWidth
+                multiline
+                rows={3}
+                value={editData.activity}
+                onChange={handleEditChange}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleEditClose}>ยกเลิก</Button>
+              <Button variant="contained" onClick={handleEditSave}>
+                บันทึก
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Box>
     </>

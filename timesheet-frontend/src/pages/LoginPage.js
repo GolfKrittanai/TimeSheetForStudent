@@ -4,13 +4,13 @@ import {
   Typography,
   TextField,
   Button,
-  Alert,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { loginUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -25,7 +25,7 @@ const LoginPage = () => {
       studentId: Yup.string().required('กรุณากรอกรหัสนักศึกษา'),
       password: Yup.string().required('กรุณากรอกรหัสผ่าน'),
     }),
-    onSubmit: async (values, { setSubmitting, setErrors }) => {
+    onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await loginUser(values);
         login({ token: res.data.token, user: res.data.user });
@@ -38,7 +38,21 @@ const LoginPage = () => {
           navigate('/');
         }
       } catch (error) {
-        setErrors({ submit: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
+        if (error.response?.status === 401) {
+      Swal.fire({
+        icon: 'error',
+        title: 'คุณกรอกข้อมูลไม่ถูกต้อง!!',
+        text: 'กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่านอีกครั้ง',
+        confirmButtonColor: '#007aff',
+      });
+     } else {
+       Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถเข้าสู่ระบบได้ในขณะนี้',
+        confirmButtonColor: '#007aff',
+      })
+      }
       } finally {
         setSubmitting(false);
       }
@@ -54,8 +68,6 @@ const LoginPage = () => {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
       }}
     >
       <Box
@@ -65,32 +77,14 @@ const LoginPage = () => {
           bgcolor: '#ffffff',
           p: 5,
           borderRadius: 3,
-          boxShadow:
-            '0 4px 12px rgba(0,0,0,0.1)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           textAlign: 'center',
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: '#111',
-            mb: 1.5,
-            letterSpacing: '0.05em',
-          }}
-        >
+        <Typography variant="h4" sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
           Timesheet
         </Typography>
-
-        <Typography
-          variant="subtitle1"
-          sx={{
-            fontWeight: 400,
-            color: '#666',
-            mb: 4,
-            letterSpacing: '0.03em',
-          }}
-        >
+        <Typography variant="subtitle1" sx={{ color: '#666', mb: 4 }}>
           ระบบสำหรับนักศึกษา
         </Typography>
 
@@ -100,7 +94,6 @@ const LoginPage = () => {
             name="studentId"
             fullWidth
             margin="normal"
-            variant="outlined"
             value={formik.values.studentId}
             onChange={formik.handleChange}
             error={formik.touched.studentId && Boolean(formik.errors.studentId)}
@@ -110,12 +103,8 @@ const LoginPage = () => {
               sx: {
                 borderRadius: 2,
                 bgcolor: '#fafafa',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#ccc',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#007aff',
-                },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: '#007aff',
                   boxShadow: '0 0 5px 0 #007aff',
@@ -129,7 +118,6 @@ const LoginPage = () => {
             type="password"
             fullWidth
             margin="normal"
-            variant="outlined"
             value={formik.values.password}
             onChange={formik.handleChange}
             error={formik.touched.password && Boolean(formik.errors.password)}
@@ -138,12 +126,8 @@ const LoginPage = () => {
               sx: {
                 borderRadius: 2,
                 bgcolor: '#fafafa',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#ccc',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#007aff',
-                },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: '#007aff',
                   boxShadow: '0 0 5px 0 #007aff',
@@ -151,12 +135,6 @@ const LoginPage = () => {
               },
             }}
           />
-
-          {formik.errors.submit && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {formik.errors.submit}
-            </Alert>
-          )}
 
           <Button
             type="submit"
@@ -168,7 +146,6 @@ const LoginPage = () => {
               fontWeight: 700,
               backgroundColor: '#007aff',
               borderRadius: 3,
-              boxShadow: 'none',
               '&:hover': {
                 backgroundColor: '#005bb5',
                 boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
@@ -190,9 +167,8 @@ const LoginPage = () => {
               fontWeight: 600,
               fontSize: '0.95rem',
               '&:hover': {
-                backgroundColor: 'transparent',
                 textDecoration: 'underline',
-                cursor: 'pointer',
+                backgroundColor: 'transparent',
               },
             }}
             onClick={() => navigate('/register')}
