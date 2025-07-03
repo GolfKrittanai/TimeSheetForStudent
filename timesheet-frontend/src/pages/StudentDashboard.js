@@ -16,6 +16,7 @@ import {
   TextField,
   Paper,
   Tooltip,
+  IconButton
 } from '@mui/material';
 
 import {
@@ -351,30 +352,25 @@ function StudentDashboard() {
                     <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
                     <TableCell>
                       <Tooltip title="แก้ไข">
-                        <Button
-                          variant="outlined"
+                        <IconButton
                           color="primary"
                           onClick={() => handleEditOpen(t)}
-                          sx={{ mr: 1, textTransform: 'none' }}
-                          startIcon={<EditIcon />}
                           size="small"
                         >
-                          แก้ไข
-                        </Button>
+                          <EditIcon />
+                        </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ">
-                        <Button
-                          variant="outlined"
+                        <IconButton
                           color="error"
                           onClick={() => handleDelete(t.id)}
-                          sx={{ textTransform: 'none' }}
-                          startIcon={<DeleteIcon />}
                           size="small"
                         >
-                          ลบ
-                        </Button>
+                          <DeleteIcon />
+                        </IconButton>
                       </Tooltip>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
