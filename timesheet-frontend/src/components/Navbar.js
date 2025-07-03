@@ -11,6 +11,7 @@ import {
   Dashboard as DashboardIcon,
   ListAlt as TimesheetIcon,
   Logout as LogoutIcon,
+  AccountCircle as ProfileIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -60,11 +61,7 @@ function Navbar() {
             <Button
               onClick={() => navigate('/admin')}
               startIcon={<DashboardIcon />}
-              sx={{
-                textTransform: 'none',
-                color: '#1976d2',
-                fontWeight: 500,
-              }}
+              sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
             >
               Admin Dashboard
             </Button>
@@ -73,16 +70,23 @@ function Navbar() {
             <Button
               onClick={() => navigate('/student')}
               startIcon={<TimesheetIcon />}
-              sx={{
-                textTransform: 'none',
-                color: '#1976d2',
-                fontWeight: 500,
-              }}
+              sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
             >
               My Timesheet
             </Button>
           )}
+
+          {/* ปุ่ม Profile */}
+          <Button
+            onClick={() => navigate('/profile')}
+            startIcon={<ProfileIcon />}
+            sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
+          >
+            โปรไฟล์
+          </Button>
+
           <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
           <Button
             onClick={handleLogout}
             startIcon={<LogoutIcon />}

@@ -1,3 +1,4 @@
+// routes/adminRoutes.js (หรือชื่อไฟล์ที่คุณใช้)
 const express = require('express');
 const router = express.Router();
 
@@ -5,7 +6,6 @@ const prisma = require('../prismaClient');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
 // ดึงรายชื่อนักศึกษาทั้งหมด (admin เท่านั้น)
-// ดึงผู้ใช้ทั้งหมด (admin เท่านั้น)
 router.get('/students', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -16,22 +16,20 @@ router.get('/students', authenticateToken, authorizeRoles('admin'), async (req, 
         role: true,
         createdAt: true,
       },
-      orderBy: { studentId: 'asc' }, // เรียงจากรหัสนักศึกษา น้อย → มาก
+      orderBy: { studentId: 'asc' },
     });
     res.json(users);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้', error });
+    console.error('โหลด students error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้', error: error.message });
   }
 });
-
 
 // แก้ไขข้อมูลนักศึกษา (admin เท่านั้น)
 router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const { id } = req.params;
   const { fullName, studentId, role } = req.body;
 
-  // ตรวจสอบ role ว่าอยู่ใน enum ที่กำหนด
   const validRoles = ['student', 'admin'];
   if (role && !validRoles.includes(role)) {
     return res.status(400).json({ message: 'Role ไม่ถูกต้อง' });
@@ -40,16 +38,12 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
   try {
     const updatedUser = await prisma.user.update({
       where: { id: Number(id) },
-      data: {
-        fullName,
-        studentId,
-        role,
-      },
+      data: { fullName, studentId, role },
     });
     res.json(updatedUser);
   } catch (error) {
     console.error('แก้ไขข้อมูล user error:', error);
-    res.status(500).json({ message: 'แก้ไขข้อมูลไม่สำเร็จ', error });
+    res.status(500).json({ message: 'แก้ไขข้อมูลไม่สำเร็จ', error: error.message });
   }
 });
 
@@ -60,54 +54,49 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
     await prisma.user.delete({ where: { id: Number(id) } });
     res.json({ message: 'ลบผู้ใช้สำเร็จ' });
   } catch (error) {
-    res.status(500).json({ message: 'เกิดข้อผิดพลาด', error });
+    console.error('ลบ user error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาด', error: error.message });
   }
 });
 
-// routes/userRoutes.js
+// สรุปข้อมูล (admin เท่านั้น)
 router.get('/admin/summary', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     const studentCount = await prisma.user.count({ where: { role: 'student' } });
-    const timesheetCount = await prisma.timeSheet.count();
+    const timesheetCount = await prisma.timesheet.count();
 
     res.json({
       totalStudents: studentCount,
       totalTimesheets: timesheetCount,
     });
   } catch (error) {
-    res.status(500).json({ message: 'ไม่สามารถดึงข้อมูลสรุปได้', error });
+    console.error('โหลด summary error:', error);
+    res.status(500).json({ message: 'ไม่สามารถดึงข้อมูลสรุปได้', error: error.message });
   }
 });
 
+// ดึง Timesheet ของนักศึกษาคนใดคนหนึ่ง (admin เท่านั้น)
 router.get('/students/:id/timesheets', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const userId = Number(req.params.id);
   try {
-    // ดึงข้อมูลนักศึกษา
     const student = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        studentId: true,
-        fullName: true,
-      },
+      select: { studentId: true, fullName: true },
     });
 
     if (!student) {
       return res.status(404).json({ message: 'ไม่พบนักศึกษา' });
     }
 
-    // ดึง Timesheet ของนักศึกษา
-    const timesheets = await prisma.timeSheet.findMany({
+    const timesheets = await prisma.timesheet.findMany({
       where: { userId },
       orderBy: { date: 'desc' },
     });
 
-    // ส่ง response กลับพร้อมข้อมูลนักศึกษา
-    res.json({
-      student,
-      timesheets,
-    });
+    res.json({ student, timesheets });
   } catch (error) {
-    res.status(500).json({ message: 'ไม่สามารถโหลด Timesheet ได้', error });
+    console.error('โหลด Timesheet นักศึกษา error:', error);
+    res.status(500).json({ message: 'ไม่สามารถโหลด Timesheet ได้', error: error.message });
   }
 });
 
@@ -115,17 +104,16 @@ router.get('/students/:id/timesheets', authenticateToken, authorizeRoles('admin'
 router.delete('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const id = Number(req.params.id);
   try {
-    const timesheet = await prisma.timeSheet.findUnique({ where: { id } });
-
+    const timesheet = await prisma.timesheet.findUnique({ where: { id } });
     if (!timesheet) {
       return res.status(404).json({ message: 'ไม่พบ Timesheet' });
     }
 
-    await prisma.timeSheet.delete({ where: { id } });
+    await prisma.timesheet.delete({ where: { id } });
     res.json({ message: 'ลบ Timesheet สำเร็จ' });
   } catch (error) {
     console.error('Admin ลบ Timesheet error:', error);
-    res.status(500).json({ message: 'ลบ Timesheet ไม่สำเร็จ', error });
+    res.status(500).json({ message: 'ลบ Timesheet ไม่สำเร็จ', error: error.message });
   }
 });
 
@@ -135,8 +123,7 @@ router.put('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), a
   const { date, checkInTime, checkOutTime, activity } = req.body;
 
   try {
-    const timesheet = await prisma.timeSheet.findUnique({ where: { id } });
-
+    const timesheet = await prisma.timesheet.findUnique({ where: { id } });
     if (!timesheet) {
       return res.status(404).json({ message: 'ไม่พบ Timesheet' });
     }
@@ -144,7 +131,7 @@ router.put('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), a
     const checkInDateTime = new Date(`${date}T${checkInTime}:00`);
     const checkOutDateTime = new Date(`${date}T${checkOutTime}:00`);
 
-    const updated = await prisma.timeSheet.update({
+    const updated = await prisma.timesheet.update({
       where: { id },
       data: {
         date: new Date(date),
@@ -157,9 +144,8 @@ router.put('/admin/timesheet/:id', authenticateToken, authorizeRoles('admin'), a
     res.json(updated);
   } catch (error) {
     console.error('Admin แก้ไข Timesheet error:', error);
-    res.status(500).json({ message: 'แก้ไข Timesheet ไม่สำเร็จ', error });
+    res.status(500).json({ message: 'แก้ไข Timesheet ไม่สำเร็จ', error: error.message });
   }
 });
-
 
 module.exports = router;
