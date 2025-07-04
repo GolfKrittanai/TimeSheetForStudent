@@ -25,6 +25,8 @@ import {
   Grid,
   IconButton,
   Button,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 
 import {
@@ -57,6 +59,9 @@ function AdminDashboard() {
     studentId: '',
     role: 'student',
   });
+
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -108,7 +113,7 @@ function AdminDashboard() {
         icon: 'success',
         title: 'บันทึกสำเร็จ',
         text: 'ข้อมูลนักศึกษาได้รับการอัปเดตเรียบร้อยแล้ว',
-        confirmButtonColor: '#3085d6'
+        confirmButtonColor: '#3085d6',
       });
       setEditOpen(false);
       fetchStudents();
@@ -117,7 +122,7 @@ function AdminDashboard() {
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
         text: 'ไม่สามารถแก้ไขข้อมูลได้',
-        confirmButtonColor: '#d33'
+        confirmButtonColor: '#d33',
       });
     }
   };
@@ -135,7 +140,7 @@ function AdminDashboard() {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'ลบ',
-      cancelButtonText: 'ยกเลิก'
+      cancelButtonText: 'ยกเลิก',
     });
 
     if (!result.isConfirmed) return;
@@ -147,14 +152,14 @@ function AdminDashboard() {
         icon: 'success',
         title: 'ลบสำเร็จ',
         text: 'นักศึกษาถูกลบเรียบร้อยแล้ว',
-        confirmButtonColor: '#3085d6'
+        confirmButtonColor: '#3085d6',
       });
     } catch {
       Swal.fire({
         icon: 'error',
         title: 'ลบไม่สำเร็จ',
         text: 'เกิดข้อผิดพลาดขณะลบผู้ใช้',
-        confirmButtonColor: '#d33'
+        confirmButtonColor: '#d33',
       });
     }
   };
@@ -162,26 +167,66 @@ function AdminDashboard() {
   return (
     <>
       <Navbar />
-      <Box sx={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'start', backgroundColor: '#f4f6f8', py: 4, px: 2 }}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'start',
+          backgroundColor: '#f4f6f8',
+          py: 4,
+          px: isSmallScreen ? 1 : 4,
+        }}
+      >
         <Box sx={{ width: '100%', maxWidth: 1100 }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#333', mb: 3, textAlign: 'center' }}>
+          <Typography
+            variant={isSmallScreen ? 'h5' : 'h4'}
+            gutterBottom
+            sx={{ fontWeight: 'bold', color: '#333', mb: 3, textAlign: 'center' }}
+          >
             ระบบจัดการนักศึกษา (Admin Dashboard)
           </Typography>
 
           {summary && (
-            <Grid container spacing={3} justifyContent="center" sx={{ mb: 4 }}>
+            <Grid container spacing={2} justifyContent="center" sx={{ mb: 4 }}>
               <Grid item xs={12} sm={6} md={4}>
-                <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: '#fff', borderRadius: 2, border: '1px solid #ddd' }}>
-                  <GroupsIcon fontSize="large" sx={{ color: '#666' }} />
-                  <Typography variant="subtitle1" color="textSecondary" mt={1}>จำนวนนักศึกษา</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>{summary.totalStudents}</Typography>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: '#fff',
+                    borderRadius: 2,
+                    border: '1px solid #ddd',
+                  }}
+                >
+                  <GroupsIcon fontSize={isSmallScreen ? 'medium' : 'large'} sx={{ color: '#666' }} />
+                  <Typography variant="subtitle2" color="textSecondary" mt={1}>
+                    จำนวนนักศึกษา
+                  </Typography>
+                  <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>
+                    {summary.totalStudents}
+                  </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Paper elevation={0} sx={{ p: 3, textAlign: 'center', bgcolor: '#fff', borderRadius: 2, border: '1px solid #ddd' }}>
-                  <AccessTimeIcon fontSize="large" sx={{ color: '#666' }} />
-                  <Typography variant="subtitle1" color="textSecondary" mt={1}>Timesheets ทั้งหมด</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>{summary.totalTimesheets}</Typography>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: '#fff',
+                    borderRadius: 2,
+                    border: '1px solid #ddd',
+                  }}
+                >
+                  <AccessTimeIcon fontSize={isSmallScreen ? 'medium' : 'large'} sx={{ color: '#666' }} />
+                  <Typography variant="subtitle2" color="textSecondary" mt={1}>
+                    Timesheets ทั้งหมด
+                  </Typography>
+                  <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>
+                    {summary.totalTimesheets}
+                  </Typography>
                 </Paper>
               </Grid>
             </Grid>
@@ -192,7 +237,19 @@ function AdminDashboard() {
               <CircularProgress size={48} color="primary" />
             </Box>
           ) : (
-            <Paper elevation={1} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <Paper
+              elevation={1}
+              sx={{
+                overflowX: 'auto',
+                borderRadius: 2,
+                border: '1px solid #e0e0e0',
+                // ปรับ font size เล็กลงบนมือถือ
+                '& td, & th': {
+                  fontSize: isSmallScreen ? '0.75rem' : '1rem',
+                  padding: isSmallScreen ? '6px 8px' : '12px 16px',
+                },
+              }}
+            >
               <Table sx={{ minWidth: 700 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: '#f5f5f5' }}>
@@ -210,18 +267,18 @@ function AdminDashboard() {
                       <TableCell sx={{ textTransform: 'capitalize', color: '#555' }}>{s.role}</TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
-                          <IconButton color="primary" onClick={() => handleEditOpen(s)} size="small">
-                            <EditIcon />
+                          <IconButton color="primary" onClick={() => handleEditOpen(s)} size={isSmallScreen ? 'small' : 'medium'}>
+                            <EditIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ดู Timesheet">
-                          <IconButton color="default" onClick={() => handleViewTimesheet(s.id)} size="small">
-                            <DescriptionIcon />
+                          <IconButton color="default" onClick={() => handleViewTimesheet(s.id)} size={isSmallScreen ? 'small' : 'medium'}>
+                            <DescriptionIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ลบผู้ใช้">
-                          <IconButton color="error" onClick={() => handleDelete(s.id)} size="small">
-                            <DeleteIcon />
+                          <IconButton color="error" onClick={() => handleDelete(s.id)} size={isSmallScreen ? 'small' : 'medium'}>
+                            <DeleteIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -236,10 +293,20 @@ function AdminDashboard() {
           <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ fontWeight: 'bold', color: '#333' }}>แก้ไขข้อมูลนักศึกษา</DialogTitle>
             <DialogContent dividers>
-              <Box component="form" sx={{ '& .MuiTextField-root': { my: 1 }, '& .MuiFormControl-root': { my: 1 } }} noValidate autoComplete="off">
-                <TextField label="รหัสนักศึกษา" name="studentId" fullWidth value={formData.studentId} onChange={handleChange} />
-                <TextField label="ชื่อ-นามสกุล" name="fullName" fullWidth value={formData.fullName} onChange={handleChange} />
-                <FormControl fullWidth>
+              <Box
+                component="form"
+                sx={{
+                  '& .MuiTextField-root': { my: 1 },
+                  '& .MuiFormControl-root': { my: 1 },
+                  // ปรับขนาดฟอนต์ใน dialog
+                  fontSize: isSmallScreen ? '0.9rem' : '1rem',
+                }}
+                noValidate
+                autoComplete="off"
+              >
+                <TextField label="รหัสนักศึกษา" name="studentId" fullWidth value={formData.studentId} onChange={handleChange} size={isSmallScreen ? 'small' : 'medium'} />
+                <TextField label="ชื่อ-นามสกุล" name="fullName" fullWidth value={formData.fullName} onChange={handleChange} size={isSmallScreen ? 'small' : 'medium'} />
+                <FormControl fullWidth size={isSmallScreen ? 'small' : 'medium'}>
                   <InputLabel id="role-label">บทบาท</InputLabel>
                   <Select labelId="role-label" name="role" value={formData.role} label="บทบาท" onChange={handleChange}>
                     <MenuItem value="student">Student</MenuItem>
@@ -249,8 +316,12 @@ function AdminDashboard() {
               </Box>
             </DialogContent>
             <DialogActions sx={{ pr: 3, pb: 2 }}>
-              <Button onClick={handleEditClose} sx={{ textTransform: 'none' }}>ยกเลิก</Button>
-              <Button variant="contained" onClick={handleSave} sx={{ textTransform: 'none', backgroundColor: '#1976d2' }}>บันทึก</Button>
+              <Button onClick={handleEditClose} sx={{ textTransform: 'none' }} size={isSmallScreen ? 'small' : 'medium'}>
+                ยกเลิก
+              </Button>
+              <Button variant="contained" onClick={handleSave} sx={{ textTransform: 'none', backgroundColor: '#1976d2' }} size={isSmallScreen ? 'small' : 'medium'}>
+                บันทึก
+              </Button>
             </DialogActions>
           </Dialog>
         </Box>

@@ -4,6 +4,8 @@ import {
   Typography,
   TextField,
   Button,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -16,6 +18,10 @@ import { motion } from 'framer-motion';
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+
+  // ตรวจสอบขนาดหน้าจอ (เช่น sm = 600px)
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const formik = useFormik({
     initialValues: {
@@ -78,16 +84,16 @@ const LoginPage = () => {
       >
         <Box
           sx={{
-            maxWidth: 400,
+            maxWidth: isSmallScreen ? '90vw' : 400,  // กำหนดกว้างอัตโนมัติตามหน้าจอ
             width: '100%',
             bgcolor: '#ffffff',
-            p: 5,
+            p: isSmallScreen ? 3 : 5, // ลด padding บนมือถือ
             borderRadius: 3,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             textAlign: 'center',
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
+          <Typography variant={isSmallScreen ? "h5" : "h4"} sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
             Timesheet
           </Typography>
           <Typography variant="subtitle1" sx={{ color: '#666', mb: 4 }}>
@@ -153,12 +159,12 @@ const LoginPage = () => {
                   fontWeight: 700,
                   backgroundColor: '#007aff',
                   borderRadius: 3,
+                  fontSize: isSmallScreen ? '1rem' : '1.1rem',
                   '&:hover': {
                     backgroundColor: '#005bb5',
                     boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
                   },
                   textTransform: 'none',
-                  fontSize: '1.1rem',
                 }}
                 disabled={formik.isSubmitting}
               >
@@ -174,7 +180,7 @@ const LoginPage = () => {
                   textTransform: 'none',
                   color: '#007aff',
                   fontWeight: 600,
-                  fontSize: '0.95rem',
+                  fontSize: isSmallScreen ? '0.85rem' : '0.95rem',
                   '&:hover': {
                     textDecoration: 'underline',
                     backgroundColor: 'transparent',
