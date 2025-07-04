@@ -215,12 +215,12 @@ function StudentTimesheetView() {
                       </TableCell>
                       <TableCell>
                         {t.checkInTime
-                          ? new Date(t.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          ? new Date(new Date(t.checkInTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : '-'}
                       </TableCell>
                       <TableCell>
                         {t.checkOutTime
-                          ? new Date(t.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          ? new Date(new Date(t.checkOutTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : '-'}
                       </TableCell>
                       <TableCell

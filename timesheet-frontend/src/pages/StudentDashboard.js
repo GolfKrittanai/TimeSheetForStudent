@@ -396,11 +396,20 @@ function StudentDashboard() {
                       {new Date(t.date).toLocaleDateString('th-TH')}
                     </TableCell>
                     <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {formatInTimeZone(new Date(t.checkInTime), 'Asia/Bangkok', 'HH:mm')}
+                      {new Date(new Date(t.checkInTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString('th-TH', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      })}
                     </TableCell>
                     <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {formatInTimeZone(new Date(t.checkOutTime), 'Asia/Bangkok', 'HH:mm')}
+                      {new Date(new Date(t.checkOutTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString('th-TH', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      })}
                     </TableCell>
+
                     <TableCell
                       sx={{
                         whiteSpace: 'pre-wrap',
