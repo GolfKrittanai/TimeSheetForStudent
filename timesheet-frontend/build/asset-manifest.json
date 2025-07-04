@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "https://timesheetforstudent-front.onrender.com/static/js/main.35626775.js",
+    "index.html": "https://timesheetforstudent-front.onrender.com/index.html",
+    "main.35626775.js.map": "https://timesheetforstudent-front.onrender.com/static/js/main.35626775.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.35626775.js"
+  ]
+}

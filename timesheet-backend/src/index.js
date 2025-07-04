@@ -10,9 +10,19 @@ const adminRoutes = require("./routes/adminRoutes"); // ✅ ต้องเพ�
 
 const app = express();
 
-app.use(cors());
+// CORS Configuration: อนุญาตให้ frontend ที่ deploy บน Render สามารถเข้าถึง API
+const corsOptions = {
+  origin: "https://timesheetforstudent-front.onrender.com",  // URL ของ frontend ที่ deploy บน Render
+  methods: "GET,POST,PUT,DELETE",  // วิธีการที่อนุญาตให้ frontend ใช้
+  allowedHeaders: "Content-Type,Authorization",  // หัวข้อที่อนุญาต
+};
+
+// ใช้ CORS กับการตั้งค่าที่กำหนด
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
+// ใช้ routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/timesheets", timesheetRoutes);
