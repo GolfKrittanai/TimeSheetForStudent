@@ -12,20 +12,8 @@ services:
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: mysql://rice:Rice@2020@203.159.95.167:4406/db_timesheet_sk
       - key: JWT_SECRET
-        sync: false
+        sync: your_jwt_secret_here
       - key: PORT
-        sync: false
 
-  # Frontend Service - React build as Static Site
-  - type: static
-    name: timesheet-frontend
-    plan: free
-    rootDir: timesheet-frontend
-    buildCommand: npm install && npm run build
-    publishDir: build
-    autoDeploy: true
-    envVars:
-      - key: REACT_APP_API
-        sync: false

@@ -24,11 +24,13 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
+  "prebuild": "chmod +x ./node_modules/.bin/react-scripts",
+  "build": "react-scripts build",
+  "start": "react-scripts start",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
+},
+
   "eslintConfig": {
     "extends": [
       "react-app",
