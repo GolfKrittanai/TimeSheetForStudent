@@ -1,11 +1,12 @@
 import axios from 'axios';
 
+// ใช้ค่า API_URL จาก .env
 const API_URL = process.env.REACT_APP_API;  // ตรวจสอบให้แน่ใจว่า .env ตั้งค่าถูกต้อง
 
-// ส่งคำขอล็อกอินผู้ใช้
+// ฟังก์ชันส่งคำขอล็อกอินผู้ใช้
 export const loginUser = (data) => {
   return axios
-    .post(`${API_URL}/auth/login`, data)
+    .post(`${API_URL}/auth/login`, data)  // ทำการ POST คำขอไปยัง backend
     .then((response) => {
       return response.data;  // ส่งข้อมูลจาก backend (JWT token และข้อมูลผู้ใช้)
     })
@@ -27,10 +28,10 @@ export const loginUser = (data) => {
     });
 };
 
-// ส่งคำขอลงทะเบียนผู้ใช้ใหม่
+// ฟังก์ชันส่งคำขอลงทะเบียนผู้ใช้ใหม่
 export const registerUser = (data) => {
   return axios
-    .post(`${API_URL}/auth/register`, data)
+    .post(`${API_URL}/auth/register`, data)  // ทำการ POST คำขอไปยัง backend
     .then((response) => {
       return response.data;  // ส่งข้อมูลจาก backend (ข้อมูลผู้ใช้ใหม่)
     })

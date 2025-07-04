@@ -14,7 +14,7 @@ const app = express();
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://timesheetforstudent-front.onrender.com'  // สำหรับ production
-    : 'http://localhost:3000',  // สำหรับ development
+    : 'http://localhost:3000',//ำหรับ development
   methods: 'GET,POST,PUT,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
 };
