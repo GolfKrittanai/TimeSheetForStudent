@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   CircularProgress,
+  Avatar,
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
@@ -140,7 +141,25 @@ function ProfilePage() {
           gap: 4,
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#0066cc', textAlign: 'center' }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: '#0066cc',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Avatar
+            src={profile?.avatarUrl || ''}
+            alt={profile?.fullName || user?.fullName}
+            sx={{ width: 96, height: 96, bgcolor: '#0066cc', fontSize: 40 }}
+          >
+            {(profile?.fullName || user?.fullName)?.[0].toUpperCase()}
+          </Avatar>
           โปรไฟล์ของ {profile?.fullName || user?.fullName}
         </Typography>
 

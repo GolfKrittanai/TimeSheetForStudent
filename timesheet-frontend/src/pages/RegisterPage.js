@@ -21,6 +21,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -82,103 +83,59 @@ function RegisterPage() {
         p: 2,
       }}
     >
-      <Box
-        sx={{
-          maxWidth: 420,
-          width: '100%',
-          bgcolor: '#fff',
-          p: 5,
-          borderRadius: 3,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#111' }}>
-          ลงทะเบียน TimeSheet
-        </Typography>
-        <Typography variant="subtitle2" sx={{ mb: 3, color: '#666' }}>
-          สำหรับนักศึกษาใหม่
-        </Typography>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+        <Box
+          sx={{
+            maxWidth: 420,
+            width: '100%',
+            bgcolor: '#fff',
+            p: 5,
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#111' }}>
+            ลงทะเบียน TimeSheet
+          </Typography>
+          <Typography variant="subtitle2" sx={{ mb: 3, color: '#666' }}>
+            สำหรับนักศึกษาใหม่
+          </Typography>
 
-        <form onSubmit={formik.handleSubmit} noValidate>
-          <CustomField
-            icon={<AccountCircle sx={{ color: '#007aff' }} />}
-            label="ชื่อ-นามสกุล"
-            name="fullName"
-            formik={formik}
-          />
-          <CustomField
-            icon={<Badge sx={{ color: '#007aff' }} />}
-            label="รหัสนักศึกษา"
-            name="studentId"
-            formik={formik}
-          />
-          <CustomField
-            icon={<Email sx={{ color: '#007aff' }} />}
-            label="อีเมล"
-            name="email"
-            formik={formik}
-          />
-          <CustomField
-            icon={<Phone sx={{ color: '#007aff' }} />}
-            label="เบอร์โทร"
-            name="phone"
-            formik={formik}
-          />
-          <CustomField
-            icon={<Home sx={{ color: '#007aff' }} />}
-            label="ที่อยู่"
-            name="address"
-            multiline
-            rows={2}
-            formik={formik}
-          />
-          <CustomField
-            icon={<Lock sx={{ color: '#007aff' }} />}
-            label="รหัสผ่าน"
-            name="password"
-            type="password"
-            formik={formik}
-          />
-          <CustomField
-            icon={<LockReset sx={{ color: '#007aff' }} />}
-            label="ยืนยันรหัสผ่าน"
-            name="confirmPassword"
-            type="password"
-            formik={formik}
-          />
+          <form onSubmit={formik.handleSubmit} noValidate>
+            <CustomField icon={<AccountCircle sx={{ color: '#007aff' }} />} label="ชื่อ-นามสกุล" name="fullName" formik={formik} />
+            <CustomField icon={<Badge sx={{ color: '#007aff' }} />} label="รหัสนักศึกษา" name="studentId" formik={formik} />
+            <CustomField icon={<Email sx={{ color: '#007aff' }} />} label="อีเมล" name="email" formik={formik} />
+            <CustomField icon={<Phone sx={{ color: '#007aff' }} />} label="เบอร์โทร" name="phone" formik={formik} />
+            <CustomField icon={<Home sx={{ color: '#007aff' }} />} label="ที่อยู่" name="address" multiline rows={2} formik={formik} />
+            <CustomField icon={<Lock sx={{ color: '#007aff' }} />} label="รหัสผ่าน" name="password" type="password" formik={formik} />
+            <CustomField icon={<LockReset sx={{ color: '#007aff' }} />} label="ยืนยันรหัสผ่าน" name="confirmPassword" type="password" formik={formik} />
 
-          {formik.errors.submit && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {formik.errors.submit}
-            </Alert>
-          )}
+            {formik.errors.submit && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {formik.errors.submit}
+              </Alert>
+            )}
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={submitButtonStyle}
-            disabled={formik.isSubmitting}
-          >
-            ลงทะเบียน
-          </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              <Button type="submit" fullWidth variant="contained" sx={submitButtonStyle} disabled={formik.isSubmitting}>
+                ลงทะเบียน
+              </Button>
+            </motion.div>
 
-          <Button
-            fullWidth
-            startIcon={<ArrowBack />}
-            sx={backButtonStyle}
-            onClick={() => navigate('/')}
-          >
-            กลับไปหน้าเข้าสู่ระบบ
-          </Button>
-        </form>
-      </Box>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              <Button fullWidth startIcon={<ArrowBack />} sx={backButtonStyle} onClick={() => navigate('/')}
+              >
+                กลับไปหน้าเข้าสู่ระบบ
+              </Button>
+            </motion.div>
+          </form>
+        </Box>
+      </motion.div>
     </Box>
   );
 }
 
-// ✅ ฟังก์ชันย่อยสำหรับลดซ้ำของ TextField + Icon
 function CustomField({ label, name, icon, formik, type = 'text', multiline = false, rows = 1 }) {
   return (
     <TextField
@@ -195,11 +152,7 @@ function CustomField({ label, name, icon, formik, type = 'text', multiline = fal
       error={formik.touched[name] && Boolean(formik.errors[name])}
       helperText={formik.touched[name] && formik.errors[name]}
       InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            {icon}
-          </InputAdornment>
-        ),
+        startAdornment: <InputAdornment position="start">{icon}</InputAdornment>,
         sx: {
           borderRadius: 2,
           bgcolor: '#fafafa',
