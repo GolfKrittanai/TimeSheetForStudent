@@ -86,7 +86,6 @@ function StudentTimesheetView() {
   };
 
   const handleEditSave = async () => {
-    // Validation เวลาเข้า-ออก
     const checkIn = new Date(`${editData.date}T${editData.checkInTime}:00`);
     const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
 
@@ -181,7 +180,7 @@ function StudentTimesheetView() {
                     <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>วันที่</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาเข้า</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาออก</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>กิจกรรม</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 300 }}>กิจกรรม</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', minWidth: 110 }}>จัดการ</TableCell>
                   </TableRow>
                 </TableHead>
@@ -205,7 +204,16 @@ function StudentTimesheetView() {
                           ? new Date(t.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                           : '-'}
                       </TableCell>
-                      <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
+                      <TableCell
+                        sx={{
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          maxWidth: 300,
+                          fontSize: isSmallScreen ? 12 : 14,
+                        }}
+                      >
+                        {t.activity}
+                      </TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
                           <IconButton color="primary" size={isSmallScreen ? 'small' : 'medium'} onClick={() => handleEditOpen(t)}>
