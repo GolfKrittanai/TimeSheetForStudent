@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import Navbar from '../components/Navbar';
 import {
   Box,
@@ -37,6 +38,12 @@ import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 function StudentDashboard() {
+  // รวมวันที่ (YYYY-MM-DD) กับเวลา (HH:mm) ให้เป็น ISO string พร้อม timezone +07:00
+  const combineDateTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return null;
+    return `${dateStr}T${timeStr}:00+07:00`;
+  };
+
   const { token, user } = useAuth();
   const [timeSheets, setTimeSheets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,12 +53,13 @@ function StudentDashboard() {
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // sm < 600px
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await getMyTimeSheets(token);
+      console.log('TimeSheets from API:', res.data);
       setTimeSheets(res.data);
     } catch {
       Swal.fire('ผิดพลาด', 'ไม่สามารถโหลด Timesheet ได้', 'error');
@@ -114,8 +122,15 @@ function StudentDashboard() {
     if (!validateForm()) return;
 
     try {
-      await createTimeSheet(formData, token);
-      fetchData();
+      const payload = {
+        date: formData.date,
+        checkInTime: formData.checkInTime,
+        checkOutTime: formData.checkOutTime,
+        activity: formData.activity,
+      };
+
+      await createTimeSheet(payload, token);
+      await fetchData();
       setFormData({ date: '', checkInTime: '', checkOutTime: '', activity: '' });
       Swal.fire('สำเร็จ', 'เพิ่ม TimeSheet เรียบร้อยแล้ว', 'success');
     } catch {
@@ -163,16 +178,14 @@ function StudentDashboard() {
 
     setLoadingEdit(true);
     try {
-      await updateTimeSheet(
-        editData.id,
-        {
-          date: editData.date,
-          checkInTime: editData.checkInTime,
-          checkOutTime: editData.checkOutTime,
-          activity: editData.activity,
-        },
-        token
-      );
+      const payload = {
+        date: editData.date,
+        checkInTime: editData.checkInTime,
+        checkOutTime: editData.checkOutTime,
+        activity: editData.activity,
+      };
+
+      await updateTimeSheet(editData.id, payload, token);
       await fetchData();
       handleEditClose();
       Swal.fire('บันทึกสำเร็จ', 'แก้ไข TimeSheet เรียบร้อยแล้ว', 'success');
@@ -224,10 +237,7 @@ function StudentDashboard() {
             boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{ mb: 3, fontWeight: 600, color: '#004a99' }}
-          >
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#004a99' }}>
             เพิ่ม Timesheet ใหม่
           </Typography>
           <form onSubmit={handleSubmit} noValidate>
@@ -312,7 +322,6 @@ function StudentDashboard() {
             boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
             overflowX: 'auto',
 
-            // scrollbar styles for webkit browsers
             '&::-webkit-scrollbar': {
               height: 8,
             },
@@ -325,7 +334,6 @@ function StudentDashboard() {
               borderRadius: 4,
             },
 
-            // scrollbar styles for Firefox
             scrollbarWidth: 'thin',
             scrollbarColor: '#0066cc #f0f0f0',
           }}
@@ -342,10 +350,7 @@ function StudentDashboard() {
               <CircularProgress size={48} color="primary" />
             </Box>
           ) : timeSheets.length === 0 ? (
-            <Typography
-              sx={{ textAlign: 'center', color: 'text.disabled', py: 8 }}
-              variant="subtitle1"
-            >
+            <Typography sx={{ textAlign: 'center', color: 'text.disabled', py: 8 }} variant="subtitle1">
               ยังไม่มี TimeSheet
             </Typography>
           ) : (
@@ -388,19 +393,13 @@ function StudentDashboard() {
                 {timeSheets.map((t) => (
                   <TableRow key={t.id} hover>
                     <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {new Date(t.date).toLocaleDateString()}
+                      {new Date(t.date).toLocaleDateString('th-TH')}
                     </TableCell>
                     <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {new Date(t.checkInTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(new Date(t.checkInTime), 'Asia/Bangkok', 'HH:mm')}
                     </TableCell>
                     <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {new Date(t.checkOutTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(new Date(t.checkOutTime), 'Asia/Bangkok', 'HH:mm')}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -441,9 +440,7 @@ function StudentDashboard() {
 
         {/* Dialog แก้ไข Timesheet */}
         <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ fontWeight: 'bold', color: '#0066cc' }}>
-            แก้ไข TimeSheet
-          </DialogTitle>
+          <DialogTitle sx={{ fontWeight: 'bold', color: '#0066cc' }}>แก้ไข TimeSheet</DialogTitle>
           <DialogContent dividers>
             <Box
               component="form"
@@ -501,11 +498,7 @@ function StudentDashboard() {
                 helperText={editErrors.activity}
               />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button
-                  onClick={handleEditClose}
-                  sx={{ mr: 2, textTransform: 'none' }}
-                  disabled={loadingEdit}
-                >
+                <Button onClick={handleEditClose} sx={{ mr: 2, textTransform: 'none' }} disabled={loadingEdit}>
                   ยกเลิก
                 </Button>
                 <Button

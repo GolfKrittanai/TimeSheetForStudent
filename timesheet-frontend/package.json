@@ -13,6 +13,8 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.23.0",
     "react": "^19.1.0",
@@ -24,13 +26,12 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-  "prebuild": "chmod +x ./node_modules/.bin/react-scripts",
-  "build": "react-scripts build",
-  "start": "react-scripts start",
-  "test": "react-scripts test",
-  "eject": "react-scripts eject"
-},
-
+    "prebuild": "chmod +x ./node_modules/.bin/react-scripts",
+    "build": "react-scripts build",
+    "start": "react-scripts start",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -49,5 +50,4 @@
       "last 1 safari version"
     ]
   }
-  
 }
