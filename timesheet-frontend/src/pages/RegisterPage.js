@@ -6,6 +6,8 @@ import {
   Button,
   Alert,
   InputAdornment,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   AccountCircle,
@@ -25,6 +27,8 @@ import { motion } from 'framer-motion';
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // sm = 600px
 
   const formik = useFormik({
     initialValues: {
@@ -83,19 +87,27 @@ function RegisterPage() {
         p: 2,
       }}
     >
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <Box
           sx={{
-            maxWidth: 420,
+            maxWidth: isSmallScreen ? '90vw' : 420,  // กว้าง 90% ของ viewport บนมือถือ
             width: '100%',
             bgcolor: '#fff',
-            p: 5,
+            p: isSmallScreen ? 3 : 5,              // ลด padding บนมือถือ
             borderRadius: 3,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             textAlign: 'center',
           }}
         >
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#111' }}>
+          <Typography
+            variant={isSmallScreen ? 'h6' : 'h5'}
+            gutterBottom
+            sx={{ fontWeight: 600, color: '#111' }}
+          >
             ลงทะเบียน TimeSheet
           </Typography>
           <Typography variant="subtitle2" sx={{ mb: 3, color: '#666' }}>
@@ -103,13 +115,52 @@ function RegisterPage() {
           </Typography>
 
           <form onSubmit={formik.handleSubmit} noValidate>
-            <CustomField icon={<AccountCircle sx={{ color: '#007aff' }} />} label="ชื่อ-นามสกุล" name="fullName" formik={formik} />
-            <CustomField icon={<Badge sx={{ color: '#007aff' }} />} label="รหัสนักศึกษา" name="studentId" formik={formik} />
-            <CustomField icon={<Email sx={{ color: '#007aff' }} />} label="อีเมล" name="email" formik={formik} />
-            <CustomField icon={<Phone sx={{ color: '#007aff' }} />} label="เบอร์โทร" name="phone" formik={formik} />
-            <CustomField icon={<Home sx={{ color: '#007aff' }} />} label="ที่อยู่" name="address" multiline rows={2} formik={formik} />
-            <CustomField icon={<Lock sx={{ color: '#007aff' }} />} label="รหัสผ่าน" name="password" type="password" formik={formik} />
-            <CustomField icon={<LockReset sx={{ color: '#007aff' }} />} label="ยืนยันรหัสผ่าน" name="confirmPassword" type="password" formik={formik} />
+            <CustomField
+              icon={<AccountCircle sx={{ color: '#007aff' }} />}
+              label="ชื่อ-นามสกุล"
+              name="fullName"
+              formik={formik}
+            />
+            <CustomField
+              icon={<Badge sx={{ color: '#007aff' }} />}
+              label="รหัสนักศึกษา"
+              name="studentId"
+              formik={formik}
+            />
+            <CustomField
+              icon={<Email sx={{ color: '#007aff' }} />}
+              label="อีเมล"
+              name="email"
+              formik={formik}
+            />
+            <CustomField
+              icon={<Phone sx={{ color: '#007aff' }} />}
+              label="เบอร์โทร"
+              name="phone"
+              formik={formik}
+            />
+            <CustomField
+              icon={<Home sx={{ color: '#007aff' }} />}
+              label="ที่อยู่"
+              name="address"
+              multiline
+              rows={2}
+              formik={formik}
+            />
+            <CustomField
+              icon={<Lock sx={{ color: '#007aff' }} />}
+              label="รหัสผ่าน"
+              name="password"
+              type="password"
+              formik={formik}
+            />
+            <CustomField
+              icon={<LockReset sx={{ color: '#007aff' }} />}
+              label="ยืนยันรหัสผ่าน"
+              name="confirmPassword"
+              type="password"
+              formik={formik}
+            />
 
             {formik.errors.submit && (
               <Alert severity="error" sx={{ mt: 2 }}>
@@ -118,13 +169,47 @@ function RegisterPage() {
             )}
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Button type="submit" fullWidth variant="contained" sx={submitButtonStyle} disabled={formik.isSubmitting}>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 3,
+                  py: 1.3,
+                  fontWeight: 600,
+                  backgroundColor: '#007aff',
+                  borderRadius: 3,
+                  boxShadow: 'none',
+                  textTransform: 'none',
+                  fontSize: isSmallScreen ? '1rem' : '1.1rem',
+                  '&:hover': {
+                    backgroundColor: '#005bb5',
+                    boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
+                  },
+                }}
+                disabled={formik.isSubmitting}
+              >
                 ลงทะเบียน
               </Button>
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Button fullWidth startIcon={<ArrowBack />} sx={backButtonStyle} onClick={() => navigate('/')}
+              <Button
+                fullWidth
+                startIcon={<ArrowBack />}
+                sx={{
+                  mt: 2,
+                  color: '#007aff',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  fontSize: isSmallScreen ? '0.85rem' : '0.95rem',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                  },
+                }}
+                onClick={() => navigate('/')}
               >
                 กลับไปหน้าเข้าสู่ระบบ
               </Button>
@@ -171,31 +256,5 @@ function CustomField({ label, name, icon, formik, type = 'text', multiline = fal
     />
   );
 }
-
-const submitButtonStyle = {
-  mt: 3,
-  py: 1.3,
-  fontWeight: 600,
-  backgroundColor: '#007aff',
-  borderRadius: 3,
-  boxShadow: 'none',
-  textTransform: 'none',
-  '&:hover': {
-    backgroundColor: '#005bb5',
-    boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
-  },
-};
-
-const backButtonStyle = {
-  mt: 2,
-  color: '#007aff',
-  textTransform: 'none',
-  fontWeight: 500,
-  '&:hover': {
-    textDecoration: 'underline',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-  },
-};
 
 export default RegisterPage;

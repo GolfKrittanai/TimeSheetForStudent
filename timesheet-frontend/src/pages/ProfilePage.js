@@ -7,6 +7,8 @@ import {
   Button,
   CircularProgress,
   Avatar,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +25,9 @@ function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   // ฟอร์มแก้ไขข้อมูลส่วนตัว
   const [editData, setEditData] = useState({
@@ -133,16 +138,16 @@ function ProfilePage() {
           minHeight: '90vh',
           maxWidth: 700,
           mx: 'auto',
-          px: 2,
-          py: 6,
+          px: isSmallScreen ? 2 : 4,
+          py: isSmallScreen ? 4 : 6,
           backgroundColor: '#f5f7fa',
           display: 'flex',
           flexDirection: 'column',
-          gap: 4,
+          gap: isSmallScreen ? 3 : 4,
         }}
       >
         <Typography
-          variant="h4"
+          variant={isSmallScreen ? 'h5' : 'h4'}
           sx={{
             fontWeight: 700,
             color: '#0066cc',
@@ -156,7 +161,12 @@ function ProfilePage() {
           <Avatar
             src={profile?.avatarUrl || ''}
             alt={profile?.fullName || user?.fullName}
-            sx={{ width: 96, height: 96, bgcolor: '#0066cc', fontSize: 40 }}
+            sx={{
+              width: isSmallScreen ? 72 : 96,
+              height: isSmallScreen ? 72 : 96,
+              bgcolor: '#0066cc',
+              fontSize: isSmallScreen ? 32 : 40,
+            }}
           >
             {(profile?.fullName || user?.fullName)?.[0].toUpperCase()}
           </Avatar>
@@ -169,7 +179,14 @@ function ProfilePage() {
           </Box>
         ) : (
           <>
-            <Paper sx={{ p: 4, borderRadius: 3, backgroundColor: '#fff' }} elevation={4}>
+            <Paper
+              sx={{
+                p: isSmallScreen ? 3 : 4,
+                borderRadius: 3,
+                backgroundColor: '#fff',
+              }}
+              elevation={4}
+            >
               <Typography variant="h6" sx={{ mb: 2, color: '#004a99' }}>
                 แก้ไขข้อมูลส่วนตัว
               </Typography>
@@ -183,6 +200,7 @@ function ProfilePage() {
                   error={Boolean(editErrors.fullName)}
                   helperText={editErrors.fullName}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
                 <TextField
                   fullWidth
@@ -194,6 +212,7 @@ function ProfilePage() {
                   error={Boolean(editErrors.email)}
                   helperText={editErrors.email}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
                 <TextField
                   fullWidth
@@ -204,16 +223,18 @@ function ProfilePage() {
                   error={Boolean(editErrors.phone)}
                   helperText={editErrors.phone}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
                 <TextField
                   fullWidth
                   label="ที่อยู่"
                   name="address"
                   multiline
-                  rows={3}
+                  rows={isSmallScreen ? 2 : 3}
                   value={editData.address}
                   onChange={handleEditChange}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
 
                 <Button
@@ -226,6 +247,7 @@ function ProfilePage() {
                     textTransform: 'none',
                     fontWeight: 700,
                     py: 1.5,
+                    fontSize: isSmallScreen ? '0.9rem' : '1rem',
                   }}
                 >
                   {loadingEdit ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
@@ -233,7 +255,14 @@ function ProfilePage() {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 4, borderRadius: 3, backgroundColor: '#fff' }} elevation={4}>
+            <Paper
+              sx={{
+                p: isSmallScreen ? 3 : 4,
+                borderRadius: 3,
+                backgroundColor: '#fff',
+              }}
+              elevation={4}
+            >
               <Typography variant="h6" sx={{ mb: 2, color: '#004a99' }}>
                 เปลี่ยนรหัสผ่าน
               </Typography>
@@ -248,6 +277,7 @@ function ProfilePage() {
                   error={Boolean(passwordErrors.currentPassword)}
                   helperText={passwordErrors.currentPassword}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
                 <TextField
                   fullWidth
@@ -259,6 +289,7 @@ function ProfilePage() {
                   error={Boolean(passwordErrors.newPassword)}
                   helperText={passwordErrors.newPassword}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
                 <TextField
                   fullWidth
@@ -270,6 +301,7 @@ function ProfilePage() {
                   error={Boolean(passwordErrors.confirmNewPassword)}
                   helperText={passwordErrors.confirmNewPassword}
                   sx={{ mb: 3 }}
+                  size={isSmallScreen ? 'small' : 'medium'}
                 />
 
                 <Button
@@ -282,6 +314,7 @@ function ProfilePage() {
                     textTransform: 'none',
                     fontWeight: 700,
                     py: 1.5,
+                    fontSize: isSmallScreen ? '0.9rem' : '1rem',
                   }}
                 >
                   {loadingPwd ? 'กำลังเปลี่ยนรหัส...' : 'เปลี่ยนรหัสผ่าน'}

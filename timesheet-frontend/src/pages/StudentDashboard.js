@@ -16,7 +16,9 @@ import {
   TextField,
   Paper,
   Tooltip,
-  IconButton
+  IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 
 import {
@@ -42,6 +44,9 @@ function StudentDashboard() {
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
+
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // sm < 600px
 
   const fetchData = async () => {
     setLoading(true);
@@ -187,7 +192,7 @@ function StudentDashboard() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          pt: 6,
+          pt: isSmallScreen ? 3 : 6,
           px: 2,
           pb: 6,
           maxWidth: 700,
@@ -195,7 +200,7 @@ function StudentDashboard() {
         }}
       >
         <Typography
-          variant="h4"
+          variant={isSmallScreen ? 'h5' : 'h4'}
           sx={{
             fontWeight: '700',
             color: '#0066cc',
@@ -213,7 +218,7 @@ function StudentDashboard() {
           sx={{
             width: '100%',
             mb: 5,
-            p: 4,
+            p: isSmallScreen ? 2 : 4,
             borderRadius: 3,
             backgroundColor: '#fff',
             boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
@@ -302,9 +307,10 @@ function StudentDashboard() {
           sx={{
             width: '100%',
             borderRadius: 3,
-            p: 2,
+            p: isSmallScreen ? 1 : 2,
             backgroundColor: '#fff',
             boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
+            overflowX: 'auto',
           }}
         >
           {loading ? (
@@ -329,20 +335,25 @@ function StudentDashboard() {
             <Table sx={{ minWidth: 650 }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: '#e3f2fd' }}>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
                     วันที่
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
                     เวลาเข้า
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
                     เวลาออก
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99' }}>
+                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
                     กิจกรรม
                   </TableCell>
                   <TableCell
-                    sx={{ fontWeight: 'bold', color: '#004a99', minWidth: 140 }}
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#004a99',
+                      minWidth: 140,
+                      fontSize: isSmallScreen ? 12 : 14,
+                    }}
                   >
                     จัดการ
                   </TableCell>
@@ -351,41 +362,44 @@ function StudentDashboard() {
               <TableBody>
                 {timeSheets.map((t) => (
                   <TableRow key={t.id} hover>
-                    <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
+                      {new Date(t.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
                       {new Date(t.checkInTime).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
                       {new Date(t.checkOutTime).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'pre-line', fontSize: isSmallScreen ? 12 : 14 }}>
+                      {t.activity}
+                    </TableCell>
                     <TableCell>
                       <Tooltip title="แก้ไข">
                         <IconButton
                           color="primary"
                           onClick={() => handleEditOpen(t)}
-                          size="small"
+                          size={isSmallScreen ? 'small' : 'medium'}
                         >
-                          <EditIcon />
+                          <EditIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ">
                         <IconButton
                           color="error"
                           onClick={() => handleDelete(t.id)}
-                          size="small"
+                          size={isSmallScreen ? 'small' : 'medium'}
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
-
                   </TableRow>
                 ))}
               </TableBody>
@@ -399,7 +413,17 @@ function StudentDashboard() {
             แก้ไข TimeSheet
           </DialogTitle>
           <DialogContent dividers>
-            <Box component="form" noValidate autoComplete="off" onSubmit={handleEditSubmit}>
+            <Box
+              component="form"
+              noValidate
+              autoComplete="off"
+              onSubmit={handleEditSubmit}
+              sx={{
+                '& .MuiTextField-root': {
+                  my: 1,
+                },
+              }}
+            >
               <TextField
                 label="วันที่"
                 name="date"
@@ -410,7 +434,6 @@ function StudentDashboard() {
                 onChange={handleEditChange}
                 error={Boolean(editErrors.date)}
                 helperText={editErrors.date}
-                sx={{ my: 1 }}
               />
               <TextField
                 label="เวลาเข้า"
@@ -422,7 +445,6 @@ function StudentDashboard() {
                 onChange={handleEditChange}
                 error={Boolean(editErrors.checkInTime)}
                 helperText={editErrors.checkInTime}
-                sx={{ my: 1 }}
               />
               <TextField
                 label="เวลาออก"
@@ -434,7 +456,6 @@ function StudentDashboard() {
                 onChange={handleEditChange}
                 error={Boolean(editErrors.checkOutTime)}
                 helperText={editErrors.checkOutTime}
-                sx={{ my: 1 }}
               />
               <TextField
                 label="กิจกรรม"
@@ -446,7 +467,6 @@ function StudentDashboard() {
                 onChange={handleEditChange}
                 error={Boolean(editErrors.activity)}
                 helperText={editErrors.activity}
-                sx={{ my: 1 }}
               />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button

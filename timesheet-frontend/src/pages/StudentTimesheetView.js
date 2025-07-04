@@ -18,6 +18,8 @@ import {
   TextField,
   Tooltip,
   IconButton,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { getStudentTimesheetById, updateStudentTimesheetById, deleteStudentTimesheetById } from '../services/adminService';
@@ -28,10 +30,13 @@ import Swal from 'sweetalert2';
 function StudentTimesheetView() {
   const { id } = useParams();
   const { token } = useAuth();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [data, setData] = useState([]);
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState({
     id: '',
@@ -40,6 +45,7 @@ function StudentTimesheetView() {
     checkOutTime: '',
     activity: '',
   });
+  const [saving, setSaving] = useState(false);
 
   const fetchTimesheet = useCallback(async () => {
     setLoading(true);
@@ -62,8 +68,8 @@ function StudentTimesheetView() {
     setEditData({
       id: timesheet.id,
       date: timesheet.date.slice(0, 10),
-      checkInTime: timesheet.checkInTime.slice(11, 16),
-      checkOutTime: timesheet.checkOutTime.slice(11, 16),
+      checkInTime: timesheet.checkInTime ? timesheet.checkInTime.slice(11, 16) : '',
+      checkOutTime: timesheet.checkOutTime ? timesheet.checkOutTime.slice(11, 16) : '',
       activity: timesheet.activity,
     });
     setEditOpen(true);
@@ -71,6 +77,7 @@ function StudentTimesheetView() {
 
   const handleEditClose = () => {
     setEditOpen(false);
+    setSaving(false);
   };
 
   const handleEditChange = (e) => {
@@ -79,21 +86,34 @@ function StudentTimesheetView() {
   };
 
   const handleEditSave = async () => {
-    try {
-      const checkIn = new Date(`${editData.date}T${editData.checkInTime}:00`);
-      const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
-      await updateStudentTimesheetById(editData.id, {
-        date: editData.date,
-        checkInTime: checkIn.toISOString(),
-        checkOutTime: checkOut.toISOString(),
-        activity: editData.activity,
-      }, token);
+    // Validation เวลาเข้า-ออก
+    const checkIn = new Date(`${editData.date}T${editData.checkInTime}:00`);
+    const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
 
+    if (checkOut <= checkIn) {
+      Swal.fire('ผิดพลาด', 'เวลาออกต้องมากกว่าเวลาเข้า', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateStudentTimesheetById(
+        editData.id,
+        {
+          date: editData.date,
+          checkInTime: checkIn.toISOString(),
+          checkOutTime: checkOut.toISOString(),
+          activity: editData.activity,
+        },
+        token
+      );
       Swal.fire('สำเร็จ', 'แก้ไข Timesheet เรียบร้อยแล้ว', 'success');
       setEditOpen(false);
       fetchTimesheet();
     } catch {
       Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไข Timesheet ได้', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -123,14 +143,24 @@ function StudentTimesheetView() {
   return (
     <>
       <Navbar />
-      <Box sx={{ minHeight: '100vh', backgroundColor: '#f4f6f8', display: 'flex', justifyContent: 'center', alignItems: 'start', px: 2, py: 4 }}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundColor: '#f4f6f8',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'start',
+          px: isSmallScreen ? 1 : 2,
+          py: 4,
+        }}
+      >
         <Box sx={{ width: '100%', maxWidth: 1000 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: '#333', textAlign: 'center' }}>
+          <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', mb: 2, color: '#333', textAlign: 'center' }}>
             ข้อมูล TimeSheet ของนักศึกษา
           </Typography>
 
           {studentInfo && (
-            <Typography variant="h6" sx={{ color: '#555', textAlign: 'center', mb: 3 }}>
+            <Typography variant={isSmallScreen ? 'subtitle1' : 'h6'} sx={{ color: '#555', textAlign: 'center', mb: 3 }}>
               {studentInfo.fullName} (รหัส {studentInfo.studentId})
             </Typography>
           )}
@@ -148,29 +178,43 @@ function StudentTimesheetView() {
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>วันที่</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>เวลาเข้า</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>เวลาออก</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>วันที่</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาเข้า</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาออก</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>กิจกรรม</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>จัดการ</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 110 }}>จัดการ</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data.map((t) => (
                     <TableRow key={t.id} hover>
-                      <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(t.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
-                      <TableCell>{new Date(t.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                      <TableCell>
+                        {new Date(t.date).toLocaleDateString('th-TH', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        {t.checkInTime
+                          ? new Date(t.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {t.checkOutTime
+                          ? new Date(t.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '-'}
+                      </TableCell>
                       <TableCell sx={{ whiteSpace: 'pre-line' }}>{t.activity}</TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
-                          <IconButton color="primary" size="small" onClick={() => handleEditOpen(t)}>
-                            <EditIcon />
+                          <IconButton color="primary" size={isSmallScreen ? 'small' : 'medium'} onClick={() => handleEditOpen(t)}>
+                            <EditIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ลบ">
-                          <IconButton color="error" size="small" onClick={() => handleDelete(t.id)}>
-                            <DeleteIcon />
+                          <IconButton color="error" size={isSmallScreen ? 'small' : 'medium'} onClick={() => handleDelete(t.id)}>
+                            <DeleteIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -185,14 +229,53 @@ function StudentTimesheetView() {
           <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
             <DialogTitle>แก้ไข Timesheet</DialogTitle>
             <DialogContent>
-              <TextField label="วันที่" name="date" type="date" fullWidth value={editData.date} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
-              <TextField label="เวลาเข้า" name="checkInTime" type="time" fullWidth value={editData.checkInTime} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
-              <TextField label="เวลาออก" name="checkOutTime" type="time" fullWidth value={editData.checkOutTime} onChange={handleEditChange} sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} />
-              <TextField label="กิจกรรม" name="activity" fullWidth multiline rows={3} value={editData.activity} onChange={handleEditChange} />
+              <TextField
+                label="วันที่"
+                name="date"
+                type="date"
+                fullWidth
+                value={editData.date}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="เวลาเข้า"
+                name="checkInTime"
+                type="time"
+                fullWidth
+                value={editData.checkInTime}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="เวลาออก"
+                name="checkOutTime"
+                type="time"
+                fullWidth
+                value={editData.checkOutTime}
+                onChange={handleEditChange}
+                sx={{ mb: 2 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="กิจกรรม"
+                name="activity"
+                fullWidth
+                multiline
+                rows={3}
+                value={editData.activity}
+                onChange={handleEditChange}
+              />
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleEditClose}>ยกเลิก</Button>
-              <Button variant="contained" onClick={handleEditSave}>บันทึก</Button>
+              <Button onClick={handleEditClose} disabled={saving}>
+                ยกเลิก
+              </Button>
+              <Button variant="contained" onClick={handleEditSave} disabled={saving}>
+                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
             </DialogActions>
           </Dialog>
         </Box>
