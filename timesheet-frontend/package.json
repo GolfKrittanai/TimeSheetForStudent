@@ -25,12 +25,10 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "prebuild": "chmod +x ./node_modules/.bin/react-scripts",
     "build": "react-scripts build",
     "start": "serve -s build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "postinstall": "chmod +x ./node_modules/.bin/serve"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
