@@ -6,19 +6,20 @@ const profileRoutes = require("./routes/profileRoutes");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
-const adminRoutes = require("./routes/adminRoutes"); // ✅ ต้องเพิ่ม
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
-// CORS Configuration: อนุญาตให้ frontend ที่ deploy บน Render สามารถเข้าถึง API
+// ตั้งค่า CORS สำหรับการเชื่อมต่อจาก frontend
 const corsOptions = {
-  origin: "https://timesheetforstudent-front.onrender.com",  // URL ของ frontend ที่ deploy บน Render
-  methods: "GET,POST,PUT,DELETE",  // วิธีการที่อนุญาตให้ frontend ใช้
-  allowedHeaders: "Content-Type,Authorization",  // หัวข้อที่อนุญาต
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://timesheetforstudent-front.onrender.com'  // สำหรับ production
+    : 'http://localhost:3000',  // สำหรับ development
+  methods: 'GET,POST,PUT,DELETE',
+  allowedHeaders: 'Content-Type,Authorization',
 };
 
-// ใช้ CORS กับการตั้งค่าที่กำหนด
-app.use(cors(corsOptions));
+app.use(cors(corsOptions));  // ใช้ CORS กับการตั้งค่าที่กำหนด
 
 app.use(express.json());
 
@@ -27,7 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/admin", adminRoutes); // ✅ เพิ่มตรงนี้ให้ถูก path
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
