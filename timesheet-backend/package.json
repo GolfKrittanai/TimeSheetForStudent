@@ -6,9 +6,14 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon",
-    "postinstall": "prisma generate"
+    "postinstall": "npm install prisma && npx prisma generate"
   },
-  "keywords": ["timesheet", "express", "prisma", "backend"],
+  "keywords": [
+    "timesheet",
+    "express",
+    "prisma",
+    "backend"
+  ],
   "author": "GolfKrittanai",
   "license": "ISC",
   "dependencies": {
