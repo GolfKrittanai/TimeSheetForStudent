@@ -4,15 +4,11 @@ services:
     env: node
     plan: free
     rootDir: timesheet-backend
+    buildCommand: npm install
+    startCommand: npm start
     region: singapore
     nodeVersion: 18.18.2
     autoDeploy: true
-    buildCommand: npm install
-    startCommand: npm start
-    preBuildCommand: npx prisma generate
-    buildFilter:
-      paths:
-        - timesheet-backend/**
     envVars:
       - key: DATABASE_URL
         sync: false
