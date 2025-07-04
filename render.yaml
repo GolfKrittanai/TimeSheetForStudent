@@ -1,4 +1,5 @@
 services:
+  # Backend Service - Node.js Express + Prisma
   - type: web
     name: timesheet-backend
     env: node
@@ -15,4 +16,16 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: PORT
+        sync: false
+
+  # Frontend Service - React build as Static Site
+  - type: static
+    name: timesheet-frontend
+    plan: free
+    rootDir: timesheet-frontend
+    buildCommand: npm install && npm run build
+    publishDir: build
+    autoDeploy: true
+    envVars:
+      - key: REACT_APP_API
         sync: false
