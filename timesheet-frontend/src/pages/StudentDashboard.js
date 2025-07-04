@@ -311,6 +311,23 @@ function StudentDashboard() {
             backgroundColor: '#fff',
             boxShadow: '0 8px 24px rgba(0,102,204,0.15)',
             overflowX: 'auto',
+
+            // scrollbar styles for webkit browsers
+            '&::-webkit-scrollbar': {
+              height: 8,
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: '#f0f0f0',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#0066cc',
+              borderRadius: 4,
+            },
+
+            // scrollbar styles for Firefox
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#0066cc #f0f0f0',
           }}
         >
           {loading ? (

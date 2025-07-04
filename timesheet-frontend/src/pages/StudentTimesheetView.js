@@ -173,7 +173,26 @@ function StudentTimesheetView() {
               ยังไม่มีข้อมูล TimeSheet
             </Typography>
           ) : (
-            <Paper elevation={1} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid #e0e0e0', backgroundColor: '#fff' }}>
+            <Paper
+              elevation={1}
+              sx={{
+                overflowX: 'auto',
+                overflowY: 'auto',
+                maxHeight: 500,
+                borderRadius: 2,
+                border: '1px solid #e0e0e0',
+                backgroundColor: '#fff',
+                scrollbarWidth: 'thin',
+                '&::-webkit-scrollbar': {
+                  height: 8,
+                  backgroundColor: '#f5f5f5',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: '#0066cc',
+                  borderRadius: 4,
+                },
+              }}
+            >
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
