@@ -344,7 +344,15 @@ function StudentDashboard() {
                   <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
                     เวลาออก
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', color: '#004a99', fontSize: isSmallScreen ? 12 : 14 }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#004a99',
+                      fontSize: isSmallScreen ? 12 : 14,
+                      whiteSpace: 'nowrap',
+                      maxWidth: 200,
+                    }}
+                  >
                     กิจกรรม
                   </TableCell>
                   <TableCell
@@ -377,7 +385,14 @@ function StudentDashboard() {
                         minute: '2-digit',
                       })}
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: 'pre-line', fontSize: isSmallScreen ? 12 : 14 }}>
+                    <TableCell
+                      sx={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        maxWidth: 200,
+                        fontSize: isSmallScreen ? 12 : 14,
+                      }}
+                    >
                       {t.activity}
                     </TableCell>
                     <TableCell>
