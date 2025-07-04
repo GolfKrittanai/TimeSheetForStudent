@@ -1,5 +1,5 @@
 const prisma = require('../prismaClient');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');  // หรือคุณสามารถใช้ 'bcrypt' ได้หากต้องการ
 const generateToken = require('../utils/generateToken');
 
 // ✅ REGISTER
@@ -16,8 +16,9 @@ async function register(req, res) {
       return res.status(400).json({ message: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);  // เข้ารหัสรหัสผ่าน
 
+    // เปลี่ยนจาก 'passwordHash' เป็น 'password' เพื่อให้ตรงกับฟิลด์ในฐานข้อมูล
     const user = await prisma.user.create({
       data: {
         studentId,
@@ -25,7 +26,7 @@ async function register(req, res) {
         email,
         phone,
         address,
-        passwordHash,
+        password: passwordHash,  // แก้เป็น 'password'
         role,
       },
     });
@@ -64,12 +65,12 @@ async function login(req, res) {
       return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.password);  // แก้เป็น 'password' แทน 'passwordHash'
     if (!isMatch) {
       return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    const token = generateToken({ id: user.id, role: user.role });
+    const token = generateToken({ id: user.id, role: user.role });  // สร้าง JWT token
 
     return res.status(200).json({
       token,
