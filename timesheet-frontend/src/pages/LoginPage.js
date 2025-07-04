@@ -11,6 +11,7 @@ import { loginUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { motion } from 'framer-motion';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -39,20 +40,20 @@ const LoginPage = () => {
         }
       } catch (error) {
         if (error.response?.status === 401) {
-      Swal.fire({
-        icon: 'error',
-        title: 'คุณกรอกข้อมูลไม่ถูกต้อง!!',
-        text: 'กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่านอีกครั้ง',
-        confirmButtonColor: '#007aff',
-      });
-     } else {
-       Swal.fire({
-        icon: 'error',
-        title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถเข้าสู่ระบบได้ในขณะนี้',
-        confirmButtonColor: '#007aff',
-      })
-      }
+          Swal.fire({
+            icon: 'error',
+            title: 'คุณกรอกข้อมูลไม่ถูกต้อง!!',
+            text: 'กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่านอีกครั้ง',
+            confirmButtonColor: '#007aff',
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถเข้าสู่ระบบได้ในขณะนี้',
+            confirmButtonColor: '#007aff',
+          });
+        }
       } finally {
         setSubmitting(false);
       }
@@ -70,113 +71,123 @@ const LoginPage = () => {
         p: 2,
       }}
     >
-      <Box
-        sx={{
-          maxWidth: 400,
-          width: '100%',
-          bgcolor: '#ffffff',
-          p: 5,
-          borderRadius: 3,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          textAlign: 'center',
-        }}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
-          Timesheet
-        </Typography>
-        <Typography variant="subtitle1" sx={{ color: '#666', mb: 4 }}>
-          ระบบสำหรับนักศึกษา
-        </Typography>
+        <Box
+          sx={{
+            maxWidth: 400,
+            width: '100%',
+            bgcolor: '#ffffff',
+            p: 5,
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
+            Timesheet
+          </Typography>
+          <Typography variant="subtitle1" sx={{ color: '#666', mb: 4 }}>
+            ระบบสำหรับนักศึกษา
+          </Typography>
 
-        <form onSubmit={formik.handleSubmit} noValidate>
-          <TextField
-            label="รหัสนักศึกษา"
-            name="studentId"
-            fullWidth
-            margin="normal"
-            value={formik.values.studentId}
-            onChange={formik.handleChange}
-            error={formik.touched.studentId && Boolean(formik.errors.studentId)}
-            helperText={formik.touched.studentId && formik.errors.studentId}
-            autoFocus
-            InputProps={{
-              sx: {
-                borderRadius: 2,
-                bgcolor: '#fafafa',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#007aff',
-                  boxShadow: '0 0 5px 0 #007aff',
+          <form onSubmit={formik.handleSubmit} noValidate>
+            <TextField
+              label="รหัสนักศึกษา"
+              name="studentId"
+              fullWidth
+              margin="normal"
+              value={formik.values.studentId}
+              onChange={formik.handleChange}
+              error={formik.touched.studentId && Boolean(formik.errors.studentId)}
+              helperText={formik.touched.studentId && formik.errors.studentId}
+              autoFocus
+              InputProps={{
+                sx: {
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#007aff',
+                    boxShadow: '0 0 5px 0 #007aff',
+                  },
                 },
-              },
-            }}
-          />
-          <TextField
-            label="รหัสผ่าน"
-            name="password"
-            type="password"
-            fullWidth
-            margin="normal"
-            value={formik.values.password}
-            onChange={formik.handleChange}
-            error={formik.touched.password && Boolean(formik.errors.password)}
-            helperText={formik.touched.password && formik.errors.password}
-            InputProps={{
-              sx: {
-                borderRadius: 2,
-                bgcolor: '#fafafa',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#007aff',
-                  boxShadow: '0 0 5px 0 #007aff',
+              }}
+            />
+            <TextField
+              label="รหัสผ่าน"
+              name="password"
+              type="password"
+              fullWidth
+              margin="normal"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              error={formik.touched.password && Boolean(formik.errors.password)}
+              helperText={formik.touched.password && formik.errors.password}
+              InputProps={{
+                sx: {
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#007aff',
+                    boxShadow: '0 0 5px 0 #007aff',
+                  },
                 },
-              },
-            }}
-          />
+              }}
+            />
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{
-              mt: 4,
-              py: 1.5,
-              fontWeight: 700,
-              backgroundColor: '#007aff',
-              borderRadius: 3,
-              '&:hover': {
-                backgroundColor: '#005bb5',
-                boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
-              },
-              textTransform: 'none',
-              fontSize: '1.1rem',
-            }}
-            disabled={formik.isSubmitting}
-          >
-            เข้าสู่ระบบ
-          </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 4,
+                  py: 1.5,
+                  fontWeight: 700,
+                  backgroundColor: '#007aff',
+                  borderRadius: 3,
+                  '&:hover': {
+                    backgroundColor: '#005bb5',
+                    boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
+                  },
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                }}
+                disabled={formik.isSubmitting}
+              >
+                เข้าสู่ระบบ
+              </Button>
+            </motion.div>
 
-          <Button
-            fullWidth
-            sx={{
-              mt: 2,
-              textTransform: 'none',
-              color: '#007aff',
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              '&:hover': {
-                textDecoration: 'underline',
-                backgroundColor: 'transparent',
-              },
-            }}
-            onClick={() => navigate('/register')}
-          >
-            ลงทะเบียน
-          </Button>
-        </form>
-      </Box>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                fullWidth
+                sx={{
+                  mt: 2,
+                  textTransform: 'none',
+                  color: '#007aff',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                    backgroundColor: 'transparent',
+                  },
+                }}
+                onClick={() => navigate('/register')}
+              >
+                ลงทะเบียน
+              </Button>
+            </motion.div>
+          </form>
+        </Box>
+      </motion.div>
     </Box>
   );
 };

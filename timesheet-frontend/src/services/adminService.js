@@ -1,19 +1,21 @@
 import axios from 'axios';
 
+const API_URL = process.env.REACT_APP_API;
+
 export const getStudentTimesheetById = (id, token) => {
-  return axios.get(`/api/users/students/${id}/timesheets`, {
+  return axios.get(`${API_URL}/users/students/${id}/timesheets`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
 export const updateStudentTimesheetById = (id, data, token) => {
-  return axios.put(`/api/admin/timesheet/${id}`, data, {
+  return axios.put(`${API_URL}/admin/timesheet/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
 export const deleteStudentTimesheetById = (id, token) => {
-  return axios.delete(`/api/admin/timesheet/${id}`, {
+  return axios.delete(`${API_URL}/admin/timesheet/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
