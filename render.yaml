@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: timesheet-backend
+    env: node
+    plan: free
+    rootDir: timesheet-backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    region: singapore
+    nodeVersion: 18.18.2
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PORT
+        sync: false
