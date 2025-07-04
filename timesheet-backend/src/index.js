@@ -18,6 +18,11 @@ const corsOptions = {
   methods: 'GET,POST,PUT,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
 };
+// เพิ่ม route นี้เข้าไปในไฟล์ index.js (backend)
+app.get("/", (req, res) => {
+  res.send("Backend is working properly.");
+});
+
 
 app.use(cors(corsOptions));  // ใช้ CORS กับการตั้งค่าที่กำหนด
 
