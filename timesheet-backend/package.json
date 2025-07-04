@@ -1,15 +1,16 @@
 {
   "name": "timesheet-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Backend for TimeSheet system using Express, Prisma, and JWT",
+  "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "build": "npx prisma generate"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["timesheet", "express", "prisma", "backend"],
+  "author": "GolfKrittanai",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@prisma/client": "^6.11.0",
     "bcrypt": "^6.0.0",
