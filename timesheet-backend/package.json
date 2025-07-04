@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon",
-    "build": "npx prisma generate"
+    "postinstall": "prisma generate"
   },
   "keywords": ["timesheet", "express", "prisma", "backend"],
   "author": "GolfKrittanai",
