@@ -8,6 +8,7 @@ import StudentTimesheetView from './pages/StudentTimesheetView';
 import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './context/AuthContext';
 
+
 function App() {
   const { user } = useAuth();
 

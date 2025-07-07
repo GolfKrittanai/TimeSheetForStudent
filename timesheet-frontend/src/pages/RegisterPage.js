@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -8,7 +8,7 @@ import {
   InputAdornment,
   useMediaQuery,
   useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   AccountCircle,
   Badge,
@@ -18,41 +18,43 @@ import {
   Email,
   Phone,
   Home,
-} from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { registerUser } from '../services/authService';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+} from "@mui/icons-material";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { registerUser } from "../services/authService";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 function RegisterPage() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // sm = 600px
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm")); // sm = 600px
 
   const formik = useFormik({
     initialValues: {
-      fullName: '',
-      studentId: '',
-      email: '',
-      phone: '',
-      address: '',
-      password: '',
-      confirmPassword: '',
-      role: 'student',
+      fullName: "",
+      studentId: "",
+      email: "",
+      phone: "",
+      address: "",
+      password: "",
+      confirmPassword: "",
+      role: "student",
     },
     validationSchema: Yup.object({
-      fullName: Yup.string().required('กรุณากรอกชื่อ'),
-      studentId: Yup.string().required('กรุณากรอกรหัสนักศึกษา'),
-      email: Yup.string().email('อีเมลไม่ถูกต้อง').required('กรุณากรอกอีเมล'),
-      phone: Yup.string().matches(/^[0-9]{9,10}$/, 'เบอร์โทรไม่ถูกต้อง').required('กรุณากรอกเบอร์โทร'),
-      address: Yup.string().required('กรุณากรอกที่อยู่'),
+      fullName: Yup.string().required("กรุณากรอกชื่อ"),
+      studentId: Yup.string().required("กรุณากรอกรหัสนักศึกษา"),
+      email: Yup.string().email("อีเมลไม่ถูกต้อง").required("กรุณากรอกอีเมล"),
+      phone: Yup.string()
+        .matches(/^[0-9]{9,10}$/, "เบอร์โทรไม่ถูกต้อง")
+        .required("กรุณากรอกเบอร์โทร"),
+      address: Yup.string().required("กรุณากรอกที่อยู่"),
       password: Yup.string()
-        .min(6, 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร')
-        .required('กรุณากรอกรหัสผ่าน'),
+        .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
+        .required("กรุณากรอกรหัสผ่าน"),
       confirmPassword: Yup.string()
-        .oneOf([Yup.ref('password'), null], 'รหัสผ่านไม่ตรงกัน')
-        .required('กรุณายืนยันรหัสผ่าน'),
+        .oneOf([Yup.ref("password"), null], "รหัสผ่านไม่ตรงกัน")
+        .required("กรุณายืนยันรหัสผ่าน"),
     }),
     onSubmit: async (values, { setSubmitting, setErrors }) => {
       try {
@@ -65,10 +67,11 @@ function RegisterPage() {
           password: values.password,
           role: values.role,
         });
-        navigate('/', { state: { registered: true } });
+        navigate("/", { state: { registered: true } });
       } catch (error) {
         setErrors({
-          submit: error.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+          submit:
+            error.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
         });
       } finally {
         setSubmitting(false);
@@ -79,12 +82,13 @@ function RegisterPage() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         p: 2,
+        fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์ที่นี่
       }}
     >
       <motion.div
@@ -94,53 +98,54 @@ function RegisterPage() {
       >
         <Box
           sx={{
-            maxWidth: isSmallScreen ? '90vw' : 420,  // กว้าง 90% ของ viewport บนมือถือ
-            width: '100%',
-            bgcolor: '#fff',
-            p: isSmallScreen ? 3 : 5,              // ลด padding บนมือถือ
+            maxWidth: isSmallScreen ? "90vw" : 420, // กว้าง 90% ของ viewport บนมือถือ
+            width: "100%",
+            bgcolor: "#fff",
+            p: isSmallScreen ? 3 : 5, // ลด padding บนมือถือ
             borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            textAlign: 'center',
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            textAlign: "center",
+            fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์ที่นี่
           }}
         >
           <Typography
-            variant={isSmallScreen ? 'h6' : 'h5'}
+            variant={isSmallScreen ? "h6" : "h5"}
             gutterBottom
-            sx={{ fontWeight: 600, color: '#111' }}
+            sx={{ fontWeight: 600, color: "#00796b" }}
           >
             ลงทะเบียน TimeSheet
           </Typography>
-          <Typography variant="subtitle2" sx={{ mb: 3, color: '#666' }}>
+          <Typography variant="subtitle2" sx={{ mb: 3, color: "#666" }}>
             สำหรับนักศึกษาใหม่
           </Typography>
 
           <form onSubmit={formik.handleSubmit} noValidate>
             <CustomField
-              icon={<AccountCircle sx={{ color: '#007aff' }} />}
+              icon={<AccountCircle sx={{ color: "#00796b" }} />}
               label="ชื่อ-นามสกุล"
               name="fullName"
               formik={formik}
             />
             <CustomField
-              icon={<Badge sx={{ color: '#007aff' }} />}
+              icon={<Badge sx={{ color: "#00796b" }} />}
               label="รหัสนักศึกษา"
               name="studentId"
               formik={formik}
             />
             <CustomField
-              icon={<Email sx={{ color: '#007aff' }} />}
+              icon={<Email sx={{ color: "#00796b" }} />}
               label="อีเมล"
               name="email"
               formik={formik}
             />
             <CustomField
-              icon={<Phone sx={{ color: '#007aff' }} />}
+              icon={<Phone sx={{ color: "#00796b" }} />}
               label="เบอร์โทร"
               name="phone"
               formik={formik}
             />
             <CustomField
-              icon={<Home sx={{ color: '#007aff' }} />}
+              icon={<Home sx={{ color: "#00796b" }} />}
               label="ที่อยู่"
               name="address"
               multiline
@@ -148,14 +153,14 @@ function RegisterPage() {
               formik={formik}
             />
             <CustomField
-              icon={<Lock sx={{ color: '#007aff' }} />}
+              icon={<Lock sx={{ color: "#00796b" }} />}
               label="รหัสผ่าน"
               name="password"
               type="password"
               formik={formik}
             />
             <CustomField
-              icon={<LockReset sx={{ color: '#007aff' }} />}
+              icon={<LockReset sx={{ color: "#00796b" }} />}
               label="ยืนยันรหัสผ่าน"
               name="confirmPassword"
               type="password"
@@ -177,15 +182,16 @@ function RegisterPage() {
                   mt: 3,
                   py: 1.3,
                   fontWeight: 600,
-                  backgroundColor: '#007aff',
+                  backgroundColor: "#00796b",
                   borderRadius: 3,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                  fontSize: isSmallScreen ? '1rem' : '1.1rem',
-                  '&:hover': {
-                    backgroundColor: '#005bb5',
-                    boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
+                  boxShadow: "none",
+                  textTransform: "none",
+                  fontSize: isSmallScreen ? "1rem" : "1.1rem",
+                  "&:hover": {
+                    backgroundColor: "#024f46",
+                    boxShadow: "0 4px 12px #00796b",
                   },
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ไม่มีหัว
                 }}
                 disabled={formik.isSubmitting}
               >
@@ -199,17 +205,18 @@ function RegisterPage() {
                 startIcon={<ArrowBack />}
                 sx={{
                   mt: 2,
-                  color: '#007aff',
-                  textTransform: 'none',
+                  color: "#00796b",
+                  textTransform: "none",
                   fontWeight: 500,
-                  fontSize: isSmallScreen ? '0.85rem' : '0.95rem',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
+                  fontSize: isSmallScreen ? "0.85rem" : "0.95rem",
+                  "&:hover": {
+                    textDecoration: "underline",
+                    backgroundColor: "transparent",
+                    cursor: "pointer",
                   },
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ไม่มีหัว
                 }}
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/")}
               >
                 กลับไปหน้าเข้าสู่ระบบ
               </Button>
@@ -221,7 +228,15 @@ function RegisterPage() {
   );
 }
 
-function CustomField({ label, name, icon, formik, type = 'text', multiline = false, rows = 1 }) {
+function CustomField({
+  label,
+  name,
+  icon,
+  formik,
+  type = "text",
+  multiline = false,
+  rows = 1,
+}) {
   return (
     <TextField
       label={label}
@@ -237,19 +252,29 @@ function CustomField({ label, name, icon, formik, type = 'text', multiline = fal
       error={formik.touched[name] && Boolean(formik.errors[name])}
       helperText={formik.touched[name] && formik.errors[name]}
       InputProps={{
-        startAdornment: <InputAdornment position="start">{icon}</InputAdornment>,
+        startAdornment: (
+          <InputAdornment position="start">{icon}</InputAdornment>
+        ),
         sx: {
           borderRadius: 2,
-          bgcolor: '#fafafa',
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#ccc',
+          bgcolor: "#fafafa",
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#ccc",
           },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#007aff',
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#00796b",
           },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#007aff',
-            boxShadow: '0 0 5px 0 #007aff',
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#00796b",
+            boxShadow: "0 0 5px 0 #00796b",
+          },
+        },
+      }}
+      InputLabelProps={{
+        sx: {
+          color: "",
+          "&.Mui-focused": {
+            color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
           },
         },
       }}
