@@ -569,26 +569,29 @@ function StudentDashboard() {
                       <Tooltip title="แก้ไข">
                         <IconButton
                           sx={{ color: "#00796b" }}
-                          onClick={() => handleEditOpen(t)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditOpen(t);
+                          }}
                           size={isSmallScreen ? "small" : "medium"}
                         >
-                          <EditIcon
-                            fontSize={isSmallScreen ? "small" : "medium"}
-                          />
+                          <EditIcon fontSize={isSmallScreen ? "small" : "medium"} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ">
                         <IconButton
                           sx={{ color: "error.main" }}
-                          onClick={() => handleDelete(t.id)}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await handleDelete(t.id);
+                          }}
                           size={isSmallScreen ? "small" : "medium"}
                         >
-                          <DeleteIcon
-                            fontSize={isSmallScreen ? "small" : "medium"}
-                          />
+                          <DeleteIcon fontSize={isSmallScreen ? "small" : "medium"} />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
