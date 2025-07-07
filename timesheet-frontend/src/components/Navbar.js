@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -11,28 +11,28 @@ import {
   MenuItem,
   useMediaQuery,
   useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   ListAlt as TimesheetIcon,
   Logout as LogoutIcon,
   AccountCircle as ProfileIcon,
   Menu as MenuIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+} from "@mui/icons-material";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   const handleMenuOpen = (event) => {
@@ -46,28 +46,40 @@ function Navbar() {
 
   return (
     <AppBar
-      position="static"
+      position="sticky" // เลื่อนตามเวลาที่เลื่อนหน้าจอ
       elevation={0}
       sx={{
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #e0e0e0',
+        backgroundColor: "#ffffff",
+        borderBottom: "1px solid #e0e0e0",
         mb: 3,
+        fontFamily: '"Didonesque", sans-serif', // เพิ่มฟอนต์ที่ต้องการ
       }}
     >
       <Toolbar
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
+          display: "flex",
+          justifyContent: "space-between",
           px: { xs: 2, sm: 4 },
           py: 1.5,
         }}
       >
         {/* ซ้าย: ชื่อระบบ + ผู้ใช้ */}
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1976d2' }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              color: "#00796b",
+              fontFamily: '"Didonesque", sans-serif',
+            }} // ใช้ฟอนต์ที่ต้องการ
+          >
             TimeSheet System
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontFamily: '"Didonesque", sans-serif' }}
+          >
             {user.fullName} ({user.role})
           </Typography>
         </Box>
@@ -82,28 +94,28 @@ function Navbar() {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              {user.role === 'admin' && (
+              {user.role === "admin" && (
                 <MenuItem
                   onClick={() => {
-                    navigate('/admin');
+                    navigate("/admin");
                     handleMenuClose();
                   }}
-                  sx={{ gap: 1 }}
+                  sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
                 >
                   <DashboardIcon fontSize="small" />
                   Admin Dashboard
                 </MenuItem>
               )}
-              {user.role === 'student' && (
+              {user.role === "student" && (
                 <MenuItem
                   onClick={() => {
-                    navigate('/student');
+                    navigate("/student");
                     handleMenuClose();
                   }}
-                  sx={{ gap: 1 }}
+                  sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
                 >
                   <TimesheetIcon fontSize="small" />
                   My Timesheet
@@ -112,10 +124,10 @@ function Navbar() {
               <Divider />
               <MenuItem
                 onClick={() => {
-                  navigate('/profile');
+                  navigate("/profile");
                   handleMenuClose();
                 }}
-                sx={{ gap: 1 }}
+                sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
               >
                 <ProfileIcon fontSize="small" />
                 โปรไฟล์
@@ -125,7 +137,11 @@ function Navbar() {
                   handleLogout();
                   handleMenuClose();
                 }}
-                sx={{ gap: 1, color: 'error.main' }}
+                sx={{
+                  gap: 1,
+                  color: "error.main",
+                  fontFamily: '"Didonesque", sans-serif',
+                }} // ใช้ฟอนต์ที่ต้องการ
               >
                 <LogoutIcon fontSize="small" />
                 Logout
@@ -133,21 +149,31 @@ function Navbar() {
             </Menu>
           </>
         ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {user.role === 'admin' && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {user.role === "admin" && (
               <Button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate("/admin")}
                 startIcon={<DashboardIcon />}
-                sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
+                sx={{
+                  textTransform: "none",
+                  color: "#00796b",
+                  fontWeight: "bold",
+                  fontFamily: '"Didonesque", sans-serif',
+                }} // ใช้ฟอนต์ที่ต้องการ
               >
                 Admin Dashboard
               </Button>
             )}
-            {user.role === 'student' && (
+            {user.role === "student" && (
               <Button
-                onClick={() => navigate('/student')}
+                onClick={() => navigate("/student")}
                 startIcon={<TimesheetIcon />}
-                sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
+                sx={{
+                  textTransform: "none",
+                  color: "#00796b",
+                  fontWeight: "bold",
+                  fontFamily: '"Didonesque", sans-serif',
+                }} // ใช้ฟอนต์ที่ต้องการ
               >
                 My Timesheet
               </Button>
@@ -155,9 +181,14 @@ function Navbar() {
 
             {/* ปุ่ม Profile */}
             <Button
-              onClick={() => navigate('/profile')}
-              startIcon={<ProfileIcon />}
-              sx={{ textTransform: 'none', color: '#1976d2', fontWeight: 500 }}
+              onClick={() => navigate("/profile")}
+              startIcon={<ProfileIcon sx={{ color: "#1976d2" }}/>}
+              sx={{
+                textTransform: "none",
+                color: "#1976d2",
+                fontWeight: "bold",
+                fontFamily: '"Didonesque", sans-serif',
+              }} // ใช้ฟอนต์ที่ต้องการ
             >
               โปรไฟล์
             </Button>
@@ -166,8 +197,13 @@ function Navbar() {
 
             <Button
               onClick={handleLogout}
-              startIcon={<LogoutIcon />}
-              sx={{ textTransform: 'none', color: 'error.main', fontWeight: 500 }}
+              startIcon={<LogoutIcon sx={{ color: "error.main" }} />}
+              sx={{
+                textTransform: "none",
+                color: "error.main",
+                fontWeight: "bold", // ทำให้ข้อความตัวหนา
+                fontFamily: '"Didonesque", sans-serif', // ใช้ฟอนต์ที่ต้องการ
+              }}
             >
               Logout
             </Button>
