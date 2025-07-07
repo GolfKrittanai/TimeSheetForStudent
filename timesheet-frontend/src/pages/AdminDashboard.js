@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import {
   Box,
   Typography,
@@ -27,24 +26,23 @@ import {
   Button,
   useTheme,
   useMediaQuery,
-} from '@mui/material';
-
+} from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Description as DescriptionIcon,
   Groups as GroupsIcon,
   AccessTime as AccessTimeIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
-import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
+import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 import {
   getAllStudents,
   deleteStudent,
   updateStudent,
   getAdminSummary,
-} from '../services/studentService';
+} from "../services/studentService";
 
 function AdminDashboard() {
   const { token } = useAuth();
@@ -55,15 +53,16 @@ function AdminDashboard() {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: '',
-    studentId: '',
-    role: 'student',
+    fullName: "",
+    studentId: "",
+    role: "student",
   });
 
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const fetchStudents = async () => {
+  // ใช้ useCallback เพื่อ memoize ฟังก์ชัน fetchStudents
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
       const [studentRes, summaryRes] = await Promise.all([
@@ -76,15 +75,15 @@ function AdminDashboard() {
       setStudents(sorted);
       setSummary(summaryRes.data);
     } catch {
-      Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลนักศึกษาได้', 'error');
+      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลนักศึกษาได้", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]); // เพิ่ม dependency ที่เป็น token
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [fetchStudents]); // ใช้ fetchStudents ที่ memoized ใน dependency array
 
   const handleEditOpen = (student) => {
     setSelectedStudent(student);
@@ -109,21 +108,11 @@ function AdminDashboard() {
   const handleSave = async () => {
     try {
       await updateStudent(selectedStudent.id, formData, token);
-      Swal.fire({
-        icon: 'success',
-        title: 'บันทึกสำเร็จ',
-        text: 'ข้อมูลนักศึกษาได้รับการอัปเดตเรียบร้อยแล้ว',
-        confirmButtonColor: '#3085d6',
-      });
+      Swal.fire("บันทึกสำเร็จ", "ข้อมูลนักศึกษาอัปเดตแล้ว", "success");
       setEditOpen(false);
       fetchStudents();
     } catch {
-      Swal.fire({
-        icon: 'error',
-        title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถแก้ไขข้อมูลได้',
-        confirmButtonColor: '#d33',
-      });
+      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถแก้ไขข้อมูลได้", "error");
     }
   };
 
@@ -133,14 +122,14 @@ function AdminDashboard() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: 'คุณแน่ใจหรือไม่?',
-      text: 'หากลบแล้วจะไม่สามารถกู้คืนได้!',
-      icon: 'warning',
+      title: "คุณแน่ใจหรือไม่?",
+      text: "หากลบแล้วจะไม่สามารถกู้คืนได้!",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'ลบ',
-      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#00796b",
+      confirmButtonText: "ลบ",
+      cancelButtonText: "ยกเลิก",
     });
 
     if (!result.isConfirmed) return;
@@ -148,19 +137,9 @@ function AdminDashboard() {
     try {
       await deleteStudent(id, token);
       setStudents((prev) => prev.filter((s) => s.id !== id));
-      Swal.fire({
-        icon: 'success',
-        title: 'ลบสำเร็จ',
-        text: 'นักศึกษาถูกลบเรียบร้อยแล้ว',
-        confirmButtonColor: '#3085d6',
-      });
+      Swal.fire("ลบสำเร็จ", "นักศึกษาถูกลบเรียบร้อยแล้ว", "success");
     } catch {
-      Swal.fire({
-        icon: 'error',
-        title: 'ลบไม่สำเร็จ',
-        text: 'เกิดข้อผิดพลาดขณะลบผู้ใช้',
-        confirmButtonColor: '#d33',
-      });
+      Swal.fire("ลบไม่สำเร็จ", "เกิดข้อผิดพลาดขณะลบผู้ใช้", "error");
     }
   };
 
@@ -169,20 +148,27 @@ function AdminDashboard() {
       <Navbar />
       <Box
         sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'start',
-          backgroundColor: '#f4f6f8',
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "start",
+          backgroundColor: "#f4f6f8",
           py: 4,
           px: isSmallScreen ? 1 : 4,
+          fontFamily: '"Didonesque", sans-serif', // เพิ่มฟอนต์ที่ต้องการที่นี่
         }}
       >
-        <Box sx={{ width: '100%', maxWidth: 1100 }}>
+        <Box sx={{ width: "100%", maxWidth: 1100 }}>
           <Typography
-            variant={isSmallScreen ? 'h5' : 'h4'}
+            variant={isSmallScreen ? "h5" : "h4"}
             gutterBottom
-            sx={{ fontWeight: 'bold', color: '#333', mb: 3, textAlign: 'center' }}
+            sx={{
+              fontWeight: "bold",
+              color: "#00796b",
+              mb: 3,
+              textAlign: "center",
+              fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+            }}
           >
             ระบบจัดการนักศึกษา (Admin Dashboard)
           </Typography>
@@ -194,17 +180,27 @@ function AdminDashboard() {
                   elevation={0}
                   sx={{
                     p: 2,
-                    textAlign: 'center',
-                    bgcolor: '#fff',
+                    textAlign: "center",
+                    bgcolor: "#fff",
                     borderRadius: 2,
-                    border: '1px solid #ddd',
+                    border: "1px solid #ddd",
                   }}
                 >
-                  <GroupsIcon fontSize={isSmallScreen ? 'medium' : 'large'} sx={{ color: '#666' }} />
+                  <GroupsIcon
+                    fontSize={isSmallScreen ? "medium" : "large"}
+                    sx={{ color: "#00796b" }}
+                  />
                   <Typography variant="subtitle2" color="textSecondary" mt={1}>
                     จำนวนนักศึกษา
                   </Typography>
-                  <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>
+                  <Typography
+                    variant={isSmallScreen ? "h6" : "h5"}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#333",
+                      fontFamily: '"Didonesque", sans-serif',
+                    }} // ฟอนต์ที่ต้องการ
+                  >
                     {summary.totalStudents}
                   </Typography>
                 </Paper>
@@ -214,17 +210,27 @@ function AdminDashboard() {
                   elevation={0}
                   sx={{
                     p: 2,
-                    textAlign: 'center',
-                    bgcolor: '#fff',
+                    textAlign: "center",
+                    bgcolor: "#fff",
                     borderRadius: 2,
-                    border: '1px solid #ddd',
+                    border: "1px solid #ddd",
                   }}
                 >
-                  <AccessTimeIcon fontSize={isSmallScreen ? 'medium' : 'large'} sx={{ color: '#666' }} />
+                  <AccessTimeIcon
+                    fontSize={isSmallScreen ? "medium" : "large"}
+                    sx={{ color: "#00796b" }}
+                  />
                   <Typography variant="subtitle2" color="textSecondary" mt={1}>
                     Timesheets ทั้งหมด
                   </Typography>
-                  <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', color: '#333' }}>
+                  <Typography
+                    variant={isSmallScreen ? "h6" : "h5"}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#333",
+                      fontFamily: '"Didonesque", sans-serif',
+                    }} // ฟอนต์ที่ต้องการ
+                  >
                     {summary.totalTimesheets}
                   </Typography>
                 </Paper>
@@ -233,52 +239,117 @@ function AdminDashboard() {
           )}
 
           {loading ? (
-            <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <Box sx={{ textAlign: "center", mt: 6 }}>
               <CircularProgress size={48} color="primary" />
             </Box>
           ) : (
             <Paper
               elevation={1}
               sx={{
-                overflowX: 'auto',
+                overflowX: "auto",
                 borderRadius: 2,
-                border: '1px solid #e0e0e0',
-                // ปรับ font size เล็กลงบนมือถือ
-                '& td, & th': {
-                  fontSize: isSmallScreen ? '0.75rem' : '1rem',
-                  padding: isSmallScreen ? '6px 8px' : '12px 16px',
+                border: "1px solid #e0e0e0",
+                "& td, & th": {
+                  fontSize: isSmallScreen ? "0.75rem" : "1rem",
+                  padding: isSmallScreen ? "6px 8px" : "12px 16px",
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
                 },
               }}
             >
               <Table sx={{ minWidth: 700 }}>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                    <TableCell sx={{ fontWeight: 'bold' }}>รหัสนักศึกษา</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>ชื่อ-นามสกุล</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>บทบาท</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>จัดการ</TableCell>
+                  <TableRow sx={{ bgcolor: "#00796b" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        color: "#ffffff",
+                        fontFamily: '"Didonesque", sans-serif',
+                      }}
+                    >
+                      รหัสนักศึกษา
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        color: "#ffffff",
+                        fontFamily: '"Didonesque", sans-serif',
+                      }}
+                    >
+                      ชื่อ-นามสกุล
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        color: "#ffffff",
+                        fontFamily: '"Didonesque", sans-serif',
+                      }}
+                    >
+                      บทบาท
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        color: "#ffffff",
+                        fontFamily: '"Didonesque", sans-serif',
+                      }}
+                    >
+                      จัดการ
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {students.map((s) => (
                     <TableRow key={s.id} hover>
-                      <TableCell>{s.studentId}</TableCell>
-                      <TableCell>{s.fullName}</TableCell>
-                      <TableCell sx={{ textTransform: 'capitalize', color: '#555' }}>{s.role}</TableCell>
+                      <TableCell
+                        sx={{ fontFamily: '"Didonesque", sans-serif' }}
+                      >
+                        {s.studentId}
+                      </TableCell>
+                      <TableCell
+                        sx={{ fontFamily: '"Didonesque", sans-serif' }}
+                      >
+                        {s.fullName}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontFamily: '"Didonesque", sans-serif"',
+                          color: "#555",
+                        }}
+                      >
+                        {s.role}
+                      </TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
-                          <IconButton color="primary" onClick={() => handleEditOpen(s)} size={isSmallScreen ? 'small' : 'medium'}>
-                            <EditIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
+                          <IconButton
+                            sx={{ color: "#00796b" }}
+                            onClick={() => handleEditOpen(s)}
+                            size={isSmallScreen ? "small" : "medium"}
+                          >
+                            <EditIcon
+                              fontSize={isSmallScreen ? "small" : "medium"}
+                            />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ดู Timesheet">
-                          <IconButton color="default" onClick={() => handleViewTimesheet(s.id)} size={isSmallScreen ? 'small' : 'medium'}>
-                            <DescriptionIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
+                          <IconButton
+                            color="default"
+                            onClick={() => handleViewTimesheet(s.id)}
+                            size={isSmallScreen ? "small" : "medium"}
+                          >
+                            <DescriptionIcon
+                              fontSize={isSmallScreen ? "small" : "medium"}
+                            />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ลบผู้ใช้">
-                          <IconButton color="error" onClick={() => handleDelete(s.id)} size={isSmallScreen ? 'small' : 'medium'}>
-                            <DeleteIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDelete(s.id)}
+                            size={isSmallScreen ? "small" : "medium"}
+                          >
+                            <DeleteIcon
+                              fontSize={isSmallScreen ? "small" : "medium"}
+                            />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -290,25 +361,70 @@ function AdminDashboard() {
           )}
 
           {/* Dialog แก้ไข */}
-          <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ fontWeight: 'bold', color: '#333' }}>แก้ไขข้อมูลนักศึกษา</DialogTitle>
+          <Dialog
+            open={editOpen}
+            onClose={handleEditClose}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle
+              sx={{
+                fontWeight: "bold",
+                color: "#00796b",
+                fontFamily: '"Didonesque", sans-serif',
+              }}
+            >
+              แก้ไขข้อมูลนักศึกษา
+            </DialogTitle>
             <DialogContent dividers>
               <Box
                 component="form"
                 sx={{
-                  '& .MuiTextField-root': { my: 1 },
-                  '& .MuiFormControl-root': { my: 1 },
-                  // ปรับขนาดฟอนต์ใน dialog
-                  fontSize: isSmallScreen ? '0.9rem' : '1rem',
+                  "& .MuiTextField-root": { my: 1 },
+                  "& .MuiFormControl-root": { my: 1 },
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                  fontSize: isSmallScreen ? "0.9rem" : "1rem",
                 }}
                 noValidate
                 autoComplete="off"
               >
-                <TextField label="รหัสนักศึกษา" name="studentId" fullWidth value={formData.studentId} onChange={handleChange} size={isSmallScreen ? 'small' : 'medium'} />
-                <TextField label="ชื่อ-นามสกุล" name="fullName" fullWidth value={formData.fullName} onChange={handleChange} size={isSmallScreen ? 'small' : 'medium'} />
-                <FormControl fullWidth size={isSmallScreen ? 'small' : 'medium'}>
+                <TextField
+                  label="รหัสนักศึกษา"
+                  name="studentId"
+                  fullWidth
+                  value={formData.studentId}
+                  onChange={handleChange}
+                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{
+                    fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                  }}
+                />
+                <TextField
+                  label="ชื่อ-นามสกุล"
+                  name="fullName"
+                  fullWidth
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{
+                    fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                  }}
+                />
+                <FormControl
+                  fullWidth
+                  size={isSmallScreen ? "small" : "medium"}
+                >
                   <InputLabel id="role-label">บทบาท</InputLabel>
-                  <Select labelId="role-label" name="role" value={formData.role} label="บทบาท" onChange={handleChange}>
+                  <Select
+                    labelId="role-label"
+                    name="role"
+                    value={formData.role}
+                    label="บทบาท"
+                    onChange={handleChange}
+                    sx={{
+                      fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                    }}
+                  >
                     <MenuItem value="student">Student</MenuItem>
                     <MenuItem value="admin">Admin</MenuItem>
                   </Select>
@@ -316,10 +432,27 @@ function AdminDashboard() {
               </Box>
             </DialogContent>
             <DialogActions sx={{ pr: 3, pb: 2 }}>
-              <Button onClick={handleEditClose} sx={{ textTransform: 'none' }} size={isSmallScreen ? 'small' : 'medium'}>
+              <Button
+                onClick={handleEditClose}
+                color="success"
+                sx={{
+                  textTransform: "none",
+                  fontFamily: '"Didonesque", sans-serif',
+                }}
+                size={isSmallScreen ? "small" : "medium"}
+              >
                 ยกเลิก
               </Button>
-              <Button variant="contained" onClick={handleSave} sx={{ textTransform: 'none', backgroundColor: '#1976d2' }} size={isSmallScreen ? 'small' : 'medium'}>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                sx={{
+                  textTransform: "none",
+                  backgroundColor: "#00796b",
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                }}
+                size={isSmallScreen ? "small" : "medium"}
+              >
                 บันทึก
               </Button>
             </DialogActions>

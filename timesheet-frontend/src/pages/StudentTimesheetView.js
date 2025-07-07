@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -20,18 +20,22 @@ import {
   IconButton,
   useTheme,
   useMediaQuery,
-} from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { getStudentTimesheetById, updateStudentTimesheetById, deleteStudentTimesheetById } from '../services/adminService';
-import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
-import Swal from 'sweetalert2';
+} from "@mui/material";
+import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  getStudentTimesheetById,
+  updateStudentTimesheetById,
+  deleteStudentTimesheetById,
+} from "../services/adminService";
+import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2";
 
 function StudentTimesheetView() {
   const { id } = useParams();
   const { token } = useAuth();
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [data, setData] = useState([]);
   const [studentInfo, setStudentInfo] = useState(null);
@@ -39,11 +43,11 @@ function StudentTimesheetView() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState({
-    id: '',
-    date: '',
-    checkInTime: '',
-    checkOutTime: '',
-    activity: '',
+    id: "",
+    date: "",
+    checkInTime: "",
+    checkOutTime: "",
+    activity: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -54,7 +58,7 @@ function StudentTimesheetView() {
       setData(res.data.timesheets || []);
       setStudentInfo(res.data.student || null);
     } catch (err) {
-      Swal.fire('ผิดพลาด', 'โหลดข้อมูล Timesheet ไม่สำเร็จ', 'error');
+      Swal.fire("ผิดพลาด", "โหลดข้อมูล Timesheet ไม่สำเร็จ", "error");
     } finally {
       setLoading(false);
     }
@@ -68,8 +72,12 @@ function StudentTimesheetView() {
     setEditData({
       id: timesheet.id,
       date: timesheet.date.slice(0, 10),
-      checkInTime: timesheet.checkInTime ? timesheet.checkInTime.slice(11, 16) : '',
-      checkOutTime: timesheet.checkOutTime ? timesheet.checkOutTime.slice(11, 16) : '',
+      checkInTime: timesheet.checkInTime
+        ? timesheet.checkInTime.slice(11, 16)
+        : "",
+      checkOutTime: timesheet.checkOutTime
+        ? timesheet.checkOutTime.slice(11, 16)
+        : "",
       activity: timesheet.activity,
     });
     setEditOpen(true);
@@ -90,7 +98,7 @@ function StudentTimesheetView() {
     const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
 
     if (checkOut <= checkIn) {
-      Swal.fire('ผิดพลาด', 'เวลาออกต้องมากกว่าเวลาเข้า', 'error');
+      Swal.fire("ผิดพลาด", "เวลาออกต้องมากกว่าเวลาเข้า", "error");
       return;
     }
 
@@ -106,11 +114,11 @@ function StudentTimesheetView() {
         },
         token
       );
-      Swal.fire('สำเร็จ', 'แก้ไข Timesheet เรียบร้อยแล้ว', 'success');
+      Swal.fire("สำเร็จ", "แก้ไข Timesheet เรียบร้อยแล้ว", "success");
       setEditOpen(false);
       fetchTimesheet();
     } catch {
-      Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไข Timesheet ได้', 'error');
+      Swal.fire("ผิดพลาด", "ไม่สามารถแก้ไข Timesheet ได้", "error");
     } finally {
       setSaving(false);
     }
@@ -118,23 +126,23 @@ function StudentTimesheetView() {
 
   const handleDelete = async (timesheetId) => {
     const result = await Swal.fire({
-      title: 'คุณแน่ใจหรือไม่?',
-      text: 'คุณต้องการลบ TimeSheet นี้ใช่หรือไม่',
-      icon: 'warning',
+      title: "คุณแน่ใจหรือไม่?",
+      text: "คุณต้องการลบ TimeSheet นี้ใช่หรือไม่",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: 'ใช่, ลบเลย!',
-      cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
+      confirmButtonText: "ใช่, ลบเลย!",
+      cancelButtonText: "ยกเลิก",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#00796b",
     });
 
     if (result.isConfirmed) {
       try {
         await deleteStudentTimesheetById(timesheetId, token);
         setData((prev) => prev.filter((t) => t.id !== timesheetId));
-        Swal.fire('ลบสำเร็จ', 'TimeSheet ได้ถูกลบแล้ว', 'success');
+        Swal.fire("ลบสำเร็จ", "TimeSheet ได้ถูกลบแล้ว", "success");
       } catch {
-        Swal.fire('ผิดพลาด', 'ไม่สามารถลบ Timesheet ได้', 'error');
+        Swal.fire("ผิดพลาด", "ไม่สามารถลบ Timesheet ได้", "error");
       }
     }
   };
@@ -144,28 +152,39 @@ function StudentTimesheetView() {
       <Navbar />
       <Box
         sx={{
-          minHeight: '100vh',
-          backgroundColor: '#f4f6f8',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'start',
+          minHeight: "100vh",
+          backgroundColor: "#f4f6f8",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "start",
           px: isSmallScreen ? 1 : 2,
           py: 4,
         }}
       >
-        <Box sx={{ width: '100%', maxWidth: 1000 }}>
-          <Typography variant={isSmallScreen ? 'h6' : 'h5'} sx={{ fontWeight: 'bold', mb: 2, color: '#333', textAlign: 'center' }}>
+        <Box sx={{ width: "100%", maxWidth: 1000 }}>
+          <Typography
+            variant={isSmallScreen ? "h6" : "h5"}
+            sx={{
+              fontWeight: "bold",
+              mb: 2,
+              color: "#00796b",
+              textAlign: "center",
+            }}
+          >
             ข้อมูล TimeSheet ของนักศึกษา
           </Typography>
 
           {studentInfo && (
-            <Typography variant={isSmallScreen ? 'subtitle1' : 'h6'} sx={{ color: '#555', textAlign: 'center', mb: 3 }}>
+            <Typography
+              variant={isSmallScreen ? "subtitle1" : "h6"}
+              sx={{ color: "#555", textAlign: "center", mb: 3 }}
+            >
               {studentInfo.fullName} (รหัส {studentInfo.studentId})
             </Typography>
           )}
 
           {loading ? (
-            <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Box sx={{ textAlign: "center", mt: 4 }}>
               <CircularProgress size={48} />
             </Box>
           ) : data.length === 0 ? (
@@ -176,57 +195,109 @@ function StudentTimesheetView() {
             <Paper
               elevation={1}
               sx={{
-                overflowX: 'auto',
-                overflowY: 'auto',
+                overflowX: "auto",
+                overflowY: "auto",
                 maxHeight: 500,
                 borderRadius: 2,
-                border: '1px solid #e0e0e0',
-                backgroundColor: '#fff',
-                scrollbarWidth: 'thin',
-                '&::-webkit-scrollbar': {
+                border: "1px solid #e0e0e0",
+                backgroundColor: "#fff",
+                scrollbarWidth: "thin",
+                "&::-webkit-scrollbar": {
                   height: 8,
-                  backgroundColor: '#f5f5f5',
+                  backgroundColor: "#f5f5f5",
                 },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: '#0066cc',
+                "&::-webkit-scrollbar-thumb": {
+                  backgroundColor: "#0066cc",
                   borderRadius: 4,
                 },
               }}
             >
               <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>วันที่</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาเข้า</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>เวลาออก</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 300 }}>กิจกรรม</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 110 }}>จัดการ</TableCell>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#00796b" }}>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        minWidth: 120,
+                        color: "#ffffff",
+                      }}
+                    >
+                      วันที่
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        minWidth: 100,
+                        color: "#ffffff",
+                      }}
+                    >
+                      เวลาเข้า
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        minWidth: 100,
+                        color: "#ffffff",
+                      }}
+                    >
+                      เวลาออก
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        minWidth: 300,
+                        color: "#ffffff",
+                      }}
+                    >
+                      กิจกรรม
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: "bold",
+                        minWidth: 110,
+                        color: "#ffffff",
+                      }}
+                    >
+                      จัดการ
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data.map((t) => (
                     <TableRow key={t.id} hover>
                       <TableCell>
-                        {new Date(t.date).toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
+                        {new Date(t.date).toLocaleDateString("th-TH", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
                         })}
                       </TableCell>
                       <TableCell>
                         {t.checkInTime
-                          ? new Date(new Date(t.checkInTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : '-'}
+                          ? new Date(
+                              new Date(t.checkInTime).getTime() -
+                                7 * 60 * 60 * 1000
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
                       </TableCell>
                       <TableCell>
                         {t.checkOutTime
-                          ? new Date(new Date(t.checkOutTime).getTime() - 7 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : '-'}
+                          ? new Date(
+                              new Date(t.checkOutTime).getTime() -
+                                7 * 60 * 60 * 1000
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
                       </TableCell>
                       <TableCell
                         sx={{
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
                           maxWidth: 300,
                           fontSize: isSmallScreen ? 12 : 14,
                         }}
@@ -235,13 +306,25 @@ function StudentTimesheetView() {
                       </TableCell>
                       <TableCell>
                         <Tooltip title="แก้ไข">
-                          <IconButton color="primary" size={isSmallScreen ? 'small' : 'medium'} onClick={() => handleEditOpen(t)}>
-                            <EditIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
+                          <IconButton
+                            sx={{ color: "#00796b" }}
+                            size={isSmallScreen ? "small" : "medium"}
+                            onClick={() => handleEditOpen(t)}
+                          >
+                            <EditIcon
+                              fontSize={isSmallScreen ? "small" : "medium"}
+                            />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="ลบ">
-                          <IconButton color="error" size={isSmallScreen ? 'small' : 'medium'} onClick={() => handleDelete(t.id)}>
-                            <DeleteIcon fontSize={isSmallScreen ? 'small' : 'medium'} />
+                          <IconButton
+                            color="error"
+                            size={isSmallScreen ? "small" : "medium"}
+                            onClick={() => handleDelete(t.id)}
+                          >
+                            <DeleteIcon
+                              fontSize={isSmallScreen ? "small" : "medium"}
+                            />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
@@ -253,7 +336,12 @@ function StudentTimesheetView() {
           )}
 
           {/* Dialog แก้ไข Timesheet */}
-          <Dialog open={editOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
+          <Dialog
+            open={editOpen}
+            onClose={handleEditClose}
+            maxWidth="sm"
+            fullWidth
+          >
             <DialogTitle>แก้ไข Timesheet</DialogTitle>
             <DialogContent>
               <TextField
@@ -297,11 +385,20 @@ function StudentTimesheetView() {
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleEditClose} disabled={saving}>
+              <Button
+                onClick={handleEditClose}
+                disabled={saving}
+                color="success"
+              >
                 ยกเลิก
               </Button>
-              <Button variant="contained" onClick={handleEditSave} disabled={saving}>
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              <Button
+                variant="contained"
+                onClick={handleEditSave}
+                disabled={saving}
+                sx={{ textTransform: "none", backgroundColor: "#00796b" }}
+              >
+                {saving ? "กำลังบันทึก..." : "บันทึก"}
               </Button>
             </DialogActions>
           </Dialog>
