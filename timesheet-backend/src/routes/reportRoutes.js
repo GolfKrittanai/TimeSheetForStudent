@@ -1,103 +1,131 @@
-// reportRoutes.js
 const express = require("express");
+const path = require("path");
 const router = express.Router();
-const prisma = require("../prismaClient"); // import prisma client
+const prisma = require("../prismaClient");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
+const thaiFontPath = path.join(__dirname, "../fonts/THSarabunNew.ttf");
+const { authenticateToken } = require("../middleware/authMiddleware");
 
-// middleware สำหรับตรวจสอบ user และ role (สมมติ)
-const authenticate = (req, res, next) => {
-  // สมมติรับ user info จาก token
-  // ตัวอย่าง
-  req.user = {
-    id: "S12345",
-    role: "student", // หรือ "admin"
+// ฟังก์ชันดึงข้อมูล timesheet
+const fetchTimesheetData = async ({
+  startDate,
+  endDate,
+  isAdmin,
+  userId,
+  startStudentId,
+  endStudentId,
+}) => {
+  const dateFilter = {
+    gte: new Date(startDate),
+    lte: new Date(endDate),
   };
-  next();
+
+  let userIds = [];
+
+  if (isAdmin) {
+    if (startStudentId && endStudentId) {
+      // admin ดูเฉพาะช่วง studentId ที่ระบุ
+      const users = await prisma.user.findMany({
+        where: {
+          studentId: {
+            gte: startStudentId,
+            lte: endStudentId,
+          },
+        },
+        select: { id: true },
+      });
+      userIds = users.map((u) => u.id);
+    } else {
+      // admin ดูได้ทุกคน
+      const users = await prisma.user.findMany({
+        select: { id: true },
+      });
+      userIds = users.map((u) => u.id);
+    }
+  } else {
+    // student ดูเฉพาะตัวเอง
+    userIds = [userId];
+  }
+
+  const timesheets = await prisma.timesheet.findMany({
+    where: {
+      date: dateFilter,
+      userId: { in: userIds },
+    },
+    include: { user: { select: { studentId: true } } },
+    orderBy: { date: "asc" },
+  });
+
+  return timesheets.map((t) => ({
+    date: t.date,
+    studentId: t.user.studentId,
+    hours: ((new Date(t.checkOutTime) - new Date(t.checkInTime)) / 3600000).toFixed(2),
+    activity: t.activity || "",
+  }));
 };
 
-// GET /api/reports/timesheets?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&startStudentId=&endStudentId=
-// ดึงข้อมูล timesheet เพื่อ preview
-router.get("/timesheets", authenticate, async (req, res) => {
+// GET preview timesheet data
+router.get("/timesheets", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const isAdmin = req.user.role === "admin";
+    const { id: userId, role } = req.user;
     const { startDate, endDate, startStudentId, endStudentId } = req.query;
 
-    if (!startDate || !endDate)
+    if (!startDate || !endDate) {
       return res.status(400).json({ message: "กรุณาระบุช่วงวันที่" });
-
-    let where = {
-      date: {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      },
-    };
-
-    if (isAdmin) {
-      if (startStudentId && endStudentId) {
-        where.studentId = {
-          gte: startStudentId,
-          lte: endStudentId,
-        };
-      }
-    } else {
-      where.studentId = userId;
     }
 
-    const timesheets = await prisma.timesheet.findMany({
-      where,
-      orderBy: { date: "asc" },
+    const data = await fetchTimesheetData({
+      startDate,
+      endDate,
+      isAdmin: role === "admin",
+      userId,
+      startStudentId,
+      endStudentId,
     });
 
-    res.json(timesheets);
+    res.json(data);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });
   }
 });
 
-// POST /api/reports/export
-// ส่ง body: {startDate, endDate, startStudentId?, endStudentId?, format}
-router.post("/export", authenticate, async (req, res) => {
+// POST export report PDF หรือ Excel
+router.post("/export", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const isAdmin = req.user.role === "admin";
-    const { startDate, endDate, startStudentId, endStudentId, format } = req.body;
+    const { id: userId, role } = req.user;
+    let { startDate, endDate, startStudentId, endStudentId, format } = req.body;
 
-    if (!startDate || !endDate)
+    if (!startDate || !endDate) {
       return res.status(400).json({ message: "กรุณาระบุช่วงวันที่" });
-
-    let where = {
-      date: {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      },
-    };
-
-    if (isAdmin) {
-      if (startStudentId && endStudentId) {
-        where.studentId = {
-          gte: startStudentId,
-          lte: endStudentId,
-        };
-      }
-    } else {
-      where.studentId = userId;
     }
 
-    const timesheets = await prisma.timesheet.findMany({
-      where,
-      orderBy: { date: "asc" },
+    if (!["pdf", "excel"].includes(format)) {
+      return res.status(400).json({ message: "รูปแบบไฟล์ไม่ถูกต้อง" });
+    }
+
+    // ถ้าไม่ใช่ admin ให้บังคับใช้ userId ของตัวเอง และลบ filter ช่วง studentId ออก
+    if (role !== "admin") {
+      startStudentId = null;
+      endStudentId = null;
+    }
+
+    const data = await fetchTimesheetData({
+      startDate,
+      endDate,
+      isAdmin: role === "admin",
+      userId,
+      startStudentId,
+      endStudentId,
     });
 
     if (format === "pdf") {
-      // สร้าง PDF ด้วย pdfkit
       const doc = new PDFDocument();
-      let buffers = [];
+      const buffers = [];
       doc.on("data", buffers.push.bind(buffers));
       doc.on("end", () => {
-        let pdfData = Buffer.concat(buffers);
+        const pdfData = Buffer.concat(buffers);
         res.writeHead(200, {
           "Content-Length": Buffer.byteLength(pdfData),
           "Content-Type": "application/pdf",
@@ -105,36 +133,35 @@ router.post("/export", authenticate, async (req, res) => {
         }).end(pdfData);
       });
 
-      doc.fontSize(20).text("Timesheet Report", { align: "center" });
+      // ลงทะเบียนและใช้ฟอนต์ไทย
+      doc.registerFont("THSarabun", thaiFontPath);
+      doc.font("THSarabun").fontSize(18).text("รายงาน Timesheet", { align: "center" });
       doc.moveDown();
 
-      timesheets.forEach((ts) => {
-        doc
-          .fontSize(12)
-          .text(
-            `Date: ${ts.date.toISOString().slice(0, 10)} | StudentID: ${ts.studentId} | Hours: ${ts.hours} | Activity: ${ts.activity}`
-          );
+      data.forEach((item) => {
+        doc.fontSize(12).text(
+          `วันที่: ${item.date.toISOString().slice(0, 10)} | รหัสนักศึกษา: ${item.studentId} | ชั่วโมง: ${item.hours} | กิจกรรม: ${item.activity}`
+        );
       });
 
       doc.end();
     } else if (format === "excel") {
-      // สร้าง Excel ด้วย exceljs
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Timesheet Report");
 
       worksheet.columns = [
-        { header: "Date", key: "date", width: 15 },
-        { header: "Student ID", key: "studentId", width: 15 },
-        { header: "Hours", key: "hours", width: 10 },
-        { header: "Activity", key: "activity", width: 30 },
+        { header: "วันที่", key: "date", width: 15 },
+        { header: "รหัสนักศึกษา", key: "studentId", width: 15 },
+        { header: "จำนวนชั่วโมง", key: "hours", width: 10 },
+        { header: "กิจกรรม", key: "activity", width: 30 },
       ];
 
-      timesheets.forEach((ts) => {
+      data.forEach((item) => {
         worksheet.addRow({
-          date: ts.date.toISOString().slice(0, 10),
-          studentId: ts.studentId,
-          hours: ts.hours,
-          activity: ts.activity,
+          date: item.date.toISOString().slice(0, 10),
+          studentId: item.studentId,
+          hours: item.hours,
+          activity: item.activity,
         });
       });
 
@@ -146,11 +173,8 @@ router.post("/export", authenticate, async (req, res) => {
         "Content-Disposition",
         `attachment; filename=timesheet_${startDate}_${endDate}.xlsx`
       );
-
       await workbook.xlsx.write(res);
       res.end();
-    } else {
-      res.status(400).json({ message: "Invalid format" });
     }
   } catch (error) {
     console.error(error);

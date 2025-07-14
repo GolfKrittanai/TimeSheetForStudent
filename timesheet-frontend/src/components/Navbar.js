@@ -124,16 +124,28 @@ function Navbar() {
                 </>
               )}
               {user.role === "student" && (
-                <MenuItem
-                  onClick={() => {
-                    navigate("/student");
-                    handleMenuClose();
-                  }}
-                  sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
-                >
-                  <TimesheetIcon fontSize="small" />
-                  My Timesheet
-                </MenuItem>
+                <>
+                  <MenuItem
+                    onClick={() => {
+                      navigate("/student");
+                      handleMenuClose();
+                    }}
+                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                  >
+                    <TimesheetIcon fontSize="small" />
+                    My Timesheet
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      navigate("/student/export");
+                      handleMenuClose();
+                    }}
+                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                  >
+                    <ReportIcon fontSize="small" />
+                    ส่งออกรายงาน Timesheet
+                  </MenuItem>
+                </>
               )}
               <Divider />
               <MenuItem
@@ -180,8 +192,6 @@ function Navbar() {
             )}
             {user.role === "admin" && (
               <>
-  
-
                 <Button
                   onClick={() => navigate("/report")}
                   startIcon={<ReportIcon />}
@@ -196,8 +206,34 @@ function Navbar() {
                 </Button>
               </>
             )}
-
-
+            {user.role === "student" && (
+              <>
+                <Button
+                  onClick={() => navigate("/student")}
+                  startIcon={<TimesheetIcon />}
+                  sx={{
+                    textTransform: "none",
+                    color: "#00796b",
+                    fontWeight: "bold",
+                    fontFamily: '"Didonesque", sans-serif',
+                  }}
+                >
+                  My Timesheet
+                </Button>
+                <Button
+                  onClick={() => navigate("/student/export")}
+                  startIcon={<ReportIcon />}
+                  sx={{
+                    textTransform: "none",
+                    color: "#00796b",
+                    fontWeight: "bold",
+                    fontFamily: '"Didonesque", sans-serif',
+                  }}
+                >
+                  ส่งออกรายงาน Timesheet
+                </Button>
+              </>
+            )}
             {/* ปุ่ม Profile */}
             <Button
               onClick={() => navigate("/profile")}

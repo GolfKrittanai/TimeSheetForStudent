@@ -47,6 +47,7 @@ function App() {
       />
 
       <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/student/export" element={<ReportExport user={user} />} />
 
     </Routes>
   );
