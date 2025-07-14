@@ -1,0 +1,7 @@
+node_modules/
+build/
+dist/
+.DS_Store
+.vscode/
+*.pack
+/timesheet-frontend/node_modules/.cache

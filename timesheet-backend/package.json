@@ -8,7 +8,12 @@
     "dev": "nodemon",
     "postinstall": "npm install prisma && npx prisma generate"
   },
-  "keywords": ["timesheet", "express", "prisma", "backend"],
+  "keywords": [
+    "timesheet",
+    "express",
+    "prisma",
+    "backend"
+  ],
   "author": "GolfKrittanai",
   "license": "ISC",
   "dependencies": {
@@ -17,8 +22,12 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.0.0",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.5",
+    "pdfkit": "^0.17.1",
     "prisma": "^6.11.0"
   },
   "devDependencies": {
