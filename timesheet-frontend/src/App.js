@@ -7,6 +7,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import StudentTimesheetView from './pages/StudentTimesheetView';
 import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './context/AuthContext';
+import ReportExport from "./pages/ReportExport";
+
 
 function App() {
   const { user } = useAuth();
@@ -39,7 +41,14 @@ function App() {
         path="/profile"
         element={user ? <ProfilePage /> : <Navigate to="/" />}
       />
+      <Route
+        path="/report"
+        element={user ? <ReportExport user={user} /> : <Navigate to="/" />}
+      />
+
       <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/student/export" element={<ReportExport user={user} />} />
+
     </Routes>
   );
 }

@@ -3,6 +3,11 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../prismaClient');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
+// src/routes/exportRoutes.js
+const { exportDailyForCron } = require('../controllers/exportController');
+
+
+router.get('/export/daily', exportDailyForCron);
 
 // ลบ Timesheet โดย admin
 router.delete('/timesheet/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {

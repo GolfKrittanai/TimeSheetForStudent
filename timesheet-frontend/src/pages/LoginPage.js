@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
@@ -6,58 +6,56 @@ import {
   Button,
   useMediaQuery,
   useTheme,
-} from '@mui/material';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { loginUser } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import { motion } from 'framer-motion';
+} from "@mui/material";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { loginUser } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { motion } from "framer-motion";
 
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-
-  // ตรวจสอบขนาดหน้าจอ (เช่น sm = 600px)
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const formik = useFormik({
     initialValues: {
-      studentId: '',
-      password: '',
+      studentId: "",
+      password: "",
     },
     validationSchema: Yup.object({
-      studentId: Yup.string().required('กรุณากรอกรหัสนักศึกษา'),
-      password: Yup.string().required('กรุณากรอกรหัสผ่าน'),
+      studentId: Yup.string().required("กรุณากรอกรหัสนักศึกษา"),
+      password: Yup.string().required("กรุณากรอกรหัสผ่าน"),
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await loginUser(values);
         login({ token: res.data.token, user: res.data.user });
 
-        if (res.data.user.role === 'admin') {
-          navigate('/admin');
-        } else if (res.data.user.role === 'student') {
-          navigate('/student');
+        if (res.data.user.role === "admin") {
+          navigate("/admin");
+        } else if (res.data.user.role === "student") {
+          navigate("/student");
         } else {
-          navigate('/');
+          navigate("/");
         }
       } catch (error) {
         if (error.response?.status === 401) {
           Swal.fire({
-            icon: 'error',
-            title: 'คุณกรอกข้อมูลไม่ถูกต้อง!!',
-            text: 'กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่านอีกครั้ง',
-            confirmButtonColor: '#007aff',
+            icon: "error",
+            title: "คุณกรอกข้อมูลไม่ถูกต้อง!!",
+            text: "กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่านอีกครั้ง",
+            confirmButtonColor: "#00796b",
           });
         } else {
           Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาด',
-            text: 'ไม่สามารถเข้าสู่ระบบได้ในขณะนี้',
-            confirmButtonColor: '#007aff',
+            icon: "error",
+            title: "เกิดข้อผิดพลาด",
+            text: "ไม่สามารถเข้าสู่ระบบได้ในขณะนี้",
+            confirmButtonColor: "#007aff",
           });
         }
       } finally {
@@ -69,13 +67,14 @@ const LoginPage = () => {
   return (
     <Box
       sx={{
-        height: '100vh',
-        width: '100vw',
-        background: 'linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        height: "100vh",
+        width: "100vw",
+        background: "linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         p: 2,
+        fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
       }}
     >
       <motion.div
@@ -85,19 +84,34 @@ const LoginPage = () => {
       >
         <Box
           sx={{
-            maxWidth: isSmallScreen ? '90vw' : 400,  // กำหนดกว้างอัตโนมัติตามหน้าจอ
-            width: '100%',
-            bgcolor: '#ffffff',
+            maxWidth: isSmallScreen ? "90vw" : 400, // กำหนดกว้างอัตโนมัติตามหน้าจอ
+            width: "100%",
+            bgcolor: "#ffffff",
             p: isSmallScreen ? 3 : 5, // ลด padding บนมือถือ
             borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            textAlign: 'center',
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            textAlign: "center",
           }}
         >
-          <Typography variant={isSmallScreen ? "h5" : "h4"} sx={{ fontWeight: 700, color: '#111', mb: 1.5 }}>
+          <Typography
+            variant={isSmallScreen ? "h5" : "h4"}
+            sx={{
+              fontWeight: 700,
+              color: "#00796b",
+              mb: 1.5,
+              fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
+            }}
+          >
             Timesheet
           </Typography>
-          <Typography variant="subtitle1" sx={{ color: '#666', mb: 4 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              color: "#666",
+              mb: 4,
+              fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
+            }}
+          >
             ระบบสำหรับนักศึกษา
           </Typography>
 
@@ -109,18 +123,30 @@ const LoginPage = () => {
               margin="normal"
               value={formik.values.studentId}
               onChange={formik.handleChange}
-              error={formik.touched.studentId && Boolean(formik.errors.studentId)}
+              error={
+                formik.touched.studentId && Boolean(formik.errors.studentId)
+              }
               helperText={formik.touched.studentId && formik.errors.studentId}
               autoFocus
               InputProps={{
                 sx: {
                   borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#007aff',
-                    boxShadow: '0 0 5px 0 #007aff',
+                  bgcolor: "#fafafa",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b",
+                    boxShadow: "0 0 5px 0 #00796b",
+                  },
+                },
+              }}
+              InputLabelProps={{
+                sx: {
+                  color: "",
+                  "&.Mui-focused": {
+                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
                   },
                 },
               }}
@@ -138,12 +164,22 @@ const LoginPage = () => {
               InputProps={{
                 sx: {
                   borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ccc' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#007aff',
-                    boxShadow: '0 0 5px 0 #007aff',
+                  bgcolor: "#fafafa",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b",
+                    boxShadow: "0 0 5px 0 #00796b",
+                  },
+                },
+              }}
+              InputLabelProps={{
+                sx: {
+                  color: "",
+                  "&.Mui-focused": {
+                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
                   },
                 },
               }}
@@ -158,14 +194,15 @@ const LoginPage = () => {
                   mt: 4,
                   py: 1.5,
                   fontWeight: 700,
-                  backgroundColor: '#007aff',
+                  backgroundColor: "#00796b",
                   borderRadius: 3,
-                  fontSize: isSmallScreen ? '1rem' : '1.1rem',
-                  '&:hover': {
-                    backgroundColor: '#005bb5',
-                    boxShadow: '0 4px 12px rgba(0,91,181,0.4)',
+                  fontSize: isSmallScreen ? "1rem" : "1.1rem",
+                  "&:hover": {
+                    backgroundColor: "#024f46",
+                    boxShadow: "0 4px 12px rgba(0,91,181,0.4)",
                   },
-                  textTransform: 'none',
+                  textTransform: "none",
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ใหม่ที่นี่
                 }}
                 disabled={formik.isSubmitting}
               >
@@ -178,16 +215,17 @@ const LoginPage = () => {
                 fullWidth
                 sx={{
                   mt: 2,
-                  textTransform: 'none',
-                  color: '#007aff',
+                  textTransform: "none",
+                  color: "#00796b",
                   fontWeight: 600,
-                  fontSize: isSmallScreen ? '0.85rem' : '0.95rem',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                    backgroundColor: 'transparent',
+                  fontSize: isSmallScreen ? "1rem" : "1em",
+                  "&:hover": {
+                    textDecoration: "underline",
+                    backgroundColor: "transparent",
                   },
+                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ใหม่ที่นี่
                 }}
-                onClick={() => navigate('/register')}
+                onClick={() => navigate("/register")}
               >
                 ลงทะเบียน
               </Button>
