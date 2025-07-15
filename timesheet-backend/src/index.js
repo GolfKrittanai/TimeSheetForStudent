@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan'); // 👍 สำหรับ log HTTP
+const logger = require('./logger/logger'); // 👈 Winston Logger
 
 const profileRoutes = require('./routes/profileRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -15,6 +17,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
+
+// Morgan + winston
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
 
 // Routes
 app.use("/api/reports", reportRoutes);

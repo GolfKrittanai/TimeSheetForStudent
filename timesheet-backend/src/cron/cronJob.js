@@ -5,15 +5,15 @@ const path = require('path');
 const prisma = require('../prismaClient');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
+const logger = require('../logger/logger'); // ✅ เพิ่ม logger
 
-// ฟังก์ชันสร้าง PDF รายงาน
+// 🔹 ฟังก์ชันสร้าง PDF รายงาน
 async function generatePDFReport(data, filePath) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ margin: 30, size: 'A4' });
         const writeStream = fs.createWriteStream(filePath);
         doc.pipe(writeStream);
 
-        // 👇 ลงทะเบียนฟอนต์ไทย
         doc.registerFont('THSarabun', path.join(__dirname, '../fonts/THSarabunNew.ttf'));
         doc.font('THSarabun');
 
@@ -28,12 +28,18 @@ async function generatePDFReport(data, filePath) {
 
         doc.end();
 
-        writeStream.on('finish', () => resolve());
-        writeStream.on('error', (err) => reject(err));
+        writeStream.on('finish', () => {
+            logger.info(`✅ สร้าง PDF เสร็จสมบูรณ์: ${filePath}`);
+            resolve();
+        });
+        writeStream.on('error', (err) => {
+            logger.error(`❌ สร้าง PDF ล้มเหลว: ${err.message}`);
+            reject(err);
+        });
     });
 }
 
-// ฟังก์ชันสร้าง Excel รายงาน
+// 🔹 ฟังก์ชันสร้าง Excel รายงาน
 async function generateExcelReport(data, filePath) {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Timesheet Report');
@@ -55,9 +61,10 @@ async function generateExcelReport(data, filePath) {
     });
 
     await workbook.xlsx.writeFile(filePath);
+    logger.info(`✅ สร้าง Excel เสร็จสมบูรณ์: ${filePath}`);
 }
 
-// ฟังก์ชันส่งอีเมลพร้อมไฟล์แนบ
+// 🔹 ฟังก์ชันส่งอีเมล
 async function sendEmailWithAttachment(filePath, filename) {
     const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -79,16 +86,20 @@ async function sendEmailWithAttachment(filePath, filename) {
             },
         ],
     });
+
+    logger.info(`📧 ส่งอีเมลแนบไฟล์สำเร็จ: ${filename}`);
 }
 
-// ตั้งเวลา cron job ทุกวัน 19:00 น.
+// 🔹 ตั้งเวลา cron job ทุกวัน 19:00 น.
 cron.schedule("0 19 * * *", async () => {
+    const now = new Date();
+    logger.info("🕖 เริ่ม Cron Job รายงาน TimeSheet เวลา 19:00");
+
     try {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-        // ดึงข้อมูล timesheet พร้อม user relation (ต้องแก้จาก student เป็น user ตาม schema)
         const timesheets = await prisma.timesheet.findMany({
             where: {
                 date: {
@@ -97,18 +108,15 @@ cron.schedule("0 19 * * *", async () => {
                 },
             },
             include: {
-                user: {
-                    select: { studentId: true },
-                },
+                user: { select: { studentId: true } },
             },
         });
 
         if (timesheets.length === 0) {
-            console.log("ไม่มีข้อมูล Timesheet วันนี้");
+            logger.warn("⚠️ ไม่มีข้อมูล Timesheet สำหรับวันนี้");
             return;
         }
 
-        // แปลงข้อมูล พร้อมคำนวณชั่วโมงจาก checkInTime - checkOutTime
         const data = timesheets.map(t => ({
             date: t.date,
             studentId: t.user.studentId,
@@ -116,20 +124,18 @@ cron.schedule("0 19 * * *", async () => {
             activity: t.activity || "",
         }));
 
-        // สร้าง path ไฟล์
-        const pdfPath = path.join(__dirname, `timesheet_report_${today.toISOString().slice(0, 10)}.pdf`);
-        const excelPath = path.join(__dirname, `timesheet_report_${today.toISOString().slice(0, 10)}.xlsx`);
+        const dateString = today.toISOString().slice(0, 10);
+        const pdfPath = path.join(__dirname, `timesheet_report_${dateString}.pdf`);
+        const excelPath = path.join(__dirname, `timesheet_report_${dateString}.xlsx`);
 
-        // สร้างไฟล์รายงาน
         await generatePDFReport(data, pdfPath);
         await generateExcelReport(data, excelPath);
 
-        // ส่งอีเมลพร้อมไฟล์แนบ
-        await sendEmailWithAttachment(pdfPath, `timesheet_report_${today.toISOString().slice(0, 10)}.pdf`);
-        await sendEmailWithAttachment(excelPath, `timesheet_report_${today.toISOString().slice(0, 10)}.xlsx`);
+        await sendEmailWithAttachment(pdfPath, `timesheet_report_${dateString}.pdf`);
+        await sendEmailWithAttachment(excelPath, `timesheet_report_${dateString}.xlsx`);
 
-        console.log("ส่งอีเมลรายงาน PDF และ Excel เรียบร้อย");
+        logger.info("✅ Cron Job เสร็จสมบูรณ์: รายงานส่งเรียบร้อย");
     } catch (error) {
-        console.error("Error cron job:", error);
+        logger.error(`❌ เกิดข้อผิดพลาดใน Cron Job: ${error.message}`);
     }
 });

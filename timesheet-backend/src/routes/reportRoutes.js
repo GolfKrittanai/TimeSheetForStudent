@@ -6,8 +6,9 @@ const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 const thaiFontPath = path.join(__dirname, "../fonts/THSarabunNew.ttf");
 const { authenticateToken } = require("../middleware/authMiddleware");
+const logger = require("../logger/logger"); // ✅ เพิ่ม logger
 
-// ฟังก์ชันดึงข้อมูล timesheet
+// 🔹 ฟังก์ชันดึงข้อมูล timesheet
 const fetchTimesheetData = async ({
   startDate,
   endDate,
@@ -25,7 +26,6 @@ const fetchTimesheetData = async ({
 
   if (isAdmin) {
     if (startStudentId && endStudentId) {
-      // admin ดูเฉพาะช่วง studentId ที่ระบุ
       const users = await prisma.user.findMany({
         where: {
           studentId: {
@@ -37,14 +37,10 @@ const fetchTimesheetData = async ({
       });
       userIds = users.map((u) => u.id);
     } else {
-      // admin ดูได้ทุกคน
-      const users = await prisma.user.findMany({
-        select: { id: true },
-      });
+      const users = await prisma.user.findMany({ select: { id: true } });
       userIds = users.map((u) => u.id);
     }
   } else {
-    // student ดูเฉพาะตัวเอง
     userIds = [userId];
   }
 
@@ -65,13 +61,14 @@ const fetchTimesheetData = async ({
   }));
 };
 
-// GET preview timesheet data
+// 🔹 GET preview
 router.get("/timesheets", authenticateToken, async (req, res) => {
   try {
     const { id: userId, role } = req.user;
     const { startDate, endDate, startStudentId, endStudentId } = req.query;
 
     if (!startDate || !endDate) {
+      logger.warn("⚠️ Preview: ไม่ระบุวันที่ startDate หรือ endDate");
       return res.status(400).json({ message: "กรุณาระบุช่วงวันที่" });
     }
 
@@ -84,28 +81,30 @@ router.get("/timesheets", authenticateToken, async (req, res) => {
       endStudentId,
     });
 
+    logger.info(`👁️‍🗨️ Preview โดย ${role} ID ${userId}, วันที่ ${startDate} ถึง ${endDate}, จำนวน: ${data.length}`);
     res.json(data);
   } catch (error) {
-    console.error(error);
+    logger.error(`❌ Error preview timesheet: ${error.message}`);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });
   }
 });
 
-// POST export report PDF หรือ Excel
+// 🔹 POST export
 router.post("/export", authenticateToken, async (req, res) => {
   try {
     const { id: userId, role } = req.user;
     let { startDate, endDate, startStudentId, endStudentId, format } = req.body;
 
     if (!startDate || !endDate) {
+      logger.warn("⚠️ Export: ไม่ระบุวันที่ startDate หรือ endDate");
       return res.status(400).json({ message: "กรุณาระบุช่วงวันที่" });
     }
 
     if (!["pdf", "excel"].includes(format)) {
+      logger.warn(`⚠️ Export: รูปแบบไฟล์ไม่ถูกต้อง: ${format}`);
       return res.status(400).json({ message: "รูปแบบไฟล์ไม่ถูกต้อง" });
     }
 
-    // ถ้าไม่ใช่ admin ให้บังคับใช้ userId ของตัวเอง และลบ filter ช่วง studentId ออก
     if (role !== "admin") {
       startStudentId = null;
       endStudentId = null;
@@ -120,6 +119,8 @@ router.post("/export", authenticateToken, async (req, res) => {
       endStudentId,
     });
 
+    logger.info(`📤 Export โดย ${role} ID ${userId}, type: ${format}, วันที่: ${startDate} - ${endDate}, จำนวน: ${data.length}`);
+
     if (format === "pdf") {
       const doc = new PDFDocument();
       const buffers = [];
@@ -133,7 +134,6 @@ router.post("/export", authenticateToken, async (req, res) => {
         }).end(pdfData);
       });
 
-      // ลงทะเบียนและใช้ฟอนต์ไทย
       doc.registerFont("THSarabun", thaiFontPath);
       doc.font("THSarabun").fontSize(18).text("รายงาน Timesheet", { align: "center" });
       doc.moveDown();
@@ -165,19 +165,13 @@ router.post("/export", authenticateToken, async (req, res) => {
         });
       });
 
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=timesheet_${startDate}_${endDate}.xlsx`
-      );
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=timesheet_${startDate}_${endDate}.xlsx`);
       await workbook.xlsx.write(res);
       res.end();
     }
   } catch (error) {
-    console.error(error);
+    logger.error(`❌ Export error: ${error.message}`);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });
   }
 });
