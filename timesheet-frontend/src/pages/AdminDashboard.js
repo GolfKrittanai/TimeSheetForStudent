@@ -69,9 +69,11 @@ function AdminDashboard() {
         getAllStudents(token),
         getAdminSummary(token),
       ]);
-      const sorted = studentRes.data.sort((a, b) =>
-        a.studentId.localeCompare(b.studentId)
-      );
+      const sorted = studentRes.data.sort((a, b) => {
+        if (a.role === "admin" && b.role !== "admin") return -1;
+        if (a.role !== "admin" && b.role === "admin") return 1;
+        return a.studentId.localeCompare(b.studentId);
+      });
       setStudents(sorted);
       setSummary(summaryRes.data);
     } catch {
