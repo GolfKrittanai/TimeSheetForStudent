@@ -50,10 +50,11 @@ function Navbar() {
       position="sticky" // เลื่อนตามเวลาที่เลื่อนหน้าจอ
       elevation={0}
       sx={{
-        backgroundColor: "#ffffff",
-        borderBottom: "1px solid #e0e0e0",
-        mb: 3,
+        backgroundColor: "#0b463f",
+        borderBottom: "1px solid #4e4c4c",
+        mb: 1,
         fontFamily: '"Didonesque", sans-serif', // เพิ่มฟอนต์ที่ต้องการ
+        width:"100%"
       }}
     >
       <Toolbar
@@ -70,19 +71,19 @@ function Navbar() {
             variant="h6"
             sx={{
               fontWeight: 700,
-              color: "#00796b",
+              color: "#fff",
               fontFamily: '"Didonesque", sans-serif',
             }} // ใช้ฟอนต์ที่ต้องการ
           >
             TimeSheet System
           </Typography>
-          <Typography
+          {/* <Typography
             variant="body2"
-            color="text.secondary"
+            color="#fff"
             sx={{ fontFamily: '"Didonesque", sans-serif' }}
           >
             {user.fullName} ({user.role})
-          </Typography>
+          </Typography> */}
         </Box>
 
         {/* ขวา: เมนู responsive */}
@@ -143,7 +144,7 @@ function Navbar() {
                     sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
                   >
                     <ReportIcon fontSize="small" />
-                    ส่งออกรายงาน Timesheet
+                    Export Timesheet
                   </MenuItem>
                 </>
               )}
@@ -182,7 +183,7 @@ function Navbar() {
                 startIcon={<DashboardIcon />}
                 sx={{
                   textTransform: "none",
-                  color: "#00796b",
+                  color: "#fff",
                   fontWeight: "bold",
                   fontFamily: '"Didonesque", sans-serif',
                 }} // ใช้ฟอนต์ที่ต้องการ
@@ -190,6 +191,7 @@ function Navbar() {
                 Admin Dashboard
               </Button>
             )}
+            <Divider orientation="vertical"/>
             {user.role === "admin" && (
               <>
                 <Button
@@ -197,7 +199,7 @@ function Navbar() {
                   startIcon={<ReportIcon />}
                   sx={{
                     textTransform: "none",
-                    color: "#00796b",
+                    color: "#fff",
                     fontWeight: "bold",
                     fontFamily: '"Didonesque", sans-serif',
                   }}
@@ -213,49 +215,53 @@ function Navbar() {
                   startIcon={<TimesheetIcon />}
                   sx={{
                     textTransform: "none",
-                    color: "#00796b",
+                    color: "#fff",
                     fontWeight: "bold",
                     fontFamily: '"Didonesque", sans-serif',
                   }}
                 >
                   My Timesheet
                 </Button>
+
+                <Divider orientation="vertical"/>
+
                 <Button
                   onClick={() => navigate("/student/export")}
                   startIcon={<ReportIcon />}
                   sx={{
                     textTransform: "none",
-                    color: "#00796b",
+                    color: "#fff",
                     fontWeight: "bold",
                     fontFamily: '"Didonesque", sans-serif',
                   }}
                 >
-                  ส่งออกรายงาน Timesheet
+                  Export Timesheet
                 </Button>
               </>
             )}
+            <Divider orientation="vertical"/>
             {/* ปุ่ม Profile */}
             <Button
               onClick={() => navigate("/profile")}
-              startIcon={<ProfileIcon sx={{ color: "#1976d2" }} />}
+              startIcon={<ProfileIcon sx={{ color: "#fff" }} />}
               sx={{
                 textTransform: "none",
-                color: "#1976d2",
+                color: "#fff",
                 fontWeight: "bold",
                 fontFamily: '"Didonesque", sans-serif',
               }} // ใช้ฟอนต์ที่ต้องการ
             >
-              โปรไฟล์
+              Profile
             </Button>
 
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+            <Divider orientation="vertical" />
 
             <Button
               onClick={handleLogout}
-              startIcon={<LogoutIcon sx={{ color: "error.main" }} />}
+              startIcon={<LogoutIcon/>}
               sx={{
                 textTransform: "none",
-                color: "error.main",
+                color: "#fff",
                 fontWeight: "bold", // ทำให้ข้อความตัวหนา
                 fontFamily: '"Didonesque", sans-serif', // ใช้ฟอนต์ที่ต้องการ
               }}
