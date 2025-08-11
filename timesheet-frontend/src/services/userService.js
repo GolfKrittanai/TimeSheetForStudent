@@ -7,10 +7,17 @@ export const getUserProfile = (token) =>
     headers: { Authorization: `Bearer ${token}` },
   });
 
-export const updateUserProfile = (data, token) =>
-  axios.put(`${API_URL}/profile`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const updateUserProfile = (data, token, isFormData = false) => {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (isFormData) {
+    headers['Content-Type'] = 'multipart/form-data';
+  }
+
+  return axios.put(`${API_URL}/profile`, data, { headers });
+};
 
 export const changePassword = (currentPassword, newPassword, token) =>
   axios.put(

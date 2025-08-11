@@ -2,7 +2,80 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../prismaClient');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const fs = require('fs');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/profile');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.user.id}_${Date.now()}${ext}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+  if (allowedTypes.includes(file.mimetype)) cb(null, true);
+  else cb(new Error('รองรับเฉพาะไฟล์ .jpg .jpeg .png เท่านั้น'));
+};
+
+const upload = multer({ storage, fileFilter });
+
+// Route อัปโหลดรูปโปรไฟล์
+router.put(
+  '/upload-avatar',
+  authenticateToken,
+  upload.single('profileImage'),
+  async (req, res) => {
+    try {
+      if (!req.file)
+        return res.status(400).json({ message: 'กรุณาอัปโหลดไฟล์รูป' });
+
+      // ดึง path รูปเก่าจาก DB ก่อนอัปเดต
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { profileImage: true },
+      });
+
+      const oldImagePath = user.profileImage;
+
+      const imagePath = `/uploads/profile/${req.file.filename}`;
+
+      // อัปเดตใน DB
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { profileImage: imagePath },
+      });
+
+      // ลบไฟล์รูปเก่า (ถ้ามีและไม่ใช่ default)
+      if (oldImagePath && oldImagePath !== imagePath) {
+        const cleanOldImagePath = oldImagePath.startsWith('/') ? oldImagePath.slice(1) : oldImagePath;
+        const fullOldImagePath = path.join(__dirname, '..', '..', cleanOldImagePath);
+
+        fs.unlink(fullOldImagePath, (err) => {
+          if (err) {
+            console.error('ลบรูปเก่าไม่สำเร็จ:', err);
+          } else {
+            console.log('ลบรูปเก่าเรียบร้อย:', fullOldImagePath);
+          }
+        });
+      }
+
+      res.json({
+        message: 'อัปโหลดรูปโปรไฟล์สำเร็จ',
+        profileImage: imagePath,
+        user: updatedUser,
+      });
+    } catch (error) {
+      console.error('อัปโหลดรูปโปรไฟล์ผิดพลาด:', error);
+      res.status(500).json({ message: 'เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์' });
+    }
+  }
+);
 
 // GET /api/profile - ดึงข้อมูลโปรไฟล์ของ user ที่ login อยู่
 router.get('/', authenticateToken, async (req, res) => {
@@ -15,6 +88,7 @@ router.get('/', authenticateToken, async (req, res) => {
         email: true,
         phone: true,
         address: true,
+        profileImage: true,
       },
     });
     res.json(user);
@@ -26,11 +100,11 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // PUT /api/profile - แก้ไขข้อมูลโปรไฟล์ของ user
 router.put('/', authenticateToken, async (req, res) => {
-  const { fullName, email, phone, address } = req.body;
+  const { fullName, email, phone, address, profileImage } = req.body;
   try {
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: { fullName, email, phone, address },
+      data: { fullName, email, phone, address, profileImage },
     });
     res.json(updatedUser);
   } catch (error) {
