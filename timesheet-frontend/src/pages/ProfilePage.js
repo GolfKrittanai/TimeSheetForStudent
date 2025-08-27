@@ -61,7 +61,12 @@ function ProfilePage() {
           address: res.data.address || "",
         });
       } catch (error) {
-        Swal.fire("ผิดพลาด", "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้", "error");
+        Swal.fire({
+          title: "ผิดพลาด",
+          text: "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
       }
       setLoading(false);
     };
@@ -108,10 +113,20 @@ function ProfilePage() {
     setLoadingEdit(true);
     try {
       await updateUserProfile(editData, token);
-      await Swal.fire("สำเร็จ", "อัปเดตข้อมูลเรียบร้อยแล้ว", "success");
+      await Swal.fire({
+        title: "สำเร็จ",
+        text: "อัปเดตข้อมูลเรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
       navigate("/student"); // เปลี่ยนเป็น '/admin' ถ้า admin
     } catch (error) {
-      Swal.fire("ผิดพลาด", "ไม่สามารถอัปเดตข้อมูลได้", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "ไม่สามารถอัปเดตข้อมูลได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
     setLoadingEdit(false);
   };
@@ -126,7 +141,12 @@ function ProfilePage() {
         passwordData.newPassword,
         token
       );
-      await Swal.fire("สำเร็จ", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว", "success");
+      await Swal.fire({
+        title: "สำเร็จ",
+        text: "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -134,11 +154,12 @@ function ProfilePage() {
       });
       navigate("/student"); // หรือ '/admin'
     } catch (error) {
-      Swal.fire(
-        "ผิดพลาด",
-        error.response?.data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ",
-        "error"
-      );
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: error.response?.data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
     setLoadingPwd(false);
   };

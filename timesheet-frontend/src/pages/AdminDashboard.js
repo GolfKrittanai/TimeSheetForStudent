@@ -77,7 +77,12 @@ function AdminDashboard() {
       setStudents(sorted);
       setSummary(summaryRes.data);
     } catch {
-      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลนักศึกษาได้", "error");
+      Swal.fire({
+        title: "เกิดข้อผิดพลาด",
+        text: "ไม่สามารถโหลดข้อมูลนักศึกษาได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     } finally {
       setLoading(false);
     }
@@ -110,11 +115,21 @@ function AdminDashboard() {
   const handleSave = async () => {
     try {
       await updateStudent(selectedStudent.id, formData, token);
-      Swal.fire("บันทึกสำเร็จ", "ข้อมูลนักศึกษาอัปเดตแล้ว", "success");
+      Swal.fire({
+        title: "บันทึกสำเร็จ",
+        text: "ข้อมูลนักศึกษาอัปเดตแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
       setEditOpen(false);
       fetchStudents();
     } catch {
-      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถแก้ไขข้อมูลได้", "error");
+      Swal.fire({
+        title: "เกิดข้อผิดพลาด",
+        text: "ไม่สามารถแก้ไขข้อมูลได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
   };
 
@@ -139,9 +154,19 @@ function AdminDashboard() {
     try {
       await deleteStudent(id, token);
       setStudents((prev) => prev.filter((s) => s.id !== id));
-      Swal.fire("ลบสำเร็จ", "นักศึกษาถูกลบเรียบร้อยแล้ว", "success");
+      Swal.fire({
+        title: "ลบสำเร็จ",
+        text: "นักศึกษาถูกลบเรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
     } catch {
-      Swal.fire("ลบไม่สำเร็จ", "เกิดข้อผิดพลาดขณะลบผู้ใช้", "error");
+      Swal.fire({
+        title: "ลบไม่สำเร็จ",
+        text: "เกิดข้อผิดพลาดขณะลบผู้ใช้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
   };
 
@@ -397,8 +422,32 @@ function AdminDashboard() {
                   value={formData.studentId}
                   onChange={handleChange}
                   size={isSmallScreen ? "small" : "medium"}
-                  sx={{
-                    fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                  InputProps={{
+                    sx: {
+                      mb: 1,
+                      fontFamily: '"Didonesque", sans-serif',
+                      borderRadius: 2,
+                      bgcolor: "#fafafa",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                        boxShadow: "0 0 5px 0 #00796b",
+                      },
+                    },
+                  }}
+                  InputLabelProps={{
+                    shrink: true,
+                    sx: {
+                      color: "",
+                      "&.Mui-focused": {
+                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                      },
+                    },
                   }}
                 />
                 <TextField
@@ -408,8 +457,32 @@ function AdminDashboard() {
                   value={formData.fullName}
                   onChange={handleChange}
                   size={isSmallScreen ? "small" : "medium"}
-                  sx={{
-                    fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                  InputProps={{
+                    sx: {
+                      mb: 1,
+                      fontFamily: '"Didonesque", sans-serif',
+                      borderRadius: 2,
+                      bgcolor: "#fafafa",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                        boxShadow: "0 0 5px 0 #00796b",
+                      },
+                    },
+                  }}
+                  InputLabelProps={{
+                    shrink: true,
+                    sx: {
+                      color: "",
+                      "&.Mui-focused": {
+                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                      },
+                    },
                   }}
                 />
                 <FormControl
@@ -424,7 +497,17 @@ function AdminDashboard() {
                     label="บทบาท"
                     onChange={handleChange}
                     sx={{
-                      fontFamily: '"Didonesque", sans-serif', // ฟอนต์ที่ต้องการ
+                      borderRadius: 2,
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc", // สีกรอบที่เลือก
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b", // สีกรอบที่ hover
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b", // สีกรอบเมื่อโฟกัส
+                        boxShadow: "0 0 5px 0 #00796b", // เอฟเฟกต์สีเขียวเมื่อโฟกัส
+                      },
                     }}
                   >
                     <MenuItem value="student">Student</MenuItem>

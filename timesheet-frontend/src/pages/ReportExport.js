@@ -29,7 +29,12 @@ function ReportExport({ user }) {
 
   const fetchPreview = async () => {
     if (!startDate || !endDate) {
-      Swal.fire("แจ้งเตือน", "กรุณาเลือกช่วงวันที่", "warning");
+      Swal.fire({
+          title: "แจ้งเตือน",
+          text: "กรุณาเลือกช่วงวันที่",
+          icon: "warning",
+          confirmButtonColor: "#00796b",
+        });
       return;
     }
     setLoading(true);
@@ -49,8 +54,21 @@ function ReportExport({ user }) {
       });
 
       setPreviewData(res.data);
+      if (!res.data || res.data.length === 0) {
+        Swal.fire({
+          title: "ไม่มีข้อมูล",
+          text: "ไม่มี timesheet ในช่วงวันที่ที่คุณเลือก",
+          icon: "warning",
+          confirmButtonColor: "#00796b",
+        });
+      }
     } catch (err) {
-      Swal.fire("ผิดพลาด", "โหลดตัวอย่างข้อมูลไม่สำเร็จ", "error");
+      Swal.fire({
+          title: "ผิดพลาด",
+          text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
     } finally {
       setLoading(false);
     }
@@ -58,7 +76,12 @@ function ReportExport({ user }) {
 
   const handleExport = async () => {
     if (!startDate || !endDate) {
-      Swal.fire("แจ้งเตือน", "กรุณาเลือกช่วงวันที่", "warning");
+      Swal.fire({
+          title: "แจ้งเตือน",
+          text: "กรุณาเลือกช่วงวันที่",
+          icon: "warning",
+          confirmButtonColor: "#00796b",
+        });
       return;
     }
     setLoading(true);
@@ -90,10 +113,17 @@ function ReportExport({ user }) {
 
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
-      link.download = `timesheet_${startDate}_${endDate}.${format === "pdf" ? "pdf" : "xlsx"}`;
+      link.download = `timesheet_${startDate}_${endDate}.${
+        format === "pdf" ? "pdf" : "xlsx"
+      }`;
       link.click();
     } catch (err) {
-      Swal.fire("ผิดพลาด", "ส่งออกไฟล์ไม่สำเร็จ", "error");
+      Swal.fire({
+          title: "ผิดพลาด",
+          text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
     } finally {
       setLoading(false);
     }
@@ -212,82 +242,91 @@ function ReportExport({ user }) {
                   value={startStudentId}
                   onChange={(e) => setStartStudentId(e.target.value)}
                   InputProps={{
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                    boxShadow: "0 0 5px 0 #00796b",
-                  },
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  color: "",
-                  "&.Mui-focused": {
-                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                  },
-                },
-              }}
+                    sx: {
+                      borderRadius: 2,
+                      bgcolor: "#fafafa",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                        boxShadow: "0 0 5px 0 #00796b",
+                      },
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      color: "",
+                      "&.Mui-focused": {
+                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                      },
+                    },
+                  }}
                 />
                 <TextField
                   label="รหัสนักศึกษา สิ้นสุด"
                   value={endStudentId}
                   onChange={(e) => setEndStudentId(e.target.value)}
                   InputProps={{
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                    boxShadow: "0 0 5px 0 #00796b",
-                  },
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  color: "",
-                  "&.Mui-focused": {
-                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                  },
-                },
-              }}
+                    sx: {
+                      borderRadius: 2,
+                      bgcolor: "#fafafa",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#ccc",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#00796b",
+                        boxShadow: "0 0 5px 0 #00796b",
+                      },
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      color: "",
+                      "&.Mui-focused": {
+                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                      },
+                    },
+                  }}
                 />
               </>
             )}
 
             <FormControl>
-              <InputLabel shrink sx={{
-      color: "#757676ff", // สีเริ่มต้นของ InputLabel
-      "&.Mui-focused": {
-        color: "#004d40", // สีของ InputLabel เมื่อกรอบโฟกัส
-      },
-    }}>เลือกรูปแบบ</InputLabel>
+              <InputLabel
+                shrink
+                sx={{
+                  color: "#757676ff", // สีเริ่มต้นของ InputLabel
+                  "&.Mui-focused": {
+                    color: "#004d40", // สีของ InputLabel เมื่อกรอบโฟกัส
+                  },
+                }}
+              >
+                เลือกรูปแบบ
+              </InputLabel>
               <Select
                 value={format}
                 onChange={(e) => setFormat(e.target.value)}
                 displayEmpty
                 sx={{
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                         borderColor: "#ccc", // สีกรอบที่เลือก
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                         borderColor: "#00796b", // สีกรอบที่ hover
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                         borderColor: "#00796b", // สีกรอบเมื่อโฟกัส
-                         boxShadow: "0 0 5px 0 #00796b", // เอฟเฟกต์สีเขียวเมื่อโฟกัส
-                    },
-              }}
+                  borderRadius: 2,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#ccc", // สีกรอบที่เลือก
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b", // สีกรอบที่ hover
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#00796b", // สีกรอบเมื่อโฟกัส
+                    boxShadow: "0 0 5px 0 #00796b", // เอฟเฟกต์สีเขียวเมื่อโฟกัส
+                  },
+                }}
               >
                 <MenuItem value="pdf">PDF</MenuItem>
                 <MenuItem value="excel">Excel</MenuItem>
@@ -305,10 +344,10 @@ function ReportExport({ user }) {
                 fontSize: 16,
                 backgroundColor: "#ffffffff",
                 borderColor: "#ccc",
-                color:"#000",
+                color: "#000",
                 "&:hover": {
                   backgroundColor: "#00796b",
-                  color:"#fff"
+                  color: "#fff",
                 },
               }}
             >
@@ -330,7 +369,8 @@ function ReportExport({ user }) {
               ) : (
                 previewData.map((item, index) => (
                   <Typography key={index} fontSize={14}>
-                    📅 {item.date.slice(0, 10)} | 🎓 {item.studentId} | 🕒 {item.hours} ชม. | 📝 {item.activity}
+                    📅 {item.date.slice(0, 10)} | 🎓 {item.studentId} | 🕒{" "}
+                    {item.hours} ชม. | 📝 {item.activity}
                   </Typography>
                 ))
               )}
