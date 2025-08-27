@@ -101,9 +101,19 @@ function StudentDashboard() {
       try {
         await deleteTimeSheet(id, token);
         setTimeSheets((prev) => prev.filter((t) => t.id !== id));
-        Swal.fire("ลบสำเร็จ", "TimeSheet ได้ถูกลบแล้ว", "success");
+        Swal.fire({
+          title: "ลบสำเร็จ",
+          text: "TimeSheet ได้ถูกลบแล้ว",
+          icon: "success",
+          confirmButtonColor: "#00796b",
+        });
       } catch {
-        Swal.fire("ผิดพลาด", "ไม่สามารถลบ TimeSheet ได้", "error");
+        Swal.fire({
+          title: "ผิดพลาด",
+          text: "ไม่สามารถลบ TimeSheet ได้",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
       }
     }
   };
@@ -151,9 +161,19 @@ function StudentDashboard() {
         checkOutTime: "",
         activity: "",
       });
-      Swal.fire("สำเร็จ", "เพิ่ม TimeSheet เรียบร้อยแล้ว", "success");
+      Swal.fire({
+        title: "สำเร็จ",
+        text: "เพิ่ม TimeSheet เรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
     } catch {
-      Swal.fire("ผิดพลาด", "ไม่สามารถเพิ่ม TimeSheet ได้", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "ไม่สามารถเพิ่ม TimeSheet ได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
   };
 
@@ -207,9 +227,19 @@ function StudentDashboard() {
       await updateTimeSheet(editData.id, payload, token);
       await fetchData();
       handleEditClose();
-      Swal.fire("บันทึกสำเร็จ", "แก้ไข TimeSheet เรียบร้อยแล้ว", "success");
+      Swal.fire({
+        title: "บันทึกสำเร็จ",
+        text: "แก้ไข TimeSheet เรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
     } catch {
-      Swal.fire("ผิดพลาด", "ไม่สามารถแก้ไข TimeSheet ได้", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "ไม่สามารถแก้ไข TimeSheet ได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
     setLoadingEdit(false);
   };
@@ -575,7 +605,9 @@ function StudentDashboard() {
                           }}
                           size={isSmallScreen ? "small" : "medium"}
                         >
-                          <EditIcon fontSize={isSmallScreen ? "small" : "medium"} />
+                          <EditIcon
+                            fontSize={isSmallScreen ? "small" : "medium"}
+                          />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ">
@@ -587,11 +619,12 @@ function StudentDashboard() {
                           }}
                           size={isSmallScreen ? "small" : "medium"}
                         >
-                          <DeleteIcon fontSize={isSmallScreen ? "small" : "medium"} />
+                          <DeleteIcon
+                            fontSize={isSmallScreen ? "small" : "medium"}
+                          />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
-
                   </TableRow>
                 ))}
               </TableBody>

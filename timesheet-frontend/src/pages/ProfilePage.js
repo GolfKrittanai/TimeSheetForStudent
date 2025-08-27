@@ -120,6 +120,7 @@ function ProfilePage() {
         confirmButtonColor: "#00796b",
       });
       navigate("/student"); // เปลี่ยนเป็น '/admin' ถ้า admin
+
     } catch (error) {
       Swal.fire({
         title: "ผิดพลาด",
@@ -127,6 +128,47 @@ function ProfilePage() {
         icon: "error",
         confirmButtonColor: "#00796b",
       });
+
+      let profileImageUrl = profile?.profileImage || null;
+
+      // 1. อัปโหลดรูป ถ้ามีไฟล์ที่เลือก
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("profileImage", selectedFile);
+
+        const uploadRes = await fetch(`${process.env.REACT_APP_API}/profile/upload-avatar`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json();
+          throw new Error(errData.message || "อัปโหลดรูปไม่สำเร็จ");
+        }
+
+        const uploadData = await uploadRes.json();
+        profileImageUrl = uploadData.profileImage;
+      }
+
+      // 2. อัปเดตข้อมูลโปรไฟล์พร้อม URL รูป (ถ้ามี)
+      const updateData = {
+        ...editData,
+        profileImage: profileImageUrl,
+      };
+
+      // ใช้ฟังก์ชัน updateUserProfile ของคุณ ที่ส่ง JSON ปกติ
+      await updateUserProfile(updateData, token);
+
+      await Swal.fire("สำเร็จ", "อัปเดตข้อมูลเรียบร้อยแล้ว", "success");
+
+      // รีเฟรชข้อมูล หรือไปหน้าอื่นตามต้องการ
+      navigate("/student");
+    } catch (error) {
+      Swal.fire("ผิดพลาด", error.message || "ไม่สามารถอัปเดตข้อมูลได้", "error");
+
     }
     setLoadingEdit(false);
   };

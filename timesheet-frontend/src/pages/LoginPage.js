@@ -55,7 +55,7 @@ const LoginPage = () => {
             icon: "error",
             title: "เกิดข้อผิดพลาด",
             text: "ไม่สามารถเข้าสู่ระบบได้ในขณะนี้",
-            confirmButtonColor: "#007aff",
+            confirmButtonColor: "#00796b",
           });
         }
       } finally {
