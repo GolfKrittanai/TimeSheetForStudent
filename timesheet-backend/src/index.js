@@ -9,6 +9,7 @@ const timesheetRoutes = require('./routes/timesheetRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const reportRoutes = require("./routes/reportRoutes");
 const bodyParser = require("body-parser");
+const path = require('path');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Start server
 const PORT = process.env.PORT || 5000;
