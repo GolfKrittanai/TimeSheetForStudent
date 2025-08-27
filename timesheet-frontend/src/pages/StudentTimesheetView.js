@@ -58,7 +58,12 @@ function StudentTimesheetView() {
       setData(res.data.timesheets || []);
       setStudentInfo(res.data.student || null);
     } catch (err) {
-      Swal.fire("ผิดพลาด", "โหลดข้อมูล Timesheet ไม่สำเร็จ", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "โหลดข้อมูล Timesheet ไม่สำเร็จ",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     } finally {
       setLoading(false);
     }
@@ -98,7 +103,12 @@ function StudentTimesheetView() {
     const checkOut = new Date(`${editData.date}T${editData.checkOutTime}:00`);
 
     if (checkOut <= checkIn) {
-      Swal.fire("ผิดพลาด", "เวลาออกต้องมากกว่าเวลาเข้า", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "เวลาออกต้องมากกว่าเวลาเข้า",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
       return;
     }
 
@@ -114,11 +124,21 @@ function StudentTimesheetView() {
         },
         token
       );
-      Swal.fire("สำเร็จ", "แก้ไข Timesheet เรียบร้อยแล้ว", "success");
+      Swal.fire({
+        title: "สำเร็จ",
+        text: "แก้ไข Timesheet เรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
       setEditOpen(false);
       fetchTimesheet();
     } catch {
-      Swal.fire("ผิดพลาด", "ไม่สามารถแก้ไข Timesheet ได้", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "ไม่สามารถแก้ไข Timesheet ได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     } finally {
       setSaving(false);
     }
@@ -140,9 +160,19 @@ function StudentTimesheetView() {
       try {
         await deleteStudentTimesheetById(timesheetId, token);
         setData((prev) => prev.filter((t) => t.id !== timesheetId));
-        Swal.fire("ลบสำเร็จ", "TimeSheet ได้ถูกลบแล้ว", "success");
+        Swal.fire({
+          title: "ลบสำเร็จ",
+          text: "TimeSheet ได้ถูกลบแล้ว",
+          icon: "success",
+          confirmButtonColor: "#00796b",
+        });
       } catch {
-        Swal.fire("ผิดพลาด", "ไม่สามารถลบ Timesheet ได้", "error");
+        Swal.fire({
+          title: "ผิดพลาด",
+          text: "ไม่สามารถลบ TimeSheet ได้",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
       }
     }
   };
@@ -351,8 +381,35 @@ function StudentTimesheetView() {
                 fullWidth
                 value={editData.date}
                 onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  sx: {
+                    mt: 1,
+                    mb: 2,
+                    fontFamily: '"Didonesque", sans-serif',
+                    borderRadius: 2,
+                    bgcolor: "#fafafa",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ccc",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                      boxShadow: "0 0 5px 0 #00796b",
+                    },
+                  },
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    mt: 1,
+                    color: "",
+                    "&.Mui-focused": {
+                      color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    },
+                  },
+                }}
               />
               <TextField
                 label="เวลาเข้า"
@@ -361,8 +418,33 @@ function StudentTimesheetView() {
                 fullWidth
                 value={editData.checkInTime}
                 onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  sx: {
+                    mb: 2,
+                    fontFamily: '"Didonesque", sans-serif',
+                    borderRadius: 2,
+                    bgcolor: "#fafafa",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ccc",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                      boxShadow: "0 0 5px 0 #00796b",
+                    },
+                  },
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    color: "",
+                    "&.Mui-focused": {
+                      color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    },
+                  },
+                }}
               />
               <TextField
                 label="เวลาออก"
@@ -371,8 +453,33 @@ function StudentTimesheetView() {
                 fullWidth
                 value={editData.checkOutTime}
                 onChange={handleEditChange}
-                sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  sx: {
+                    mb: 2,
+                    fontFamily: '"Didonesque", sans-serif',
+                    borderRadius: 2,
+                    bgcolor: "#fafafa",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ccc",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                      boxShadow: "0 0 5px 0 #00796b",
+                    },
+                  },
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    color: "",
+                    "&.Mui-focused": {
+                      color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    },
+                  },
+                }}
               />
               <TextField
                 label="กิจกรรม"
@@ -382,6 +489,33 @@ function StudentTimesheetView() {
                 rows={3}
                 value={editData.activity}
                 onChange={handleEditChange}
+                InputProps={{
+                  sx: {
+                    mb: 1,
+                    fontFamily: '"Didonesque", sans-serif',
+                    borderRadius: 2,
+                    bgcolor: "#fafafa",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ccc",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#00796b",
+                      boxShadow: "0 0 5px 0 #00796b",
+                    },
+                  },
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    color: "",
+                    "&.Mui-focused": {
+                      color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    },
+                  },
+                }}
               />
             </DialogContent>
             <DialogActions>

@@ -98,7 +98,7 @@ function RegisterPage() {
       >
         <Box
           sx={{
-            maxWidth: isSmallScreen ? "90vw" : 420, // กว้าง 90% ของ viewport บนมือถือ
+            maxWidth: isSmallScreen ? "90vw" : 400, // กว้าง 90% ของ viewport บนมือถือ
             width: "100%",
             bgcolor: "#fff",
             p: isSmallScreen ? 3 : 5, // ลด padding บนมือถือ
