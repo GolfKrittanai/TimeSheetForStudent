@@ -25,25 +25,9 @@ function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const API_BASE = process.env.REACT_APP_API || "";
-  const API_STATIC_BASE = API_BASE.replace(/\/api$/, ""); 
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
-  // สเตทสำหรับจัดการไฟล์รูปที่เลือก
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
-
-  useEffect(() => {
-    // ทำงานตอน component จะ unmount หรือ previewImage เปลี่ยนแปลง
-    return () => {
-      if (previewImage) {
-        URL.revokeObjectURL(previewImage); // คืนหน่วยความจำให้ browser
-      }
-    };
-  }, [previewImage]);
 
   // ฟอร์มแก้ไขข้อมูลส่วนตัว
   const [editData, setEditData] = useState({
@@ -69,7 +53,6 @@ function ProfilePage() {
       setLoading(true);
       try {
         const res = await getUserProfile(token);
-        console.log("Profile from API:", res.data); 
         setProfile(res.data);
         setEditData({
           fullName: res.data.fullName || "",
@@ -78,7 +61,12 @@ function ProfilePage() {
           address: res.data.address || "",
         });
       } catch (error) {
-        Swal.fire("ผิดพลาด", "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้", "error");
+        Swal.fire({
+          title: "ผิดพลาด",
+          text: "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้",
+          icon: "error",
+          confirmButtonColor: "#00796b",
+        });
       }
       setLoading(false);
     };
@@ -119,105 +107,27 @@ function ProfilePage() {
     setPasswordData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewImage(URL.createObjectURL(file)); // สร้าง URL preview
-    }
-  };
-
-  const handleUploadImage = async () => {
-    if (!selectedFile) {
-      Swal.fire("ผิดพลาด", "กรุณาเลือกไฟล์รูปก่อน", "error");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("profileImage", selectedFile);
-
-    setUploading(true);
-    try {
-      const API_BASE = process.env.REACT_APP_API || "";
-      const res = await fetch(`${API_BASE}/api/profile/upload-avatar`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const text = await res.text();
-      console.log("Upload response:", text);
-
-      if (!res.ok) {
-        let errorMessage = "อัปโหลดไม่สำเร็จ";
-        try {
-          const data = JSON.parse(text);
-          errorMessage = data.message || errorMessage;
-        } catch { }
-        throw new Error(errorMessage);
-      }
-
-      const data = JSON.parse(text);
-
-      Swal.fire("สำเร็จ", "อัปโหลดรูปโปรไฟล์สำเร็จ", "success");
-      setProfile((prev) => ({ ...prev, profileImage: data.profileImage }));
-      setSelectedFile(null);
-    } catch (error) {
-      Swal.fire("ผิดพลาด", error.message || "เกิดข้อผิดพลาดในการอัปโหลดรูป", "error");
-    }
-    setUploading(false);
-  };
-
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!validateEdit()) return;
-
     setLoadingEdit(true);
-
     try {
-      let profileImageUrl = profile?.profileImage || null;
-
-      // 1. อัปโหลดรูป ถ้ามีไฟล์ที่เลือก
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append("profileImage", selectedFile);
-
-        const uploadRes = await fetch(`${process.env.REACT_APP_API}/profile/upload-avatar`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!uploadRes.ok) {
-          const errData = await uploadRes.json();
-          throw new Error(errData.message || "อัปโหลดรูปไม่สำเร็จ");
-        }
-
-        const uploadData = await uploadRes.json();
-        profileImageUrl = uploadData.profileImage;
-      }
-
-      // 2. อัปเดตข้อมูลโปรไฟล์พร้อม URL รูป (ถ้ามี)
-      const updateData = {
-        ...editData,
-        profileImage: profileImageUrl,
-      };
-
-      // ใช้ฟังก์ชัน updateUserProfile ของคุณ ที่ส่ง JSON ปกติ
-      await updateUserProfile(updateData, token);
-
-      await Swal.fire("สำเร็จ", "อัปเดตข้อมูลเรียบร้อยแล้ว", "success");
-
-      // รีเฟรชข้อมูล หรือไปหน้าอื่นตามต้องการ
-      navigate("/student");
+      await updateUserProfile(editData, token);
+      await Swal.fire({
+        title: "สำเร็จ",
+        text: "อัปเดตข้อมูลเรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
+      navigate("/student"); // เปลี่ยนเป็น '/admin' ถ้า admin
     } catch (error) {
-      Swal.fire("ผิดพลาด", error.message || "ไม่สามารถอัปเดตข้อมูลได้", "error");
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: "ไม่สามารถอัปเดตข้อมูลได้",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
-
     setLoadingEdit(false);
   };
 
@@ -231,7 +141,12 @@ function ProfilePage() {
         passwordData.newPassword,
         token
       );
-      await Swal.fire("สำเร็จ", "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว", "success");
+      await Swal.fire({
+        title: "สำเร็จ",
+        text: "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
+        icon: "success",
+        confirmButtonColor: "#00796b",
+      });
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -239,11 +154,12 @@ function ProfilePage() {
       });
       navigate("/student"); // หรือ '/admin'
     } catch (error) {
-      Swal.fire(
-        "ผิดพลาด",
-        error.response?.data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ",
-        "error"
-      );
+      Swal.fire({
+        title: "ผิดพลาด",
+        text: error.response?.data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     }
     setLoadingPwd(false);
   };
@@ -276,38 +192,18 @@ function ProfilePage() {
             gap: 1,
           }}
         >
-          <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
-            <Avatar
-              src={
-                previewImage ||
-                (profile?.profileImage
-                  ? (profile.profileImage.startsWith("http")
-                    ? profile.profileImage
-                    : `${API_STATIC_BASE}${profile.profileImage}`)
-                  : "")
-              }
-              alt={profile?.fullName || user?.fullName}
-              sx={{
-                width: isSmallScreen ? 72 : 96,
-                height: isSmallScreen ? 72 : 96,
-                bgcolor: "#00796b",
-                fontSize: isSmallScreen ? 32 : 40,
-                transition: "box-shadow 0.3s ease",
-                "&:hover": {
-                  boxShadow: "0 0 10px 3px #00796b",
-                },
-              }}
-            >
-              {(profile?.fullName || user?.fullName)?.[0].toUpperCase()}
-            </Avatar>
-          </label>
-          <input
-            accept="image/*"
-            id="avatar-upload"
-            type="file"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
+          <Avatar
+            src={profile?.avatarUrl || ""}
+            alt={profile?.fullName || user?.fullName}
+            sx={{
+              width: isSmallScreen ? 72 : 96,
+              height: isSmallScreen ? 72 : 96,
+              bgcolor: "#00796b",
+              fontSize: isSmallScreen ? 32 : 40,
+            }}
+          >
+            {(profile?.fullName || user?.fullName)?.[0].toUpperCase()}
+          </Avatar>
           โปรไฟล์ของ {profile?.fullName || user?.fullName}
         </Typography>
 
