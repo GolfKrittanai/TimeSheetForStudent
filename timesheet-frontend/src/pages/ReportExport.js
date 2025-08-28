@@ -16,6 +16,8 @@ import Swal from "sweetalert2";
 import axios from "axios";
 import Navbar from "../components/Navbar"; // ✅ Navbar ด้านบน
 
+const API_URL = process.env.REACT_APP_API;
+
 function ReportExport({ user }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,31 +31,26 @@ function ReportExport({ user }) {
 
   const fetchPreview = async () => {
     if (!startDate || !endDate) {
-      Swal.fire({
-          title: "แจ้งเตือน",
-          text: "กรุณาเลือกช่วงวันที่",
-          icon: "warning",
-          confirmButtonColor: "#00796b",
-        });
+      Swal.fire({ title: "แจ้งเตือน", text: "กรุณาเลือกช่วงวันที่", icon: "warning", confirmButtonColor: "#00796b" });
       return;
     }
     setLoading(true);
     try {
-      let params = { startDate, endDate };
-      if (isAdmin && startStudentId && endStudentId) {
-        params.startStudentId = startStudentId;
-        params.endStudentId = endStudentId;
-      }
+      const params = {
+        startDate,
+        endDate,
+        ...(isAdmin && startStudentId && endStudentId
+          ? { startStudentId, endStudentId }
+          : {}),
+      };
 
-      const token = localStorage.getItem("token"); // ✅ เพิ่ม token
-      const res = await axios.get("/api/reports/timesheets", {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_URL}/reports/timesheets`, {
         params,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      setPreviewData(res.data);
+      setPreviewData(res.data || []);
       if (!res.data || res.data.length === 0) {
         Swal.fire({
           title: "ไม่มีข้อมูล",
@@ -64,11 +61,11 @@ function ReportExport({ user }) {
       }
     } catch (err) {
       Swal.fire({
-          title: "ผิดพลาด",
-          text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
-          icon: "error",
-          confirmButtonColor: "#00796b",
-        });
+        title: "ผิดพลาด",
+        text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     } finally {
       setLoading(false);
     }
@@ -76,12 +73,7 @@ function ReportExport({ user }) {
 
   const handleExport = async () => {
     if (!startDate || !endDate) {
-      Swal.fire({
-          title: "แจ้งเตือน",
-          text: "กรุณาเลือกช่วงวันที่",
-          icon: "warning",
-          confirmButtonColor: "#00796b",
-        });
+      Swal.fire({ title: "แจ้งเตือน", text: "กรุณาเลือกช่วงวันที่", icon: "warning", confirmButtonColor: "#00796b" });
       return;
     }
     setLoading(true);
@@ -89,46 +81,41 @@ function ReportExport({ user }) {
       const body = {
         startDate,
         endDate,
-        format,
+        format: String(format).toLowerCase(), // กันพิมพ์ใหญ่/เล็ก
+        ...(isAdmin && startStudentId && endStudentId
+          ? { startStudentId, endStudentId }
+          : {}),
       };
-      if (isAdmin && startStudentId && endStudentId) {
-        body.startStudentId = startStudentId;
-        body.endStudentId = endStudentId;
-      }
 
-      const token = localStorage.getItem("token"); // ✅ เพิ่ม token
-      const response = await axios.post("/api/reports/export", body, {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(`${API_URL}/reports/export`, body, {
         responseType: "blob",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const blob = new Blob([response.data], {
         type:
-          format === "pdf"
+          body.format === "pdf"
             ? "application/pdf"
             : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
 
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
-      link.download = `timesheet_${startDate}_${endDate}.${
-        format === "pdf" ? "pdf" : "xlsx"
-      }`;
+      link.download = `timesheet_${startDate}_${endDate}.${body.format === "pdf" ? "pdf" : "xlsx"}`;
       link.click();
     } catch (err) {
       Swal.fire({
-          title: "ผิดพลาด",
-          text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
-          icon: "error",
-          confirmButtonColor: "#00796b",
-        });
+        title: "ผิดพลาด",
+        text: "โหลดตัวอย่างข้อมูลไม่สำเร็จ",
+        icon: "error",
+        confirmButtonColor: "#00796b",
+      });
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <>
       <Navbar />
