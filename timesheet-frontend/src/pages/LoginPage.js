@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -6,7 +6,10 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { loginUser } from "../services/authService";
@@ -20,6 +23,12 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const [showPassword, setShowPassword] = useState(false);
+  // ✅ เพิ่ม state สำหรับจัดการสถานะ Focus
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -154,14 +163,27 @@ const LoginPage = () => {
             <TextField
               label="รหัสผ่าน"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"} // แก้ตรงนี้
               fullWidth
               margin="normal"
               value={formik.values.password}
               onChange={formik.handleChange}
               error={formik.touched.password && Boolean(formik.errors.password)}
               helperText={formik.touched.password && formik.errors.password}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               InputProps={{
+                endAdornment: (formik.values.password || passwordFocused) && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
                 sx: {
                   borderRadius: 2,
                   bgcolor: "#fafafa",
@@ -179,11 +201,42 @@ const LoginPage = () => {
                 sx: {
                   color: "",
                   "&.Mui-focused": {
-                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    color: "#00796b",
                   },
                 },
               }}
             />
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end", // จัดให้ชิดขวา
+                width: "100%",
+                mt: -1, // ย้ายขึ้นไปอยู่ติดกับ TextField
+              }}
+            >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Button
+                  sx={{
+                    textTransform: "none",
+                    color: "#00796b",
+                    fontWeight: 600,
+                    fontSize: isSmallScreen ? "0.9rem" : "0.9em", // ปรับขนาดฟอนต์ให้เล็กลง
+                    "&:hover": {
+                      textDecoration: "underline",
+                      backgroundColor: "transparent",
+                    },
+                    fontFamily: '"Didonesque", sans-serif',
+                  }}
+                  onClick={() => navigate("/forgot-password")}
+                  type="button"
+                >
+                  ลืมรหัสผ่าน?
+                </Button>
+              </motion.div>
+            </Box>
 
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               <Button
@@ -191,7 +244,7 @@ const LoginPage = () => {
                 fullWidth
                 variant="contained"
                 sx={{
-                  mt: 4,
+                  mt: 2,
                   py: 1.5,
                   fontWeight: 700,
                   backgroundColor: "#00796b",
