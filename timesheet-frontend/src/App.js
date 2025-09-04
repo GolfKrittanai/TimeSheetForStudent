@@ -9,6 +9,8 @@ import ProfilePage from "./pages/ProfilePage";
 import { useAuth } from "./context/AuthContext";
 import ReportExport from "./pages/ReportExport";
 import { CssBaseline } from "@mui/material";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 function App() {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ function App() {
           }
         />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route
           path="/admin"

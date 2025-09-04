@@ -33,7 +33,12 @@ model user {
   email        String?     @db.VarChar(255)
   phone        String?     @db.VarChar(20)
   address      String?     @db.VarChar(255)
+<<<<<<< Updated upstream
   profileImage String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์สำหรับเก็บ URL หรือ path รูป
+=======
+  passwordResetToken    String?  @unique
+  passwordResetExpires  DateTime?
+>>>>>>> Stashed changes
 
   timesheet    timesheet[]
 }
