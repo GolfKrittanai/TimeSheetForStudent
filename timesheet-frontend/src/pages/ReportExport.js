@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import Swal from "sweetalert2";
 import axios from "axios";
-import Navbar from "../components/Navbar"; // ✅ Navbar ด้านบน
+import Sidebar from "../components/Sidebar"; // ✅ import Sidebar component
 
 const API_URL = process.env.REACT_APP_API;
 
@@ -31,7 +31,12 @@ function ReportExport({ user }) {
 
   const fetchPreview = async () => {
     if (!startDate || !endDate) {
-      Swal.fire({ title: "แจ้งเตือน", text: "กรุณาเลือกช่วงวันที่", icon: "warning", confirmButtonColor: "#00796b" });
+      Swal.fire({
+        title: "แจ้งเตือน",
+        text: "กรุณาเลือกช่วงวันที่",
+        icon: "warning",
+        confirmButtonColor: "#00796b",
+      });
       return;
     }
     setLoading(true);
@@ -73,7 +78,12 @@ function ReportExport({ user }) {
 
   const handleExport = async () => {
     if (!startDate || !endDate) {
-      Swal.fire({ title: "แจ้งเตือน", text: "กรุณาเลือกช่วงวันที่", icon: "warning", confirmButtonColor: "#00796b" });
+      Swal.fire({
+        title: "แจ้งเตือน",
+        text: "กรุณาเลือกช่วงวันที่",
+        icon: "warning",
+        confirmButtonColor: "#00796b",
+      });
       return;
     }
     setLoading(true);
@@ -102,7 +112,9 @@ function ReportExport({ user }) {
 
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
-      link.download = `timesheet_${startDate}_${endDate}.${body.format === "pdf" ? "pdf" : "xlsx"}`;
+      link.download = `timesheet_${startDate}_${endDate}.${
+        body.format === "pdf" ? "pdf" : "xlsx"
+      }`;
       link.click();
     } catch (err) {
       Swal.fire({
@@ -115,22 +127,23 @@ function ReportExport({ user }) {
       setLoading(false);
     }
   };
-  
+
   return (
-    <>
-      <Navbar />
+    <Box sx={{ display: 'flex' }}>
+      <Sidebar />
       <Box
+        component="main"
         sx={{
+          flexGrow: 1, // ✅ เพิ่ม flex-grow เพื่อให้ Box ขยายเต็มพื้นที่ที่เหลือ
+          p: 4,
+          mt: 5,
           minHeight: "90vh",
           backgroundColor: "#f5f7fa",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          pt: 6,
-          px: 2,
-          pb: 6,
-          maxWidth: 850,
-          mx: "auto",
+          fontFamily: '"Didonesque", sans-serif',
+          // ❌ ลบ mx และ maxWidth ออก
         }}
       >
         <Typography
@@ -146,7 +159,6 @@ function ReportExport({ user }) {
         >
           ส่งออกรายงาน Timesheet
         </Typography>
-
         <Paper
           elevation={4}
           sx={{
@@ -170,7 +182,9 @@ function ReportExport({ user }) {
                   fontFamily: '"Didonesque", sans-serif',
                   borderRadius: 2,
                   bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#ccc",
+                  },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
                     borderColor: "#00796b",
                   },
@@ -201,7 +215,9 @@ function ReportExport({ user }) {
                   fontFamily: '"Didonesque", sans-serif',
                   borderRadius: 2,
                   bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#ccc",
+                  },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
                     borderColor: "#00796b",
                   },
@@ -216,20 +232,21 @@ function ReportExport({ user }) {
                 sx: {
                   color: "",
                   "&.Mui-focused": {
-                    color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                    color: "#00796b",
                   },
                 },
               }}
             />
-
             {isAdmin && (
               <>
                 <TextField
-                  label="รหัสนักศึกษา เริ่มต้น"
+                  label="รหัสนักศึกษาเริ่มต้น"
                   value={startStudentId}
                   onChange={(e) => setStartStudentId(e.target.value)}
                   InputProps={{
                     sx: {
+                      mb: 1,
+                      fontFamily: '"Didonesque", sans-serif',
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -248,17 +265,19 @@ function ReportExport({ user }) {
                     sx: {
                       color: "",
                       "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                        color: "#00796b",
                       },
                     },
                   }}
                 />
                 <TextField
-                  label="รหัสนักศึกษา สิ้นสุด"
+                  label="รหัสนักศึกษาสิ้นสุด"
                   value={endStudentId}
                   onChange={(e) => setEndStudentId(e.target.value)}
                   InputProps={{
                     sx: {
+                      mb: 1,
+                      fontFamily: '"Didonesque", sans-serif',
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -277,96 +296,43 @@ function ReportExport({ user }) {
                     sx: {
                       color: "",
                       "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                        color: "#00796b",
                       },
                     },
                   }}
                 />
               </>
             )}
-
-            <FormControl>
-              <InputLabel
-                shrink
-                sx={{
-                  color: "#757676ff", // สีเริ่มต้นของ InputLabel
-                  "&.Mui-focused": {
-                    color: "#004d40", // สีของ InputLabel เมื่อกรอบโฟกัส
-                  },
-                }}
-              >
-                เลือกรูปแบบ
-              </InputLabel>
+            <FormControl fullWidth>
+              <InputLabel id="format-select-label">รูปแบบไฟล์</InputLabel>
               <Select
+                labelId="format-select-label"
                 value={format}
+                label="รูปแบบไฟล์"
                 onChange={(e) => setFormat(e.target.value)}
-                displayEmpty
                 sx={{
+                  fontFamily: '"Didonesque", sans-serif',
                   borderRadius: 2,
+                  bgcolor: "#fafafa",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#ccc", // สีกรอบที่เลือก
+                    borderColor: "#ccc",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b", // สีกรอบที่ hover
+                    borderColor: "#00796b",
                   },
                   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b", // สีกรอบเมื่อโฟกัส
-                    boxShadow: "0 0 5px 0 #00796b", // เอฟเฟกต์สีเขียวเมื่อโฟกัส
+                    borderColor: "#00796b",
+                    boxShadow: "0 0 5px 0 #00796b",
                   },
                 }}
               >
                 <MenuItem value="pdf">PDF</MenuItem>
-                <MenuItem value="excel">Excel</MenuItem>
+                <MenuItem value="xlsx">Excel (XLSX)</MenuItem>
               </Select>
             </FormControl>
-
-            <Button
-              variant="outlined"
-              onClick={fetchPreview}
-              disabled={loading}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: "600",
-                fontSize: 16,
-                backgroundColor: "#ffffffff",
-                borderColor: "#ccc",
-                color: "#000",
-                "&:hover": {
-                  backgroundColor: "#00796b",
-                  color: "#fff",
-                },
-              }}
-            >
-              {loading ? <CircularProgress size={20} /> : "ดูตัวอย่างข้อมูล"}
-            </Button>
-
-            <Box
-              maxHeight={250}
-              overflow="auto"
-              border="1px solid #ccc"
-              p={2}
-              borderRadius={2}
-              bgcolor="#f9f9f9"
-            >
-              {previewData.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  ไม่มีข้อมูลแสดง
-                </Typography>
-              ) : (
-                previewData.map((item, index) => (
-                  <Typography key={index} fontSize={14}>
-                    📅 {item.date.slice(0, 10)} | 🎓 {item.studentId} | 🕒{" "}
-                    {item.hours} ชม. | 📝 {item.activity}
-                  </Typography>
-                ))
-              )}
-            </Box>
-
             <Button
               variant="contained"
-              color="primary"
-              onClick={handleExport}
+              onClick={fetchPreview}
               disabled={loading}
               sx={{
                 borderRadius: 2,
@@ -384,13 +350,62 @@ function ReportExport({ user }) {
               {loading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                "ส่งออกไฟล์"
+                "แสดงตัวอย่าง"
               )}
             </Button>
           </Stack>
         </Paper>
+
+        <Paper
+          elevation={2}
+          sx={{
+            width: "100%",
+            p: 2,
+            borderRadius: 2,
+            bgcolor: "#f9f9f9",
+          }}
+        >
+          {previewData.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              ไม่มีข้อมูลแสดง
+            </Typography>
+          ) : (
+            previewData.map((item, index) => (
+              <Typography key={index} fontSize={14}>
+                📅 {item.date.slice(0, 10)} | 🎓 {item.studentId} | 🕒{" "}
+                {item.hours} ชม. | 📝 {item.activity}
+              </Typography>
+            ))
+          )}
+        </Paper>
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleExport}
+          disabled={loading}
+          sx={{
+            mt: 2,
+            borderRadius: 2,
+            textTransform: "none",
+            py: 1.5,
+            fontWeight: "700",
+            fontSize: 16,
+            backgroundColor: "#00796b",
+            "&:hover": {
+              backgroundColor: "#024f46",
+              boxShadow: "0 6px 20px rgba(0,74,153,0.3)",
+            },
+          }}
+        >
+          {loading ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            "ส่งออกไฟล์"
+          )}
+        </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 
