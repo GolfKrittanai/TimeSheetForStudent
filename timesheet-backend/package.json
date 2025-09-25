@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon",
-    "postinstall": "npm install prisma && npx prisma generate"
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "timesheet",
@@ -17,7 +17,8 @@
   "author": "GolfKrittanai",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^6.11.0",
+    "@prisma/client": "6.11.0",
+    "prisma": "6.11.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -29,8 +30,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
-    "pdfkit": "^0.17.1",
-    "prisma": "^6.11.0"
+    "pdfkit": "^0.17.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
