@@ -10,7 +10,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar"; // ✅ import Sidebar component
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
@@ -160,7 +160,7 @@ function ProfilePage() {
         try {
           const data = JSON.parse(text);
           errorMessage = data.message || errorMessage;
-        } catch { }
+        } catch {}
         throw new Error(errorMessage);
       }
 
@@ -170,7 +170,11 @@ function ProfilePage() {
       setProfile((prev) => ({ ...prev, profileImage: data.profileImage }));
       setSelectedFile(null);
     } catch (error) {
-      Swal.fire("ผิดพลาด", error.message || "เกิดข้อผิดพลาดในการอัปโหลดรูป", "error");
+      Swal.fire(
+        "ผิดพลาด",
+        error.message || "เกิดข้อผิดพลาดในการอัปโหลดรูป",
+        "error"
+      );
     }
     setUploading(false);
   };
@@ -200,7 +204,7 @@ function ProfilePage() {
           let msg = "อัปโหลดรูปไม่สำเร็จ";
           try {
             msg = JSON.parse(uploadText)?.message || msg;
-          } catch { }
+          } catch {}
           throw new Error(msg);
         }
         const uploadData = JSON.parse(uploadText);
@@ -236,6 +240,7 @@ function ProfilePage() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (!validatePassword()) return;
+
     setLoadingPwd(true);
     try {
       await changePassword(
@@ -267,274 +272,214 @@ function ProfilePage() {
   };
 
   return (
-    <>
-      <Navbar />
+    <Box sx={{ display: 'flex' }}>
+      <Sidebar />
       <Box
+        component="main"
         sx={{
+          flexGrow: 1, // ✅ เพิ่ม flex-grow เพื่อให้ Box ขยายเต็มพื้นที่ที่เหลือ
+          p: isSmallScreen ? 2 : 4,
+          mt: isSmallScreen ? 5 : 0,
           minHeight: "90vh",
-          maxWidth: 700,
-          mx: "auto",
-          px: isSmallScreen ? 2 : 4,
-          py: isSmallScreen ? 4 : 6,
           backgroundColor: "#f5f7fa",
           display: "flex",
           flexDirection: "column",
-          gap: isSmallScreen ? 3 : 4,
+          alignItems: "center",
+          fontFamily: '"Didonesque", sans-serif',
+          // ❌ ลบ mx และ maxWidth ออก
         }}
       >
-        <Typography
-          variant={isSmallScreen ? "h5" : "h4"}
-          sx={{
-            fontWeight: 700,
-            color: "#00796b",
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
-            <Avatar
-              src={
-                previewImage ||
-                (profile?.profileImage
-                  ? (profile.profileImage.startsWith("http")
-                    ? profile.profileImage
-                    : `${API_STATIC_BASE}${profile.profileImage}`)
-                  : "")
-              }
-              alt={profile?.fullName || user?.fullName || "User"}
-              sx={{
-                width: isSmallScreen ? 72 : 96,
-                height: isSmallScreen ? 72 : 96,
-                bgcolor: "#00796b",
-                fontSize: isSmallScreen ? 32 : 40,
-                transition: "box-shadow 0.3s ease",
-                "&:hover": { boxShadow: "0 0 10px 3px #00796b" },
-              }}
-            >
-              {(profile?.fullName || user?.fullName || "").charAt(0).toUpperCase()}
-            </Avatar>
-
-          </label>
-          <input
-            accept="image/*"
-            id="avatar-upload"
-            type="file"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-          โปรไฟล์ของ {profile?.fullName || user?.fullName}
-        </Typography>
-
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
-            <CircularProgress />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "50vh",
+            }}
+          >
+            <CircularProgress size={48} color="success" />
           </Box>
         ) : (
           <>
-            <Paper
+            <Typography
+              variant={isSmallScreen ? "h5" : "h4"}
               sx={{
-                p: isSmallScreen ? 3 : 4,
+                fontWeight: 700,
+                color: "#00796b",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+                mb: 4,
+              }}
+            >
+              <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
+                <Avatar
+                  src={
+                    previewImage ||
+                    (profile?.profileImage
+                      ? profile.profileImage.startsWith("http")
+                        ? profile.profileImage
+                        : `${API_STATIC_BASE}${profile.profileImage}`
+                      : "")
+                  }
+                  alt={profile?.fullName || user?.fullName || "User"}
+                  sx={{
+                    width: isSmallScreen ? 72 : 96,
+                    height: isSmallScreen ? 72 : 96,
+                    bgcolor: "#00796b",
+                    fontSize: isSmallScreen ? 32 : 40,
+                    transition: "box-shadow 0.3s ease",
+                    "&:hover": { boxShadow: "0 0 10px 3px #00796b" },
+                  }}
+                >
+                  {(profile?.fullName || user?.fullName || "").charAt(0).toUpperCase()}
+                </Avatar>
+              </label>
+              <input
+                accept="image/*"
+                id="avatar-upload"
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: "bold",
+                  color: "#333",
+                  fontFamily: '"Didonesque", sans-serif',
+                }}
+              >
+                โปรไฟล์ของฉัน
+              </Typography>
+            </Typography>
+
+            <Paper
+              elevation={4}
+              sx={{
+                width: "100%",
+                mb: 4,
+                p: isSmallScreen ? 2 : 4,
                 borderRadius: 3,
                 backgroundColor: "#fff",
+                boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
+                fontFamily: '"Didonesque", sans-serif',
               }}
-              elevation={4}
             >
-              <Typography variant="h6" sx={{ mb: 2, color: "#00796b" }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 2, fontWeight: 600, color: "#737070" }}
+              >
                 แก้ไขข้อมูลส่วนตัว
               </Typography>
-              <Box component="form" onSubmit={handleEditSubmit} noValidate>
+              <Box
+                component="form"
+                noValidate
+                autoComplete="off"
+                onSubmit={handleEditSubmit}
+              >
                 <TextField
-                  fullWidth
                   label="ชื่อ-นามสกุล"
                   name="fullName"
+                  fullWidth
                   value={editData.fullName}
                   onChange={handleEditChange}
                   error={Boolean(editErrors.fullName)}
                   helperText={editErrors.fullName}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
-                      "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                      },
-                    },
-                  }}
-                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{ mb: 2 }}
                 />
                 <TextField
-                  fullWidth
                   label="อีเมล"
                   name="email"
                   type="email"
+                  fullWidth
                   value={editData.email}
                   onChange={handleEditChange}
                   error={Boolean(editErrors.email)}
                   helperText={editErrors.email}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
-                      "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                      },
-                    },
-                  }}
-                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{ mb: 2 }}
                 />
                 <TextField
-                  fullWidth
                   label="เบอร์โทรศัพท์"
                   name="phone"
+                  fullWidth
                   value={editData.phone}
                   onChange={handleEditChange}
                   error={Boolean(editErrors.phone)}
                   helperText={editErrors.phone}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
-                      "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                      },
-                    },
-                  }}
-                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{ mb: 2 }}
                 />
                 <TextField
-                  fullWidth
                   label="ที่อยู่"
                   name="address"
+                  fullWidth
                   multiline
-                  rows={isSmallScreen ? 2 : 3}
+                  rows={3}
                   value={editData.address}
                   onChange={handleEditChange}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
-                      "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                      },
-                    },
-                  }}
-                  size={isSmallScreen ? "small" : "medium"}
+                  error={Boolean(editErrors.address)}
+                  helperText={editErrors.address}
+                  sx={{ mb: 2 }}
                 />
-
-                <Button
-                  variant="contained"
-                  type="submit"
-                  disabled={loadingEdit}
-                  sx={{
-                    backgroundColor: "#00796b",
-                    "&:hover": { backgroundColor: "#024f46" },
-                    textTransform: "none",
-                    fontWeight: 700,
-                    py: 1.5,
-                    fontSize: isSmallScreen ? "0.9rem" : "1rem",
-                  }}
-                >
-                  {loadingEdit ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
-                </Button>
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Button
+                    variant="contained"
+                    type="submit"
+                    disabled={loadingEdit}
+                    sx={{
+                      backgroundColor: "#00796b",
+                      "&:hover": { backgroundColor: "#024f46" },
+                      textTransform: "none",
+                      fontWeight: 700,
+                      py: 1.5,
+                      fontSize: isSmallScreen ? "0.9rem" : "1rem",
+                    }}
+                  >
+                    {loadingEdit ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+                  </Button>
+                </Box>
               </Box>
             </Paper>
 
             <Paper
+              elevation={4}
               sx={{
-                p: isSmallScreen ? 3 : 4,
+                width: "100%",
+                mb: 4,
+                p: isSmallScreen ? 2 : 4,
                 borderRadius: 3,
                 backgroundColor: "#fff",
+                boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
+                fontFamily: '"Didonesque", sans-serif',
               }}
-              elevation={4}
             >
-              <Typography variant="h6" sx={{ mb: 2, color: "#00796b" }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 2, fontWeight: 600, color: "#737070" }}
+              >
                 เปลี่ยนรหัสผ่าน
               </Typography>
-              <Box component="form" onSubmit={handlePasswordSubmit} noValidate>
+              <Box
+                component="form"
+                noValidate
+                autoComplete="off"
+                onSubmit={handlePasswordSubmit}
+              >
                 <TextField
-                  fullWidth
                   label="รหัสผ่านปัจจุบัน"
                   name="currentPassword"
                   type="password"
+                  fullWidth
                   value={passwordData.currentPassword}
                   onChange={handlePasswordChange}
                   error={Boolean(passwordErrors.currentPassword)}
                   helperText={passwordErrors.currentPassword}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
+                  sx={{
+                    mb: 2,
+                    "& .MuiInputBase-root": {
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -548,30 +493,26 @@ function ProfilePage() {
                         boxShadow: "0 0 5px 0 #00796b",
                       },
                     },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
+                    "& .MuiInputLabel-root": {
                       "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                        color: "#00796b",
                       },
                     },
                   }}
                   size={isSmallScreen ? "small" : "medium"}
                 />
                 <TextField
-                  fullWidth
                   label="รหัสผ่านใหม่"
                   name="newPassword"
                   type="password"
+                  fullWidth
                   value={passwordData.newPassword}
                   onChange={handlePasswordChange}
                   error={Boolean(passwordErrors.newPassword)}
                   helperText={passwordErrors.newPassword}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
+                  sx={{
+                    mb: 2,
+                    "& .MuiInputBase-root": {
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -585,30 +526,26 @@ function ProfilePage() {
                         boxShadow: "0 0 5px 0 #00796b",
                       },
                     },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
+                    "& .MuiInputLabel-root": {
                       "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
+                        color: "#00796b",
                       },
                     },
                   }}
                   size={isSmallScreen ? "small" : "medium"}
                 />
                 <TextField
-                  fullWidth
                   label="ยืนยันรหัสผ่านใหม่"
                   name="confirmNewPassword"
                   type="password"
+                  fullWidth
                   value={passwordData.confirmNewPassword}
                   onChange={handlePasswordChange}
                   error={Boolean(passwordErrors.confirmNewPassword)}
                   helperText={passwordErrors.confirmNewPassword}
-                  InputProps={{
-                    sx: {
-                      mb: 3,
-                      fontFamily: '"Didonesque", sans-serif',
+                  sx={{
+                    mb: 2,
+                    "& .MuiInputBase-root": {
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -654,7 +591,7 @@ function ProfilePage() {
           </>
         )}
       </Box>
-    </>
+    </Box>
   );
 }
 

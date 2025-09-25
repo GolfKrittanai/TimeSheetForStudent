@@ -32,13 +32,15 @@ model user {
   updatedAt    DateTime    @updatedAt
   email        String?     @db.VarChar(255)
   phone        String?     @db.VarChar(20)
-  address      String?     @db.VarChar(255)
-<<<<<<< Updated upstream
+  course                String?     @db.VarChar(50) // ✅ เพิ่มฟิลด์ใหม่: หลักสูตร
+  semester              String?     @db.VarChar(20) // ✅ เพิ่มฟิลด์ใหม่: ภาคการศึกษา
+  academicYear          String?     @db.VarChar(10) // ✅ เพิ่มฟิลด์ใหม่: ปีการศึกษา
+  companyName           String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์ใหม่: ชื่อสถานประกอบการ
+  internPosition        String?     @db.VarChar(255) 
   profileImage String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์สำหรับเก็บ URL หรือ path รูป
-=======
   passwordResetToken    String?  @unique
   passwordResetExpires  DateTime?
->>>>>>> Stashed changes
+
 
   timesheet    timesheet[]
 }
