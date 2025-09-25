@@ -1,19 +1,32 @@
 services:
-  # Backend Service - Node.js Express + Prisma
   - type: web
     name: timesheet-backend
     env: node
     plan: free
     rootDir: timesheet-backend
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     region: singapore
     nodeVersion: 18.18.2
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
-        sync: mysql://rice:Rice@2020@203.159.95.167:4406/db_timesheet_sk
+        value: mysql://rice:Rice%402020@203.159.95.167:4406/db_timesheet_sk
       - key: JWT_SECRET
-        sync: your_jwt_secret_here
+        value: your_jwt_secret_here
       - key: PORT
-
+        value: 5000
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USERNAME
+        value: kopkittanai@gmail.com
+      - key: EMAIL_PASSWORD
+        value: "oubl mltn ubdx qeyi"
+      - key: ADMIN_EMAIL
+        value: kopkittanai@gmail.com
+      - key: PRISMA_CLIENT_ENGINE_TYPE
+        value: library
+      - key: PRISMA_CLI_QUERY_ENGINE_TYPE
+        value: binary
