@@ -42,12 +42,6 @@ model user {
   passwordResetToken    String?  @unique
   passwordResetExpires  DateTime?
 
-  profileImage String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์สำหรับเก็บ URL หรือ path รูป
-
-  passwordResetToken    String?  @unique
-  passwordResetExpires  DateTime?
-
-
   timesheet    timesheet[]
 }
 
