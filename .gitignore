@@ -1,7 +1,24 @@
-node_modules/
-build/
-dist/
-.DS_Store
+# dependencies
+**/node_modules/
+
+# build outputs
+**/build/
+**/dist/
+
+# caches
+**/.cache/
+**/.eslintcache
+**/.parcel-cache/
+**/.turbo/
+**/.next/
+**/.vite/
+**/.sass-cache/
+**/*.tsbuildinfo
+
+# IDE / OS
 .vscode/
+.DS_Store
+Thumbs.db
+
+# git pack leftovers
 *.pack
-/timesheet-frontend/node_modules/.cache
