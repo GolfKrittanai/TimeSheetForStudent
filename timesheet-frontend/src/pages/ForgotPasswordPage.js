@@ -65,7 +65,7 @@ const ForgotPasswordPage = () => {
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        fontFamily: '"Didonesque", sans-serif',
+        fontFamily: '"Kanit", sans-serif',
       }}
     >
       <motion.div
@@ -102,7 +102,7 @@ const ForgotPasswordPage = () => {
               fontWeight: 700,
               color: "#00796b",
               mb: 1,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             ลืมรหัสผ่าน ?
@@ -113,7 +113,7 @@ const ForgotPasswordPage = () => {
               fontWeight: 700,
               color: "#00796b",
               mb: 1,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
            Timesheet
@@ -123,7 +123,7 @@ const ForgotPasswordPage = () => {
             sx={{
               color: "#666",
               mb: 2,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             รีเซ็ตรหัสผ่านด้วยอีเมลที่ใช้งาน
@@ -177,7 +177,7 @@ const ForgotPasswordPage = () => {
                   borderRadius: 3,
                   "&:hover": { backgroundColor: "#024f46" },
                   textTransform: "none",
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }}
                 disabled={formik.isSubmitting}
               >

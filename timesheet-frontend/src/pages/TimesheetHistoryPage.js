@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import {
   Box,
   Typography,
@@ -21,11 +23,10 @@ import {
   useTheme,
   Button,
   styled,
+  TablePagination,
+  Pagination,
 } from "@mui/material";
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from "@mui/icons-material";
+import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import {
   getMyTimeSheets,
   deleteTimeSheet,
@@ -36,33 +37,50 @@ import Swal from "sweetalert2";
 import Sidebar from "../components/Sidebar";
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
-    "& .MuiInputBase-root": {
-      fontFamily: '"Didonesque", sans-serif',
-      borderRadius: theme.spacing(2),
-      backgroundColor: "#fafafa",
-      "& .MuiOutlinedInput-notchedOutline": {
-        borderColor: "#ccc",
-      },
-      "&:hover .MuiOutlinedInput-notchedOutline": {
-        borderColor: "#00796b",
-      },
-      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-        borderColor: "#00796b",
-        boxShadow: "0 0 5px 0 #00796b",
-      },
+  "& .MuiInputBase-root": {
+    fontFamily: '"Kanit", sans-serif',
+    borderRadius: theme.spacing(2),
+    backgroundColor: "#fafafa",
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#ccc",
     },
-    "& .MuiInputLabel-root": {
-      "&.Mui-focused": {
-        color: "#00796b",
-      },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#00796b",
     },
-  }));
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#00796b",
+      boxShadow: "0 0 5px 0 #00796b",
+    },
+  },
+  "& .MuiInputLabel-root": {
+    "&.Mui-focused": {
+      color: "#00796b",
+    },
+  },
+}));
+
+const GreenTableCell = styled(TableCell)(({ theme }) => ({
+  color: "#00796b",
+  backgroundColor: "#fff",
+  fontWeight: "bold",
+  borderRight: "1px solid #fff",
+}));
+
+const RedTableCell = styled(TableCell)(({ theme }) => ({
+  color: theme.palette.error.main,
+  backgroundColor: "#fff",
+  fontWeight: "bold",
+  borderRight: "1px solid #fff",
+}));
 
 function TimesheetHistoryPage() {
   const { token, user } = useAuth();
   const [timeSheets, setTimeSheets] = useState([]);
+  const [filteredTimeSheets, setFilteredTimeSheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -74,11 +92,15 @@ function TimesheetHistoryPage() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await getMyTimeSheets(token);
       setTimeSheets(res.data);
+      setFilteredTimeSheets(res.data);
     } catch {
       Swal.fire("ผิดพลาด", "ไม่สามารถโหลด Timesheet ได้", "error");
     }
@@ -89,6 +111,50 @@ function TimesheetHistoryPage() {
     fetchData();
   }, []);
 
+  const handleFilter = () => {
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    if (start && end && start > end) {
+      Swal.fire("ผิดพลาด", "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด", "warning");
+      return;
+    }
+
+    const newFiltered = timeSheets.filter((t) => {
+      const timeSheetDate = new Date(t.date.slice(0, 10));
+      const matchStart = start ? timeSheetDate >= start : true;
+      const matchEnd = end ? timeSheetDate <= end : true;
+      return matchStart && matchEnd;
+    });
+    setFilteredTimeSheets(newFiltered);
+  };
+
+  const handleResetFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setFilteredTimeSheets(timeSheets);
+  };
+
+  const calculateWorkingHours = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return 0;
+
+    const [inHour, inMinute] = checkIn.split(":").map(Number);
+    const [outHour, outMinute] = checkOut.split(":").map(Number);
+
+    const inDate = new Date();
+    inDate.setHours(inHour, inMinute, 0);
+
+    const outDate = new Date();
+    outDate.setHours(outHour, outMinute, 0);
+
+    if (outDate < inDate) {
+      outDate.setDate(outDate.getDate() + 1);
+    }
+
+    const diffMs = outDate.getTime() - inDate.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60));
+  };
+
   const handleViewOpen = (timesheet) => {
     setViewData(timesheet);
     setViewOpen(true);
@@ -98,6 +164,20 @@ function TimesheetHistoryPage() {
     setViewOpen(false);
     setViewData(null);
   };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // รีเซ็ตกลับไปหน้าแรกเมื่อเปลี่ยน rows per page
+  };
+
+  const visibleTimeSheets = filteredTimeSheets.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   const handleEditOpen = (timesheet) => {
     setEditData({
@@ -181,6 +261,7 @@ function TimesheetHistoryPage() {
       try {
         await deleteTimeSheet(id, token);
         setTimeSheets((prev) => prev.filter((t) => t.id !== id));
+        setFilteredTimeSheets((prev) => prev.filter((t) => t.id !== id));
         Swal.fire({
           title: "ลบสำเร็จ",
           text: "TimeSheet ได้ถูกลบแล้ว",
@@ -199,7 +280,7 @@ function TimesheetHistoryPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
         component="main"
@@ -212,7 +293,7 @@ function TimesheetHistoryPage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          fontFamily: '"Didonesque", sans-serif',
+          fontFamily: '"Kanit", sans-serif',
         }}
       >
         <Typography
@@ -220,15 +301,98 @@ function TimesheetHistoryPage() {
           sx={{
             fontWeight: "700",
             color: "#00796b",
-            mt: 4,
-            mb: 4,
+            mt: 3,
+            mb: 3,
             textAlign: "center",
             letterSpacing: 1,
-            fontFamily: '"Didonesque", sans-serif',
+            fontFamily: '"Kanit", sans-serif',
           }}
         >
           Timesheet History
         </Typography>
+
+        {/* Filter Section */}
+        <Paper
+          elevation={2}
+          sx={{
+            width: "100%",
+            borderRadius: 2,
+            p: 2,
+            mb: 2,
+            display: "flex",
+            flexDirection: isSmallScreen ? "column" : "row",
+            justifyContent: isSmallScreen ? "flex-start" : "space-between",
+            gap: 2,
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: isSmallScreen ? "column" : "row",
+              gap: 2,
+              width: isSmallScreen ? "100%" : "auto",
+            }}
+          >
+            <StyledTextField
+              label="วันที่เริ่มต้น"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              sx={{ flex: 1, minWidth: 50 }}
+            />
+            <StyledTextField
+              label="วันที่สิ้นสุด"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              sx={{ flex: 1, minWidth: 50 }}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row", // ปุ่มจะอยู่ข้างกันเสมอ
+              gap: 1, // ช่องว่างระหว่างปุ่ม
+              mt: isSmallScreen ? 1 : 0, // เว้นระยะด้านบนถ้าเป็นจอเล็ก
+            }}
+          >
+            <Button
+              variant="contained"
+              onClick={handleFilter}
+              sx={{
+                height: 40,
+                width: 150,
+                textTransform: "none",
+                borderRadius: 2,
+                backgroundColor: "#00796b",
+                "&:hover": { backgroundColor: "#024f46" },
+              }}
+            >
+              ค้นหา
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleResetFilter}
+              sx={{
+                height: 40,
+                width: 150,
+                textTransform: "none",
+                color: "#00796b",
+                borderRadius: 2,
+                borderColor: "#00796b",
+                "&:hover": {
+                  borderColor: "#024f46",
+                  backgroundColor: "#f0f7f6",
+                },
+              }}
+            >
+              ล้างค่า
+            </Button>
+          </Box>
+        </Paper>
 
         <Paper
           elevation={4}
@@ -239,7 +403,7 @@ function TimesheetHistoryPage() {
             backgroundColor: "#fff",
             boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
             overflowX: "auto",
-            fontFamily: '"Didonesque", sans-serif',
+            fontFamily: '"Kanit", sans-serif',
           }}
         >
           {loading ? (
@@ -253,7 +417,7 @@ function TimesheetHistoryPage() {
             >
               <CircularProgress size={48} color="success" />
             </Box>
-          ) : timeSheets.length === 0 ? (
+          ) : filteredTimeSheets.length === 0 ? (
             <Typography
               sx={{ textAlign: "center", color: "text.disabled", py: 8 }}
               variant="subtitle1"
@@ -269,6 +433,19 @@ function TimesheetHistoryPage() {
                       fontWeight: "bold",
                       color: "#ffffff",
                       fontSize: isSmallScreen ? 12 : 14,
+                      minWidth: 50,
+                      textAlign: "center", // จัดกึ่งกลาง
+                    }}
+                  >
+                    ลำดับ
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#ffffff",
+                      fontSize: isSmallScreen ? 12 : 14,
+                      whiteSpace: "nowrap",
+                      textAlign: "center", // จัดกึ่งกลาง
                     }}
                   >
                     วันที่
@@ -278,6 +455,8 @@ function TimesheetHistoryPage() {
                       fontWeight: "bold",
                       color: "#ffffff",
                       fontSize: isSmallScreen ? 12 : 14,
+                      whiteSpace: "nowrap",
+                      textAlign: "center", // จัดกึ่งกลาง
                     }}
                   >
                     เวลาเข้า
@@ -287,6 +466,8 @@ function TimesheetHistoryPage() {
                       fontWeight: "bold",
                       color: "#ffffff",
                       fontSize: isSmallScreen ? 12 : 14,
+                      whiteSpace: "nowrap",
+                      textAlign: "center", // จัดกึ่งกลาง
                     }}
                   >
                     เวลาออก
@@ -297,7 +478,6 @@ function TimesheetHistoryPage() {
                       color: "#ffffff",
                       fontSize: isSmallScreen ? 12 : 14,
                       whiteSpace: "nowrap",
-                      maxWidth: 200,
                     }}
                   >
                     กิจกรรม
@@ -306,8 +486,20 @@ function TimesheetHistoryPage() {
                     sx={{
                       fontWeight: "bold",
                       color: "#ffffff",
+                      fontSize: isSmallScreen ? 12 : 14,
+                      whiteSpace: "nowrap",
+                      textAlign: "center", // จัดกึ่งกลาง
+                    }}
+                  >
+                    ชั่วโมงการทำงาน
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#ffffff",
                       minWidth: 100,
                       fontSize: isSmallScreen ? 12 : 14,
+                      textAlign: "center", // จัดกึ่งกลาง
                     }}
                   >
                     จัดการ
@@ -315,30 +507,54 @@ function TimesheetHistoryPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {timeSheets.map((t) => (
+                {/* เปลี่ยนมาใช้ visibleTimeSheets ที่ถูกแบ่งหน้าแล้ว */}
+                {visibleTimeSheets.map((t, index) => (
                   <TableRow
                     key={t.id}
                     hover
                     onClick={() => handleViewOpen(t)}
                     sx={{ cursor: "pointer" }}
                   >
-                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {new Date(t.date).toLocaleDateString("th-TH")}
+                    <TableCell
+                      sx={{
+                        fontSize: isSmallScreen ? 12 : 14,
+                        textAlign: "center",
+                      }}
+                    >
+                      {/* แก้ไขการแสดงลำดับที่: (หน้าปัจจุบัน * รายการต่อหน้า) + index + 1 */}
+                      {page * rowsPerPage + index + 1}
                     </TableCell>
-                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
-                      {formatInTimeZone(
-                        t.checkInTime,
-                        "Asia/Bangkok",
-                        "HH:mm"
-                      )}
+                    <TableCell
+                      sx={{
+                        fontSize: isSmallScreen ? 12 : 14,
+                        whiteSpace: "nowrap",
+                        textAlign: "center",
+                      }}
+                    >
+                      {format(new Date(t.date), "dd MMM yyyy", { locale: th })}
                     </TableCell>
-                    <TableCell sx={{ fontSize: isSmallScreen ? 12 : 14 }}>
+                    <GreenTableCell
+                      sx={{
+                        fontSize: isSmallScreen ? 12 : 14,
+                        whiteSpace: "nowrap",
+                        textAlign: "center",
+                      }}
+                    >
+                      {formatInTimeZone(t.checkInTime, "Asia/Bangkok", "HH:mm")}
+                    </GreenTableCell>
+                    <RedTableCell
+                      sx={{
+                        fontSize: isSmallScreen ? 12 : 14,
+                        whiteSpace: "nowrap",
+                        textAlign: "center",
+                      }}
+                    >
                       {formatInTimeZone(
                         t.checkOutTime,
                         "Asia/Bangkok",
                         "HH:mm"
                       )}
-                    </TableCell>
+                    </RedTableCell>
                     <TableCell
                       sx={{
                         whiteSpace: "nowrap",
@@ -350,7 +566,19 @@ function TimesheetHistoryPage() {
                     >
                       {t.activity}
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      sx={{
+                        fontSize: isSmallScreen ? 12 : 14,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      }}
+                    >
+                      {calculateWorkingHours(
+                        t.checkInTime.slice(11, 16),
+                        t.checkOutTime.slice(11, 16)
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Tooltip title="แก้ไข">
                         <IconButton
                           sx={{ color: "#00796b" }}
@@ -385,6 +613,93 @@ function TimesheetHistoryPage() {
               </TableBody>
             </Table>
           )}
+          {filteredTimeSheets.length > 0 && (
+            // ✅ ใช้ Box เป็นตัวจัดการ Pagination แทน TablePagination
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between", // แยกซ้าย (Status) และขวา (Pagination)
+                alignItems: "center",
+                py: 1, // Padding แนวตั้ง
+                px: 2, // Padding แนวนอน
+                fontFamily: '"Kanit", sans-serif',
+                // Note: เราจะใช้ rowsPerPage ที่ตั้งค่าไว้ก่อนหน้า (สมมติว่าเป็น 10)
+              }}
+            >
+              {/* 1. ส่วนซ้าย: ข้อความสถานะ "1-10 จาก 11" */}
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                component="div"
+                count={filteredTimeSheets.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage} // 💡 ต้องมีตัวนี้ด้วย
+                labelRowsPerPage="" // ✅ ซ่อน Label "รายการต่อหน้า:"
+                labelDisplayedRows={() => ""} // ✅ ซ่อนข้อความสถานะ "1-10 จาก 11"
+                sx={{
+                  // กำหนดความกว้างให้พอดีกับเนื้อหา
+                  width: "auto",
+                  overflow: "hidden", // ซ่อนส่วนที่อาจจะล้นออกไป
+
+                  "& .MuiTablePagination-toolbar": {
+                    padding: 0,
+                    minHeight: "auto", // ลดความสูงไม่ให้กินพื้นที่มากเกินไป
+
+                    // ซ่อนส่วนประกอบที่ไม่ต้องการ
+                    "& .MuiTablePagination-actions": {
+                      display: "none", // ✅ ซ่อนปุ่มลูกศร (< >)
+                    },
+                    "& .MuiTablePagination-spacer": {
+                      display: "none", // ✅ ซ่อน Spacer
+                    },
+                    "& .MuiTablePagination-displayedRows": {
+                      display: "none", // ✅ ซ่อนข้อความสถานะ
+                    },
+
+                    // จัด Select ให้อยู่ชิดซ้าย
+                    "& .MuiTablePagination-selectRoot": {
+                      margin: 0,
+
+                      // Style Select Dropdown
+                      "& .MuiTablePagination-select": {
+                        fontFamily: '"Kanit", sans-serif',
+                        fontSize: 14,
+                        fontWeight: 500,
+                      },
+                    },
+                  },
+                }}
+              />
+              {/* 2. ส่วนขวา: ปุ่มตัวเลข Pagination */}
+              <Pagination
+                count={Math.ceil(filteredTimeSheets.length / rowsPerPage)} // จำนวนหน้าทั้งหมด
+                page={page + 1} // หน้าปัจจุบัน (ต้องเริ่มจาก 1 สำหรับ Pagination)
+                onChange={(event, value) => handleChangePage(event, value - 1)} // ปรับค่ากลับเป็น Index 0
+                variant="outlined"
+                shape="rounded"
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    fontFamily: '"Kanit", sans-serif',
+                    fontWeight: 500,
+                    borderRadius: "50%",
+                  },
+                  // ✅ เพิ่ม Style สำหรับปุ่มที่ถูกเลือก (Active Page)
+                  "& .MuiPaginationItem-root.Mui-selected": {
+                    backgroundColor: "#00796b", // สีพื้นหลัง: เขียว
+                    color: "white", // สีตัวอักษร: ขาว
+                    fontWeight: 700,
+                    borderRadius: "50%",
+                    // ทำให้สีไม่เปลี่ยนกลับเมื่อชี้เม้าส์
+                    "&:hover": {
+                      backgroundColor: "#024f46", // สีเข้มขึ้นเมื่อ hover (ตามสไตล์ที่คุณชอบ)
+                      color: "white",
+                    },
+                  },
+                }}
+              />
+            </Box>
+          )}
         </Paper>
         <Dialog
           open={viewOpen}
@@ -414,17 +729,38 @@ function TimesheetHistoryPage() {
           onClose={handleEditClose}
           maxWidth="sm"
           fullWidth
+          sx={{ "& .MuiDialog-paper": { borderRadius: 6, maxWidth: 500 } }}
         >
-          <DialogTitle sx={{ fontWeight: "bold", color: "#00796b" }}>
+          <DialogTitle
+            sx={{
+              fontWeight: "bold",
+              color: "#00796b",
+              textAlign: "center",
+              mt: 2,
+              mb: 0,
+            }}
+          >
             แก้ไข TimeSheet
           </DialogTitle>
-          <DialogContent dividers>
+          <Box
+            sx={{
+              width: "80%",
+              height: "2px",
+              backgroundColor: "#00796b",
+              mx: "auto",
+              mt: 0,
+              mb: 2,
+            }}
+          />
+          <DialogContent>
             <Box
               component="form"
               noValidate
               autoComplete="off"
               onSubmit={handleEditSubmit}
               sx={{
+                maxWidth: 450,
+                mx: "auto",
                 "& .MuiTextField-root": {
                   my: 1,
                 },
@@ -434,12 +770,14 @@ function TimesheetHistoryPage() {
                 label="วันที่"
                 name="date"
                 type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
                 value={editData?.date || ""}
                 onChange={handleEditChange}
+                disabled={true}
                 error={Boolean(editErrors.date)}
                 helperText={editErrors.date}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                sx={{ mb: 2 }}
               />
               <StyledTextField
                 label="เวลาเข้า"

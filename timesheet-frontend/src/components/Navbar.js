@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   AppBar,
@@ -53,7 +54,7 @@ function Navbar() {
         backgroundColor: "#0b463f",
         borderBottom: "1px solid #4e4c4c",
         mb: 1,
-        fontFamily: '"Didonesque", sans-serif', // เพิ่มฟอนต์ที่ต้องการ
+        fontFamily: '"Kanit", sans-serif', // เพิ่มฟอนต์ที่ต้องการ
         width:"100%"
       }}
     >
@@ -72,7 +73,7 @@ function Navbar() {
             sx={{
               fontWeight: 700,
               color: "#fff",
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }} // ใช้ฟอนต์ที่ต้องการ
           >
             TimeSheet System
@@ -80,7 +81,7 @@ function Navbar() {
           {/* <Typography
             variant="body2"
             color="#fff"
-            sx={{ fontFamily: '"Didonesque", sans-serif' }}
+            sx={{ fontFamily: '"Kanit", sans-serif' }}
           >
             {user.fullName} ({user.role})
           </Typography> */}
@@ -106,7 +107,7 @@ function Navbar() {
                       navigate("/admin");
                       handleMenuClose();
                     }}
-                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                    sx={{ gap: 1, fontFamily: '"Kanit", sans-serif' }}
                   >
                     <DashboardIcon fontSize="small" />
                     Admin Dashboard
@@ -117,7 +118,7 @@ function Navbar() {
                       navigate("/report");
                       handleMenuClose();
                     }}
-                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                    sx={{ gap: 1, fontFamily: '"Kanit", sans-serif' }}
                   >
                     <ReportIcon fontSize="small" />
                     Export Report
@@ -131,7 +132,7 @@ function Navbar() {
                       navigate("/student");
                       handleMenuClose();
                     }}
-                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                    sx={{ gap: 1, fontFamily: '"Kanit", sans-serif' }}
                   >
                     <TimesheetIcon fontSize="small" />
                     My Timesheet
@@ -141,7 +142,7 @@ function Navbar() {
                       navigate("/student/export");
                       handleMenuClose();
                     }}
-                    sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }}
+                    sx={{ gap: 1, fontFamily: '"Kanit", sans-serif' }}
                   >
                     <ReportIcon fontSize="small" />
                     Export Timesheet
@@ -154,7 +155,7 @@ function Navbar() {
                   navigate("/profile");
                   handleMenuClose();
                 }}
-                sx={{ gap: 1, fontFamily: '"Didonesque", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
+                sx={{ gap: 1, fontFamily: '"Kanit", sans-serif' }} // ใช้ฟอนต์ที่ต้องการ
               >
                 <ProfileIcon fontSize="small" />
                 โปรไฟล์
@@ -167,7 +168,7 @@ function Navbar() {
                 sx={{
                   gap: 1,
                   color: "error.main",
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }} // ใช้ฟอนต์ที่ต้องการ
               >
                 <LogoutIcon fontSize="small" />
@@ -185,7 +186,7 @@ function Navbar() {
                   textTransform: "none",
                   color: "#fff",
                   fontWeight: "bold",
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }} // ใช้ฟอนต์ที่ต้องการ
               >
                 Admin Dashboard
@@ -201,7 +202,7 @@ function Navbar() {
                     textTransform: "none",
                     color: "#fff",
                     fontWeight: "bold",
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                   }}
                 >
                   Export Report
@@ -217,7 +218,7 @@ function Navbar() {
                     textTransform: "none",
                     color: "#fff",
                     fontWeight: "bold",
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                   }}
                 >
                   My Timesheet
@@ -232,7 +233,7 @@ function Navbar() {
                     textTransform: "none",
                     color: "#fff",
                     fontWeight: "bold",
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                   }}
                 >
                   Export Timesheet
@@ -248,7 +249,7 @@ function Navbar() {
                 textTransform: "none",
                 color: "#fff",
                 fontWeight: "bold",
-                fontFamily: '"Didonesque", sans-serif',
+                fontFamily: '"Kanit", sans-serif',
               }} // ใช้ฟอนต์ที่ต้องการ
             >
               Profile
@@ -263,7 +264,7 @@ function Navbar() {
                 textTransform: "none",
                 color: "#fff",
                 fontWeight: "bold", // ทำให้ข้อความตัวหนา
-                fontFamily: '"Didonesque", sans-serif', // ใช้ฟอนต์ที่ต้องการ
+                fontFamily: '"Kanit", sans-serif', // ใช้ฟอนต์ที่ต้องการ
               }}
             >
               Logout
@@ -276,3 +277,4 @@ function Navbar() {
 }
 
 export default Navbar;
+

@@ -385,7 +385,7 @@ function StudentTimesheetView() {
                   sx: {
                     mt: 1,
                     mb: 2,
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                     borderRadius: 2,
                     bgcolor: "#fafafa",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -421,7 +421,7 @@ function StudentTimesheetView() {
                 InputProps={{
                   sx: {
                     mb: 2,
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                     borderRadius: 2,
                     bgcolor: "#fafafa",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -456,7 +456,7 @@ function StudentTimesheetView() {
                 InputProps={{
                   sx: {
                     mb: 2,
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                     borderRadius: 2,
                     bgcolor: "#fafafa",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -492,7 +492,7 @@ function StudentTimesheetView() {
                 InputProps={{
                   sx: {
                     mb: 1,
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                     borderRadius: 2,
                     bgcolor: "#fafafa",
                     "& .MuiOutlinedInput-notchedOutline": {

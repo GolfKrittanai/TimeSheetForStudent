@@ -1,4 +1,5 @@
-import axios from 'axios';
+
+import axios from "axios";
 
 const API_URL = process.env.REACT_APP_API;
 
@@ -20,9 +21,24 @@ export const deleteTimeSheet = (id, token) => {
   });
 };
 
-// เพิ่มฟังก์ชันนี้สำหรับแก้ไข Timesheet
+// เพิ่มฟังก์ชันสำหรับแก้ไข Timesheet
 export const updateTimeSheet = (id, data, token) => {
   return axios.put(`${API_URL}/timesheets/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
+};
+
+// ✅ เพิ่ม: ฟังก์ชันตรวจสอบการบันทึกซ้ำ (สำหรับใช้ใน StudentDashboard.js)
+export const checkTimesheetExists = async (date, token) => {
+  const response = await axios.get(`${API_URL}/timesheets/check-existence`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: {
+      date: date,
+    },
+  });
+
+  // คืนค่า exists: true/false ที่ได้จาก Backend
+  return response.data.exists;
 };

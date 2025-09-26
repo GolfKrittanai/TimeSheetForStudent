@@ -9,8 +9,13 @@ import {
   Avatar,
   useTheme,
   useMediaQuery,
+  Grid,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from "@mui/material";
-import Sidebar from "../components/Sidebar"; // ✅ import Sidebar component
+import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
@@ -24,12 +29,14 @@ function ProfilePage() {
   const { token, user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
+  const [loadingPwd, setLoadingPwd] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const navigate = useNavigate();
   const API_BASE = process.env.REACT_APP_API || "";
   const API_STATIC_BASE = API_BASE.replace(/\/api$/, "");
-
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   // สเตทสำหรับจัดการไฟล์รูปที่เลือก
   const [selectedFile, setSelectedFile] = useState(null);
@@ -40,542 +47,343 @@ function ProfilePage() {
     // ทำงานตอน component จะ unmount หรือ previewImage เปลี่ยนแปลง
     return () => {
       if (previewImage) {
-        URL.revokeObjectURL(previewImage); // คืนหน่วยความจำให้ browser
+        URL.revokeObjectURL(previewImage);
       }
     };
   }, [previewImage]);
 
-  // ฟอร์มแก้ไขข้อมูลส่วนตัว
-  const [editData, setEditData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
-  const [editErrors, setEditErrors] = useState({});
-  const [loadingEdit, setLoadingEdit] = useState(false);
-
-  // ฟอร์มเปลี่ยนรหัสผ่าน
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmNewPassword: "",
-  });
-  const [passwordErrors, setPasswordErrors] = useState({});
-  const [loadingPwd, setLoadingPwd] = useState(false);
+  const fetchProfile = async () => {
+    try {
+      const data = await getUserProfile(token);
+      setProfile(data);
+    } catch (error) {
+      console.error("Failed to fetch user profile", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const res = await getUserProfile(token);
-        console.log("Profile from API:", res.data);
-        setProfile(res.data);
-        setEditData({
-          fullName: res.data.fullName || "",
-          email: res.data.email || "",
-          phone: res.data.phone || "",
-          address: res.data.address || "",
-        });
-      } catch (error) {
-        Swal.fire({
-          title: "ผิดพลาด",
-          text: "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้",
-          icon: "error",
-          confirmButtonColor: "#00796b",
-        });
-      }
-      setLoading(false);
-    };
-    fetchProfile();
+    if (token) {
+      fetchProfile();
+    }
   }, [token]);
 
-  const validateEdit = () => {
-    const errors = {};
-    if (!editData.fullName.trim()) errors.fullName = "กรุณากรอกชื่อ-นามสกุล";
-    if (editData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email))
-      errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
-    if (editData.phone && !/^[0-9()+-\s]{5,20}$/.test(editData.phone))
-      errors.phone = "รูปแบบเบอร์โทรไม่ถูกต้อง";
-    setEditErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const validatePassword = () => {
-    const errors = {};
-    if (!passwordData.currentPassword)
-      errors.currentPassword = "กรุณากรอกรหัสผ่านปัจจุบัน";
-    if (!passwordData.newPassword) errors.newPassword = "กรุณากรอกรหัสผ่านใหม่";
-    else if (passwordData.newPassword.length < 6)
-      errors.newPassword = "รหัสผ่านใหม่ต้องอย่างน้อย 6 ตัวอักษร";
-    if (passwordData.newPassword !== passwordData.confirmNewPassword)
-      errors.confirmNewPassword = "รหัสผ่านไม่ตรงกัน";
-    setPasswordErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleEditChange = (e) => {
+  const handleUpdateChange = (e) => {
     const { name, value } = e.target;
-    setEditData((prev) => ({ ...prev, [name]: value }));
+    setProfile((prevProfile) => ({
+      ...prevProfile,
+      [name]: value,
+    }));
   };
 
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewImage(URL.createObjectURL(file)); // สร้าง URL preview
-    }
-  };
-
-  const handleUploadImage = async () => {
-    if (!selectedFile) {
-      Swal.fire("ผิดพลาด", "กรุณาเลือกไฟล์รูปก่อน", "error");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("profileImage", selectedFile);
-
-    setUploading(true);
-    try {
-      const API_BASE = process.env.REACT_APP_API || "";
-      const res = await fetch(`${API_BASE}/api/profile/upload-avatar`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const text = await res.text();
-      console.log("Upload response:", text);
-
-      if (!res.ok) {
-        let errorMessage = "อัปโหลดไม่สำเร็จ";
-        try {
-          const data = JSON.parse(text);
-          errorMessage = data.message || errorMessage;
-        } catch {}
-        throw new Error(errorMessage);
-      }
-
-      const data = JSON.parse(text);
-
-      Swal.fire("สำเร็จ", "อัปโหลดรูปโปรไฟล์สำเร็จ", "success");
-      setProfile((prev) => ({ ...prev, profileImage: data.profileImage }));
-      setSelectedFile(null);
-    } catch (error) {
-      Swal.fire(
-        "ผิดพลาด",
-        error.message || "เกิดข้อผิดพลาดในการอัปโหลดรูป",
-        "error"
-      );
-    }
-    setUploading(false);
-  };
-
-  const handleEditSubmit = async (e) => {
+  const handleUpdateSubmit = async (e) => {
     e.preventDefault();
-    if (!validateEdit()) return;
-
-    setLoadingEdit(true);
+    setLoadingUpdate(true);
     try {
-      // 1) อัปโหลดรูปก่อน (ถ้ามี)
-      let profileImageUrl = profile?.profileImage || null;
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append("profileImage", selectedFile);
-
-        // หมายเหตุ: API_BASE คือ REACT_APP_API (เช่น https://api.site.com/api)
-        // endpoint ที่ถูกต้องจึงไม่ต้องเติม /api ซ้ำ
-        const uploadRes = await fetch(`${API_BASE}/profile/upload-avatar`, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        const uploadText = await uploadRes.text();
-        if (!uploadRes.ok) {
-          let msg = "อัปโหลดรูปไม่สำเร็จ";
-          try {
-            msg = JSON.parse(uploadText)?.message || msg;
-          } catch {}
-          throw new Error(msg);
-        }
-        const uploadData = JSON.parse(uploadText);
-        profileImageUrl = uploadData.profileImage;
-      }
-
-      // 2) อัปเดตข้อมูลโปรไฟล์ (รวม URL รูปถ้ามี)
-      const payload = {
-        ...editData,
-        profileImage: profileImageUrl,
-      };
-      await updateUserProfile(payload, token);
-
-      await Swal.fire({
-        title: "สำเร็จ",
-        text: "อัปเดตข้อมูลเรียบร้อยแล้ว",
+      await updateUserProfile(profile, token);
+      Swal.fire({
+        title: "สำเร็จ!",
+        text: "ข้อมูลโปรไฟล์ถูกอัปเดตแล้ว",
         icon: "success",
+        confirmButtonText: "ตกลง",
         confirmButtonColor: "#00796b",
       });
-      navigate("/student"); // หรือ '/admin' ตามสิทธิ์
     } catch (error) {
+      console.error("Failed to update profile", error);
       Swal.fire({
-        title: "ผิดพลาด",
-        text: error.message || "ไม่สามารถอัปเดตข้อมูลได้",
+        title: "ผิดพลาด!",
+        text: "ไม่สามารถอัปเดตข้อมูลได้",
         icon: "error",
+        confirmButtonText: "ตกลง",
         confirmButtonColor: "#00796b",
       });
     } finally {
-      setLoadingEdit(false);
+      setLoadingUpdate(false);
     }
   };
 
-  const handlePasswordSubmit = async (e) => {
+  const handleChangePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (!validatePassword()) return;
-
+    if (newPassword !== confirmNewPassword) {
+      Swal.fire({
+        title: "ผิดพลาด!",
+        text: "รหัสผ่านใหม่และรหัสผ่านยืนยันไม่ตรงกัน",
+        icon: "error",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#00796b",
+      });
+      return;
+    }
     setLoadingPwd(true);
     try {
-      await changePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword,
-        token
-      );
-      await Swal.fire({
-        title: "สำเร็จ",
-        text: "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
-        icon: "success",
-        confirmButtonColor: "#00796b",
-      });
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmNewPassword: "",
-      });
-      navigate("/student"); // หรือ '/admin'
-    } catch (error) {
+      await changePassword(currentPassword, newPassword, token);
       Swal.fire({
-        title: "ผิดพลาด",
-        text: error.response?.data?.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ",
-        icon: "error",
+        title: "สำเร็จ!",
+        text: "เปลี่ยนรหัสผ่านเรียบร้อย",
+        icon: "success",
+        confirmButtonText: "ตกลง",
         confirmButtonColor: "#00796b",
       });
+      // Reset password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error) {
+      console.error("Failed to change password", error);
+      Swal.fire({
+        title: "ผิดพลาด!",
+        text: error.message || "ไม่สามารถเปลี่ยนรหัสผ่านได้",
+        icon: "error",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#00796b",
+      });
+    } finally {
+      setLoadingPwd(false);
     }
-    setLoadingPwd(false);
   };
 
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7f9" }}>
       <Sidebar />
       <Box
         component="main"
         sx={{
-          flexGrow: 1, // ✅ เพิ่ม flex-grow เพื่อให้ Box ขยายเต็มพื้นที่ที่เหลือ
-          p: isSmallScreen ? 2 : 4,
-          mt: isSmallScreen ? 5 : 0,
-          minHeight: "90vh",
-          backgroundColor: "#f5f7fa",
+          flexGrow: 1,
+          p: 3,
+          mt: 8,
           display: "flex",
-          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          fontFamily: '"Didonesque", sans-serif',
-          // ❌ ลบ mx และ maxWidth ออก
+          flexDirection: "column",
         }}
       >
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "50vh",
-            }}
-          >
-            <CircularProgress size={48} color="success" />
-          </Box>
-        ) : (
+        {profile && (
           <>
-            <Typography
-              variant={isSmallScreen ? "h5" : "h4"}
-              sx={{
-                fontWeight: 700,
-                color: "#00796b",
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-                mb: 4,
-              }}
+            <Paper
+              elevation={3}
+              sx={{ p: 4, maxWidth: 800, width: "100%", borderRadius: 4 }}
             >
-              <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
-                <Avatar
-                  src={
-                    previewImage ||
-                    (profile?.profileImage
-                      ? profile.profileImage.startsWith("http")
-                        ? profile.profileImage
-                        : `${API_STATIC_BASE}${profile.profileImage}`
-                      : "")
-                  }
-                  alt={profile?.fullName || user?.fullName || "User"}
-                  sx={{
-                    width: isSmallScreen ? 72 : 96,
-                    height: isSmallScreen ? 72 : 96,
-                    bgcolor: "#00796b",
-                    fontSize: isSmallScreen ? 32 : 40,
-                    transition: "box-shadow 0.3s ease",
-                    "&:hover": { boxShadow: "0 0 10px 3px #00796b" },
-                  }}
-                >
-                  {(profile?.fullName || user?.fullName || "").charAt(0).toUpperCase()}
-                </Avatar>
-              </label>
-              <input
-                accept="image/*"
-                id="avatar-upload"
-                type="file"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-              />
-              <Typography
-                variant="h5"
+              <Box
                 sx={{
-                  fontWeight: "bold",
-                  color: "#333",
-                  fontFamily: '"Didonesque", sans-serif',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  mb: 3,
                 }}
               >
-                โปรไฟล์ของฉัน
-              </Typography>
-            </Typography>
-
-            <Paper
-              elevation={4}
-              sx={{
-                width: "100%",
-                mb: 4,
-                p: isSmallScreen ? 2 : 4,
-                borderRadius: 3,
-                backgroundColor: "#fff",
-                boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
-                fontFamily: '"Didonesque", sans-serif',
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, fontWeight: 600, color: "#737070" }}
-              >
-                แก้ไขข้อมูลส่วนตัว
-              </Typography>
-              <Box
-                component="form"
-                noValidate
-                autoComplete="off"
-                onSubmit={handleEditSubmit}
-              >
-                <TextField
-                  label="ชื่อ-นามสกุล"
-                  name="fullName"
-                  fullWidth
-                  value={editData.fullName}
-                  onChange={handleEditChange}
-                  error={Boolean(editErrors.fullName)}
-                  helperText={editErrors.fullName}
-                  sx={{ mb: 2 }}
+                <Avatar
+                  alt={profile.fullName}
+                  src={
+                    previewImage ||
+                    (profile.profileImage
+                      ? `${API_STATIC_BASE}${profile.profileImage}`
+                      : null)
+                  }
+                  sx={{
+                    width: isSmallScreen ? 100 : 120,
+                    height: isSmallScreen ? 100 : 120,
+                    mb: 2,
+                    border: "3px solid #00796b",
+                  }}
                 />
-                <TextField
-                  label="อีเมล"
-                  name="email"
-                  type="email"
-                  fullWidth
-                  value={editData.email}
-                  onChange={handleEditChange}
-                  error={Boolean(editErrors.email)}
-                  helperText={editErrors.email}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="เบอร์โทรศัพท์"
-                  name="phone"
-                  fullWidth
-                  value={editData.phone}
-                  onChange={handleEditChange}
-                  error={Boolean(editErrors.phone)}
-                  helperText={editErrors.phone}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="ที่อยู่"
-                  name="address"
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={editData.address}
-                  onChange={handleEditChange}
-                  error={Boolean(editErrors.address)}
-                  helperText={editErrors.address}
-                  sx={{ mb: 2 }}
-                />
-                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                  <Button
-                    variant="contained"
-                    type="submit"
-                    disabled={loadingEdit}
-                    sx={{
-                      backgroundColor: "#00796b",
-                      "&:hover": { backgroundColor: "#024f46" },
-                      textTransform: "none",
-                      fontWeight: 700,
-                      py: 1.5,
-                      fontSize: isSmallScreen ? "0.9rem" : "1rem",
-                    }}
-                  >
-                    {loadingEdit ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
-                  </Button>
-                </Box>
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{ fontWeight: "bold" }}
+                >
+                  {profile.fullName}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  color="textSecondary"
+                  gutterBottom
+                >
+                  {profile.studentId}
+                </Typography>
               </Box>
+
+              <form onSubmit={handleUpdateSubmit}>
+                <Grid container spacing={isSmallScreen ? 2 : 3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="ชื่อ-นามสกุล"
+                      name="fullName"
+                      value={profile.fullName || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="เบอร์โทร"
+                      name="phone"
+                      value={profile.phone || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="อีเมล"
+                      name="email"
+                      value={profile.email || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+
+                  {/* ✅ ฟิลด์ข้อมูลเพิ่มเติมสำหรับนักศึกษา */}
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="หลักสูตร"
+                      name="course"
+                      value={profile.course || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="ภาคการศึกษา"
+                      name="semester"
+                      value={profile.semester || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="ปีการศึกษา"
+                      name="academicYear"
+                      value={profile.academicYear || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="ชื่อสถานประกอบการ"
+                      name="companyName"
+                      value={profile.companyName || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="ตำแหน่งฝึกงาน"
+                      name="internPosition" // ✅ ตรงกับชื่อใน schema.prisma
+                      value={profile.internPosition || ""}
+                      onChange={handleUpdateChange}
+                      fullWidth
+                      variant="outlined"
+                      size={isSmallScreen ? "small" : "medium"}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Button
+                  variant="contained"
+                  type="submit"
+                  disabled={loadingUpdate}
+                  sx={{
+                    mt: 3,
+                    backgroundColor: "#00796b",
+                    "&:hover": { backgroundColor: "#024f46" },
+                    textTransform: "none",
+                    fontWeight: 700,
+                    py: 1.5,
+                    fontSize: isSmallScreen ? "0.9rem" : "1rem",
+                  }}
+                >
+                  {loadingUpdate ? "กำลังบันทึก..." : "บันทึกข้อมูลโปรไฟล์"}
+                </Button>
+              </form>
             </Paper>
 
             <Paper
-              elevation={4}
+              elevation={3}
               sx={{
+                p: 4,
+                maxWidth: 800,
                 width: "100%",
-                mb: 4,
-                p: isSmallScreen ? 2 : 4,
-                borderRadius: 3,
-                backgroundColor: "#fff",
-                boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
-                fontFamily: '"Didonesque", sans-serif',
+                mt: 4,
+                borderRadius: 4,
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, fontWeight: 600, color: "#737070" }}
-              >
+              <Typography variant="h6" gutterBottom>
                 เปลี่ยนรหัสผ่าน
               </Typography>
-              <Box
-                component="form"
-                noValidate
-                autoComplete="off"
-                onSubmit={handlePasswordSubmit}
-              >
+              <form onSubmit={handleChangePasswordSubmit}>
                 <TextField
                   label="รหัสผ่านปัจจุบัน"
-                  name="currentPassword"
                   type="password"
                   fullWidth
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  error={Boolean(passwordErrors.currentPassword)}
-                  helperText={passwordErrors.currentPassword}
-                  sx={{
-                    mb: 2,
-                    "& .MuiInputBase-root": {
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                    "& .MuiInputLabel-root": {
-                      "&.Mui-focused": {
-                        color: "#00796b",
-                      },
-                    },
-                  }}
+                  margin="normal"
+                  variant="outlined"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   size={isSmallScreen ? "small" : "medium"}
                 />
                 <TextField
                   label="รหัสผ่านใหม่"
-                  name="newPassword"
                   type="password"
                   fullWidth
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  error={Boolean(passwordErrors.newPassword)}
-                  helperText={passwordErrors.newPassword}
-                  sx={{
-                    mb: 2,
-                    "& .MuiInputBase-root": {
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                    "& .MuiInputLabel-root": {
-                      "&.Mui-focused": {
-                        color: "#00796b",
-                      },
-                    },
-                  }}
+                  margin="normal"
+                  variant="outlined"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   size={isSmallScreen ? "small" : "medium"}
                 />
                 <TextField
                   label="ยืนยันรหัสผ่านใหม่"
-                  name="confirmNewPassword"
                   type="password"
                   fullWidth
-                  value={passwordData.confirmNewPassword}
-                  onChange={handlePasswordChange}
-                  error={Boolean(passwordErrors.confirmNewPassword)}
-                  helperText={passwordErrors.confirmNewPassword}
-                  sx={{
-                    mb: 2,
-                    "& .MuiInputBase-root": {
-                      borderRadius: 2,
-                      bgcolor: "#fafafa",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#ccc",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#00796b",
-                        boxShadow: "0 0 5px 0 #00796b",
-                      },
-                    },
-                  }}
-                  InputLabelProps={{
-                    sx: {
-                      color: "",
-                      "&.Mui-focused": {
-                        color: "#00796b", // สีเขียวเมื่อกรอบได้รับการโฟกัส
-                      },
-                    },
-                  }}
+                  margin="normal"
+                  variant="outlined"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
                   size={isSmallScreen ? "small" : "medium"}
                 />
-
                 <Button
                   variant="contained"
                   type="submit"
                   disabled={loadingPwd}
                   sx={{
+                    mt: 3,
                     backgroundColor: "#00796b",
                     "&:hover": { backgroundColor: "#024f46" },
                     textTransform: "none",
@@ -586,7 +394,7 @@ function ProfilePage() {
                 >
                   {loadingPwd ? "กำลังเปลี่ยนรหัส..." : "เปลี่ยนรหัสผ่าน"}
                 </Button>
-              </Box>
+              </form>
             </Paper>
           </>
         )}

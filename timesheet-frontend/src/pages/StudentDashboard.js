@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -14,9 +15,11 @@ import {
 import {
   AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
+import dayjs from "dayjs";
 
 import {
   createTimeSheet,
+  checkTimesheetExists,
 } from "../services/timesheetService";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
@@ -24,7 +27,7 @@ import Sidebar from "../components/Sidebar";
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-root": {
-    fontFamily: '"Didonesque", sans-serif',
+    fontFamily: '"Kanit", sans-serif',
     borderRadius: theme.spacing(2),
     backgroundColor: "#fafafa",
     "& .MuiOutlinedInput-notchedOutline": {
@@ -48,6 +51,7 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
 function StudentDashboard() {
   const { token, user } = useAuth();
   const [loadingCreate, setLoadingCreate] = useState(false);
+  const [timesheetExists, setTimesheetExists] = useState(false); 
 
   const [formData, setFormData] = useState({
     date: "",
@@ -60,6 +64,24 @@ function StudentDashboard() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const drawerWidth = 240;
+
+  useEffect(() => {
+    const checkExistence = async () => {
+        if (!formData.date || !token) {
+            setTimesheetExists(false);
+            return;
+        }
+
+        try {
+            const exists = await checkTimesheetExists(formData.date, token);
+            setTimesheetExists(exists);
+        } catch (error) {
+            console.error("Error checking timesheet existence:", error);
+            setTimesheetExists(false); 
+        }
+    };
+    checkExistence();
+  }, [formData.date, token]);
 
   const validateForm = () => {
     const errors = {};
@@ -79,6 +101,16 @@ function StudentDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
+    if (timesheetExists) {
+        Swal.fire({
+            title: "ผิดพลาด",
+            text: "คุณได้บันทึก Timesheet สำหรับวันที่นี้ไปแล้ว",
+            icon: "warning",
+            confirmButtonColor: "#00423b",
+        });
+        return;
+    }
 
     setLoadingCreate(true);
     try {
@@ -102,13 +134,27 @@ function StudentDashboard() {
         icon: "success",
         confirmButtonColor: "#00423b",
       });
-    } catch {
-      Swal.fire({
-        title: "ผิดพลาด",
-        text: "ไม่สามารถเพิ่ม TimeSheet ได้",
-        icon: "error",
-        confirmButtonColor: "#00423b",
-      });
+      setTimesheetExists(true); 
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "ไม่สามารถเพิ่ม TimeSheet ได้";
+      
+      if (error.response && error.response.status === 409) {
+         Swal.fire({
+            title: "ไม่สามารถเพิ่ม TimeSheet ได้",
+            text: errorMessage,
+            icon: "warning",
+            confirmButtonColor: "#00423b",
+         });
+         setTimesheetExists(true);
+      } else {
+         Swal.fire({
+            title: "ไม่สามารถเพิ่ม TimeSheet ได้",
+            text: errorMessage,
+            icon: "error",
+            confirmButtonColor: "#00423b",
+         });
+      }
     } finally {
       setLoadingCreate(false);
     }
@@ -128,11 +174,11 @@ function StudentDashboard() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          fontFamily: '"Didonesque", sans-serif',
+          fontFamily: '"Kanit", sans-serif',
         }}
       >
         <Typography
-          variant={isSmallScreen ? "h5" : "h4"}
+          variant={isSmallScreen ? "h5" : "h3"}
           sx={{
             fontWeight: "700",
             color: "#00796b",
@@ -140,10 +186,10 @@ function StudentDashboard() {
             mb: 4,
             textAlign: "center",
             letterSpacing: 1,
-            fontFamily: '"Didonesque", sans-serif',
+            fontFamily: '"Kanit", sans-serif',
           }}
         >
-        TimeSheet
+        TIMESHEET
         </Typography>
 
         <Paper
@@ -155,7 +201,7 @@ function StudentDashboard() {
             borderRadius: 3,
             backgroundColor: "#fff",
             boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
-            fontFamily: '"Didonesque", sans-serif',
+            fontFamily: '"Kanit", sans-serif',
           }}
         >
           <Typography
@@ -225,7 +271,7 @@ function StudentDashboard() {
               variant="contained"
               type="submit"
               fullWidth
-              disabled={loadingCreate}
+              disabled={loadingCreate || timesheetExists} 
               sx={{
                 textTransform: "none",
                 backgroundColor: "#01645a",
@@ -239,7 +285,10 @@ function StudentDashboard() {
               }}
               startIcon={<AccessTimeIcon />}
             >
-              {loadingCreate ? "กำลังบันทึก..." : "บันทึก TimeSheet"}
+              {timesheetExists 
+                ? "มีรายการบันทึกแล้ววันนี้" 
+                : (loadingCreate ? "กำลังบันทึก..." : "บันทึก TimeSheet")
+              }
             </Button>
           </form>
         </Paper>

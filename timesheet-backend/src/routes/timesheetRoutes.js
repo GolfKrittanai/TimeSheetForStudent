@@ -20,24 +20,39 @@ router.get('/', authenticateToken, authorizeRoles('student'), async (req, res) =
 // ✅ เพิ่ม Timesheet
 router.post('/', authenticateToken, authorizeRoles('student'), async (req, res) => {
   const { date, checkInTime, checkOutTime, activity } = req.body;
+  const userId = req.user.id; // ดึง userId จาก Token ที่ตรวจสอบแล้ว
 
   try {
+    const existingTimesheet = await prisma.timesheet.findFirst({
+      where: {
+        userId: userId,
+        // ใช้ date ที่ถูกส่งมาจาก frontend ในการค้นหา (Format: YYYY-MM-DD)
+        date: new Date(date), 
+      },
+    });
+
+    if (existingTimesheet) {
+      return res.status(409).json({
+        message: 'คุณได้บันทึก Timesheet ของวันนี้เรียบร้อยแล้ว',
+      });
+    }
+
     const checkInDateTime = new Date(`${date}T${checkInTime}:00`);
     const checkOutDateTime = new Date(`${date}T${checkOutTime}:00`);
 
     const newTimesheet = await prisma.timesheet.create({
       data: {
-        userId: req.user.id,
+        userId: userId,
         date: new Date(date),
         checkInTime: checkInDateTime,
         checkOutTime: checkOutDateTime,
         activity,
       },
     });
-
     res.status(201).json(newTimesheet);
   } catch (error) {
-    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการบันทึก Timesheet', error: error.message });
+    console.error('เพิ่ม Timesheet error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเพิ่ม Timesheet', error: error.message });
   }
 });
 

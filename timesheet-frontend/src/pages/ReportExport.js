@@ -142,7 +142,7 @@ function ReportExport({ user }) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          fontFamily: '"Didonesque", sans-serif',
+          fontFamily: '"Kanit", sans-serif',
           // ❌ ลบ mx และ maxWidth ออก
         }}
       >
@@ -154,7 +154,7 @@ function ReportExport({ user }) {
             mb: 4,
             textAlign: "center",
             letterSpacing: 1,
-            fontFamily: '"Didonesque", sans-serif', // เพิ่มฟอนต์ที่ต้องการที่นี่
+            fontFamily: '"Kanit", sans-serif', // เพิ่มฟอนต์ที่ต้องการที่นี่
           }}
         >
           ส่งออกรายงาน Timesheet
@@ -179,7 +179,7 @@ function ReportExport({ user }) {
               InputProps={{
                 sx: {
                   mb: 1,
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                   borderRadius: 2,
                   bgcolor: "#fafafa",
                   "& .MuiOutlinedInput-notchedOutline": {
@@ -212,7 +212,7 @@ function ReportExport({ user }) {
               InputProps={{
                 sx: {
                   mb: 1,
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                   borderRadius: 2,
                   bgcolor: "#fafafa",
                   "& .MuiOutlinedInput-notchedOutline": {
@@ -246,7 +246,7 @@ function ReportExport({ user }) {
                   InputProps={{
                     sx: {
                       mb: 1,
-                      fontFamily: '"Didonesque", sans-serif',
+                      fontFamily: '"Kanit", sans-serif',
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -277,7 +277,7 @@ function ReportExport({ user }) {
                   InputProps={{
                     sx: {
                       mb: 1,
-                      fontFamily: '"Didonesque", sans-serif',
+                      fontFamily: '"Kanit", sans-serif',
                       borderRadius: 2,
                       bgcolor: "#fafafa",
                       "& .MuiOutlinedInput-notchedOutline": {
@@ -311,7 +311,7 @@ function ReportExport({ user }) {
                 label="รูปแบบไฟล์"
                 onChange={(e) => setFormat(e.target.value)}
                 sx={{
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                   borderRadius: 2,
                   bgcolor: "#fafafa",
                   "& .MuiOutlinedInput-notchedOutline": {
