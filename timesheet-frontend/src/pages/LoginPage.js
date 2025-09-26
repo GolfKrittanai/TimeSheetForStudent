@@ -83,7 +83,7 @@ const LoginPage = () => {
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
+        fontFamily: '"Kanit", sans-serif', // เปลี่ยนฟอนต์เป็น Kanit
       }}
     >
       <motion.div
@@ -103,30 +103,38 @@ const LoginPage = () => {
           }}
         >
           <Typography
-            variant={isSmallScreen ? "h5" : "h4"}
+            variant="subtitle1"
             sx={{
-              fontWeight: 700,
-              color: "#00796b",
-              mb: 1.5,
-              fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
+              color: "#666",
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
-            Timesheet
+            เข้าสู่ระบบ
+          </Typography>
+          <Typography
+            variant={isSmallScreen ? "h5" : "h3"}
+            sx={{
+              fontWeight: 800,
+              color: "#00796b",
+              fontFamily: '"Kanit", sans-serif',
+            }}
+          >
+            TIMESHEET
           </Typography>
           <Typography
             variant="subtitle1"
             sx={{
               color: "#666",
-              mb: 4,
-              fontFamily: '"Didonesque", sans-serif', // เปลี่ยนฟอนต์เป็น Didonesque
+              mb: 2,
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
-            ระบบสำหรับนักศึกษา
+            ของนักศึกษา BIS
           </Typography>
 
           <form onSubmit={formik.handleSubmit} noValidate>
             <TextField
-              label="รหัสนักศึกษา"
+              label="รหัสประจำตัว"
               name="studentId"
               fullWidth
               margin="normal"
@@ -228,7 +236,7 @@ const LoginPage = () => {
                       textDecoration: "underline",
                       backgroundColor: "transparent",
                     },
-                    fontFamily: '"Didonesque", sans-serif',
+                    fontFamily: '"Kanit", sans-serif',
                   }}
                   onClick={() => navigate("/forgot-password")}
                   type="button"
@@ -255,7 +263,7 @@ const LoginPage = () => {
                     boxShadow: "0 4px 12px rgba(0,91,181,0.4)",
                   },
                   textTransform: "none",
-                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ใหม่ที่นี่
+                  fontFamily: '"Kanit", sans-serif', // ฟอนต์ใหม่ที่นี่
                 }}
                 disabled={formik.isSubmitting}
               >
@@ -276,7 +284,7 @@ const LoginPage = () => {
                     textDecoration: "underline",
                     backgroundColor: "transparent",
                   },
-                  fontFamily: '"Didonesque", sans-serif', // ฟอนต์ใหม่ที่นี่
+                  fontFamily: '"Kanit", sans-serif', // ฟอนต์ใหม่ที่นี่
                 }}
                 onClick={() => navigate("/register")}
               >

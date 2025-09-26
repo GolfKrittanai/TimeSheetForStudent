@@ -51,7 +51,7 @@ const handlePasswordValidate = (value) => {
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-root": {
-    fontFamily: '"Didonesque", sans-serif',
+    fontFamily: '"Kanit", sans-serif',
     borderRadius: theme.spacing(2),
     backgroundColor: "#fafafa",
     "& .MuiOutlinedInput-notchedOutline": {
@@ -244,7 +244,7 @@ function RegisterPage() {
               mb: 2,
               textAlign: "center",
               letterSpacing: 1,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             ลงทะเบียน
@@ -390,7 +390,7 @@ function RegisterPage() {
                             validatePassword.hasMaxLength
                               ? "green"
                               : "red",
-                          fontFamily: '"Didonesque", sans-serif',
+                          fontFamily: '"Kanit", sans-serif',
                         }}
                       >
                         ตัวอักษร 8-16 ตัว
@@ -402,7 +402,7 @@ function RegisterPage() {
                           color: validatePassword.hasLowercase
                             ? "green"
                             : "red",
-                          fontFamily: '"Didonesque", sans-serif',
+                          fontFamily: '"Kanit", sans-serif',
                         }}
                       >
                         ตัวพิมพ์เล็กอย่างน้อย 1 ตัว
@@ -414,7 +414,7 @@ function RegisterPage() {
                           color: validatePassword.hasUppercase
                             ? "green"
                             : "red",
-                          fontFamily: '"Didonesque", sans-serif',
+                          fontFamily: '"Kanit", sans-serif',
                         }}
                       >
                         ตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว
@@ -424,7 +424,7 @@ function RegisterPage() {
                         sx={{
                           fontSize: "10px",
                           color: validatePassword.hasNumber ? "green" : "red",
-                          fontFamily: '"Didonesque", sans-serif',
+                          fontFamily: '"Kanit", sans-serif',
                         }}
                       >
                         ตัวเลขอารบิกอย่างน้อย 1 ตัว
@@ -436,7 +436,7 @@ function RegisterPage() {
                           color: validatePassword.hasOnlyAlphanumeric
                             ? "green"
                             : "red",
-                          fontFamily: '"Didonesque", sans-serif',
+                          fontFamily: '"Kanit", sans-serif',
                         }}
                       >
                         สามารถใช้ได้เฉพาะตัวอักษรภาษาอังกฤษและตัวเลขอารบิก
@@ -469,7 +469,7 @@ function RegisterPage() {
                     boxShadow: "0 4px 12px rgba(0,91,181,0.4)",
                   },
                   textTransform: "none",
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }}
                 disabled={formik.isSubmitting}
               >
@@ -489,7 +489,7 @@ function RegisterPage() {
                     textDecoration: "underline",
                     backgroundColor: "transparent",
                   },
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }}
                 onClick={() => navigate("/")}
                 startIcon={<ArrowBack />}

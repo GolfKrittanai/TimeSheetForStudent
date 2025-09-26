@@ -104,7 +104,7 @@ const ResetPasswordPage = () => {
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        fontFamily: '"Didonesque", sans-serif',
+        fontFamily: '"Kanit", sans-serif',
       }}
     >
       <motion.div
@@ -129,7 +129,7 @@ const ResetPasswordPage = () => {
               fontWeight: 700,
               color: "#00796b",
               mb: 1.5,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             Timesheet
@@ -140,7 +140,7 @@ const ResetPasswordPage = () => {
               fontWeight: 700,
               color: "#000000ff",
               mb: 1.5,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             ตั้งรหัสผ่านใหม่
@@ -150,7 +150,7 @@ const ResetPasswordPage = () => {
             sx={{
               color: "#666",
               mb: 2,
-              fontFamily: '"Didonesque", sans-serif',
+              fontFamily: '"Kanit", sans-serif',
             }}
           >
             โปรดตั้งรหัสผ่านใหม่
@@ -273,7 +273,7 @@ const ResetPasswordPage = () => {
                   borderRadius: 3,
                   "&:hover": { backgroundColor: "#024f46" },
                   textTransform: "none",
-                  fontFamily: '"Didonesque", sans-serif',
+                  fontFamily: '"Kanit", sans-serif',
                 }}
                 disabled={formik.isSubmitting}
               >

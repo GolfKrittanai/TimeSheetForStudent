@@ -48,4 +48,5 @@ model user {
 enum user_role {
   admin
   student
+  teacher
 }
