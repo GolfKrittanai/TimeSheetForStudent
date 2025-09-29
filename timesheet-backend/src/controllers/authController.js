@@ -148,8 +148,7 @@ async function forgotPassword(req, res) {
     // ลิงก์รีเซ็ตจาก ENV (prod: vercel, dev: localhost)
     const base =
       process.env.RESET_PASSWORD_URL ||
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}${process.env.RESET_PASSWORD_PATH || '/reset-password'
-      }`;
+      `${process.env.FRONTEND_URL || 'http://localhost:3000'}${process.env.RESET_PASSWORD_PATH || '/reset-password'}`;
     const resetURL = `${base}?token=${resetToken}`;
 
     // ✅ ใช้เทมเพลตอีเมลแบบสวยงาม (HTML + text)
@@ -157,7 +156,8 @@ async function forgotPassword(req, res) {
       fullName: user.fullName,
       resetURL,
       brandName: 'TIMESHEET',
-      // heroImage: process.env.RESET_EMAIL_HERO, // ถ้ามี
+      // ถ้าต้องการใช้รูป hero จากฝั่ง FE:
+      heroImage: `${process.env.FRONTEND_ORIGIN || 'https://time-sheet-for-student.vercel.app'}/email/ResetPassword.png`,
       supportUrl: 'https://time-sheet-for-student.vercel.app/help',
     });
 
