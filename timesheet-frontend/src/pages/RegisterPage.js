@@ -1,5 +1,5 @@
-
-import React, { useState } from "react";
+// src/pages/RegisterPage.js
+import React from "react";
 import {
   Box,
   Typography,
@@ -12,34 +12,60 @@ import {
   MenuItem,
   styled,
   Grid,
+  IconButton,
+  Paper,
 } from "@mui/material";
 import {
   AccountCircle,
   Badge,
+  School as SchoolIcon,
+  Email,
+  Phone,
+  Work as WorkIcon,
   Lock,
   LockReset,
   ArrowBack,
-  Email,
-  Phone,
-  School as SchoolIcon,
-  Work as WorkIcon,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { registerUser } from "../services/authService";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-// ✅ ย้ายคอมโพเนนต์ CustomField และ StyledTextField ออกมาไว้ด้านนอก
+/* ----------------------------- ตัวเลือก select ----------------------------- */
+const courseOptions = ["4 ปี", "2 ปี", "อื่น ๆ"];
+const semesterOptions = ["1", "2", "3 (ฤดูร้อน)"];
+
+/* ------------------------------- TextField สไตล์ ------------------------------- */
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  "& .MuiInputBase-root": {
+    borderRadius: 14,
+    backgroundColor: "#f9fbfb",
+    transition: "border-color .15s ease, box-shadow .15s ease",
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#cfd8dc",
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#0b7a6b",
+    },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#0b7a6b",
+      boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
+    },
+  },
+}));
+
+/* --------------------------- ฟังก์ชันเช็ค password --------------------------- */
 const handlePasswordValidate = (value) => {
   const hasMinLength = value.length >= 8;
   const hasMaxLength = value.length <= 16;
   const hasLowercase = /[a-z]/.test(value);
   const hasUppercase = /[A-Z]/.test(value);
-  const hasNumber = /[0-9]/.test(value);
-  const hasOnlyAlphanumeric = /^[a-zA-Z0-9]+$/.test(value);
-
+  const hasNumber = /\d/.test(value);
+  const hasOnlyAlphanumeric = /^[A-Za-z0-9]*$/.test(value);
   return {
     hasMinLength,
     hasMaxLength,
@@ -50,24 +76,7 @@ const handlePasswordValidate = (value) => {
   };
 };
 
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiInputBase-root": {
-    fontFamily: '"Kanit", sans-serif',
-    borderRadius: theme.spacing(2),
-    backgroundColor: "#fafafa",
-    "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#ccc",
-    },
-    "&:hover .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#00796b",
-    },
-    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#00796b",
-      boxShadow: "0 0 5px 0 #00796b",
-    },
-  },
-}));
-
+/* ------------------------------ CustomField ------------------------------ */
 function CustomField({
   label,
   name,
@@ -78,24 +87,28 @@ function CustomField({
   options = [],
   multiline = false,
   rows = 1,
-  setValidatePassword, // เพิ่ม prop สำหรับ set state
+  setValidatePassword,
 }) {
+  const [show, setShow] = React.useState(false);
+  const isPassword = type === "password";
+
   return (
     <StyledTextField
       label={label}
       name={name}
-      type={type}
+      type={isPassword ? (show ? "text" : "password") : type}
       fullWidth
       variant="outlined"
       select={select}
       value={formik.values[name]}
       onChange={(e) => {
         formik.handleChange(e);
-        if (name === "password") {
+        if (name === "password" && setValidatePassword) {
           const validation = handlePasswordValidate(e.target.value);
           setValidatePassword(validation);
         }
       }}
+      onBlur={formik.handleBlur}
       error={formik.touched[name] && Boolean(formik.errors[name])}
       helperText={formik.touched[name] && formik.errors[name]}
       multiline={multiline}
@@ -104,13 +117,25 @@ function CustomField({
         startAdornment: (
           <InputAdornment position="start">{icon}</InputAdornment>
         ),
+        // ✅ สลับไอคอนตามที่ขอ: ตอน "ซ่อน" แสดงตาปิด, ตอน "แสดง" แสดงตาเปิด
+        endAdornment: isPassword ? (
+          <InputAdornment position="end">
+            <IconButton
+              onClick={() => setShow((v) => !v)}
+              onMouseDown={(e) => e.preventDefault()}
+              edge="end"
+              sx={{ color: "#0b7a6b" }}
+              aria-label={show ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+            >
+              {show ? <Visibility /> : <VisibilityOff />}
+            </IconButton>
+          </InputAdornment>
+        ) : undefined,
       }}
       InputLabelProps={{
         sx: {
           color: "#00796b",
-          "&.Mui-focused": {
-            color: "#00796b",
-          },
+          "&.Mui-focused": { color: "#00796b" },
         },
       }}
     >
@@ -124,21 +149,32 @@ function CustomField({
   );
 }
 
-function RegisterPage() {
-  const navigate = useNavigate();
+/* ---------------------------------- หน้าเพจ ---------------------------------- */
+export default function RegisterPage() {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const navigate = useNavigate();
+  const [validatePassword, setValidatePassword] = React.useState({});
+  const API = process.env.REACT_APP_API; // eg. http://localhost:5000/api
 
-  const courseOptions = ["2ปี", "4ปี"];
-  const semesterOptions = ["1", "2", "3"];
-
-  const [validatePassword, setValidatePassword] = useState({
-    hasMinLength: null,
-    hasMaxLength: null,
-    hasLowercase: null,
-    hasUppercase: null,
-    hasNumber: null,
-    hasOnlyAlphanumeric: null,
+  const RegisterSchema = Yup.object({
+    fullName: Yup.string().required("กรอกชื่อ-นามสกุล"),
+    studentId: Yup.string().required("กรอกรหัสประจำตัว"),
+    course: Yup.string().required("เลือกหลักสูตร"),
+    semester: Yup.string().required("เลือกภาคการศึกษา"),
+    academicYear: Yup.string().required("กรอกปีการศึกษา"),
+    email: Yup.string().email("อีเมลไม่ถูกต้อง").required("กรอกอีเมล"),
+    phone: Yup.string().required("กรอกเบอร์โทรศัพท์"),
+    companyName: Yup.string().required("กรอกชื่อสถานประกอบการ"),
+    internPosition: Yup.string().required("กรอกตำแหน่งฝึกงาน"),
+    password: Yup.string()
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,16}$/,
+        "รหัสผ่านไม่ตรงตามเงื่อนไข"
+      )
+      .required("กรอกรหัสผ่าน"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref("password")], "ยืนยันรหัสผ่านไม่ตรง")
+      .required("ยืนยันรหัสผ่าน"),
   });
 
   const formik = useFormik({
@@ -156,353 +192,307 @@ function RegisterPage() {
       confirmPassword: "",
       role: "student",
     },
-    validationSchema: Yup.object({
-      fullName: Yup.string().required("กรุณากรอกชื่อ-นามสกุล"),
-      studentId: Yup.string().required("กรุณากรอกรหัสประจำตัว"),
-      course: Yup.string().required("กรุณาเลือกหลักสูตร"),
-      semester: Yup.string().required("กรุณาเลือกภาคการศึกษา"),
-      academicYear: Yup.string().required("กรุณากรอกปีการศึกษา"),
-      email: Yup.string().email("อีเมลไม่ถูกต้อง").required("กรุณากรอกอีเมล"),
-      phone: Yup.string().required("กรุณากรอกเบอร์โทรศัพท์"),
-      companyName: Yup.string().required("กรุณากรอกชื่อสถานประกอบการ"),
-      internPosition: Yup.string().required("กรุณากรอกตำแหน่งฝึกงาน"),
-      password: Yup.string()
-        .required("กรุณากรอกรหัสผ่าน")
-        .test(
-          "password-validation",
-          "รหัสผ่านไม่ตรงตามเงื่อนไขที่กำหนด",
-          (value) => {
-            if (!value) return true;
-            const result = handlePasswordValidate(value);
-            return (
-              result.hasMinLength &&
-              result.hasMaxLength &&
-              result.hasLowercase &&
-              result.hasUppercase &&
-              result.hasNumber &&
-              result.hasOnlyAlphanumeric
-            );
-          }
-        ),
-      confirmPassword: Yup.string()
-        .oneOf([Yup.ref("password"), null], "รหัสผ่านไม่ตรงกัน")
-        .required("กรุณายืนยันรหัสผ่าน"),
-    }),
-    onSubmit: async (values, { setSubmitting, resetForm }) => {
+    validationSchema: RegisterSchema,
+    onSubmit: async (values, { setSubmitting, setFieldError }) => {
       try {
-        await registerUser(values);
-        Swal.fire({
-          title: "ลงทะเบียนสำเร็จ!",
-          text: "คุณสามารถเข้าสู่ระบบได้แล้ว",
+        const payload = {
+          studentId: values.studentId.trim(),
+          fullName: values.fullName.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          password: values.password,
+          role: "student",
+          course: values.course || undefined,
+          semester: values.semester || undefined,
+          academicYear: values.academicYear || undefined,
+          companyName: values.companyName || undefined,
+          internPosition: values.internPosition || undefined,
+        };
+        Object.keys(payload).forEach(
+          (k) => payload[k] === undefined && delete payload[k]
+        );
+
+        await axios.post(`${API}/auth/register`, payload);
+
+        await Swal.fire({
           icon: "success",
-          confirmButtonColor: "#00796b",
-        }).then(() => {
-          navigate("/");
+          title: "ลงทะเบียนสำเร็จ",
+          confirmButtonColor: "#0b7a6b",
         });
-      } catch (error) {
+        navigate("/");
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message || "ลงทะเบียนไม่สำเร็จ กรุณาลองใหม่";
+        if (msg.includes("อีเมล")) setFieldError("email", msg);
+        if (msg.includes("รหัสนักศึกษา")) setFieldError("studentId", msg);
         Swal.fire({
-          title: "ลงทะเบียนไม่สำเร็จ",
-          text: error.response?.data?.message || "เกิดข้อผิดพลาดในการลงทะเบียน",
           icon: "error",
-          confirmButtonColor: "#00796b",
+          title: "ลงทะเบียนไม่สำเร็จ",
+          text: msg,
+          confirmButtonColor: "#0b7a6b",
         });
+      } finally {
+        setSubmitting(false);
       }
-      setSubmitting(false);
     },
   });
 
   return (
     <Box
       sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
         minHeight: "100vh",
-        p: isSmallScreen ? 2 : 4,
-        backgroundImage: "linear-gradient(to bottom right, #e0f2f1, #ffffff)",
+        bgcolor: "linear-gradient(to bottom right, #e8f3f1, #ffffff)",
+        py: { xs: 3, md: 6 },
       }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Box
+      {/* ส่วนหัว */}
+      <Box sx={{ textAlign: "center", mb: 2 }}>
+        <Typography sx={{ color: "#4f5b62", mb: 0.5, fontWeight: 600 }}>
+          ลงทะเบียน
+        </Typography>
+        <Typography
           sx={{
-            width: isSmallScreen ? "100%" : 600,
-            p: isSmallScreen ? 3 : 5,
-            bgcolor: "rgba(255, 255, 255, 0.9)",
-            borderRadius: 4,
-            boxShadow: "0 8px 25px rgba(0, 0, 0, 0.1)",
-            backdropFilter: "blur(10px)",
+            fontSize: { xs: 28, sm: 34 },
+            fontWeight: 800,
+            letterSpacing: 4,
+            color: "#0b7a6b",
           }}
         >
-          <Typography
-            variant={isSmallScreen ? "h5" : "h4"}
+          TIMESHEET
+        </Typography>
+        <Typography sx={{ color: "#4f5b62", mt: 0.5 }}>
+          สำหรับนักศึกษา BIS
+        </Typography>
+      </Box>
+
+      {/* Card ฟอร์ม */}
+      <Box sx={{ maxWidth: 780, mx: "auto" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid #cfd8dc",
+            borderRadius: 4,
+            overflow: "hidden",
+          }}
+        >
+          {/* Section Header */}
+          <Box
             sx={{
-              fontWeight: "700",
-              color: "#00796b",
-              mb: 2,
-              textAlign: "center",
-              letterSpacing: 1,
-              fontFamily: '"Kanit", sans-serif',
+              px: 3,
+              py: 1.3,
+              bgcolor: "#0b7a6b",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 15,
             }}
           >
-            ลงทะเบียน
-          </Typography>
+            ข้อมูลนักศึกษา
+          </Box>
 
-          <form onSubmit={formik.handleSubmit}>
-            <Grid container spacing={2}>
-              {/* ช่อง ชื่อ-นามสกุล */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={12}>
-                  <CustomField
-                    label="ชื่อ-นามสกุล"
-                    name="fullName"
-                    icon={<AccountCircle sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-              </Grid>
-              {/* ช่อง รหัสประจำตัว และ ปีการศึกษา */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="รหัสประจำตัว"
-                    name="studentId"
-                    icon={<Badge sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="หลักสูตร"
-                    name="course"
-                    icon={<SchoolIcon sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    select
-                    options={courseOptions}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
+          {/* Form */}
+          <Box component="form" onSubmit={formik.handleSubmit} sx={{ p: { xs: 2, sm: 3 } }}>
+            <Grid container spacing={2.2}>
+              {/* ชื่อ-นามสกุล */}
+              <Grid item xs={12}>
+                <CustomField
+                  label="ชื่อ-นามสกุล"
+                  name="fullName"
+                  icon={<AccountCircle sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
               </Grid>
 
-              {/* ✅ ช่อง หลักสูตร และ ภาคการศึกษา */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="ปีการศึกษา"
-                    name="academicYear"
-                    icon={<SchoolIcon sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="ภาคการศึกษา"
-                    name="semester"
-                    icon={<SchoolIcon sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    select
-                    options={semesterOptions}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
+              {/* รหัสประจำตัว & หลักสูตร */}
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="รหัสประจำตัว"
+                  name="studentId"
+                  icon={<Badge sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="หลักสูตร"
+                  name="course"
+                  icon={<SchoolIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  select
+                  options={courseOptions}
+                  setValidatePassword={setValidatePassword}
+                />
               </Grid>
 
-              {/* ช่อง อีเมล และ เบอร์โทรศัพท์ */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="อีเมล"
-                    name="email"
-                    icon={<Email sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="เบอร์โทรศัพท์"
-                    name="phone"
-                    icon={<Phone sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
+              {/* ปีการศึกษา & ภาคการศึกษา */}
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="ปีการศึกษา"
+                  name="academicYear"
+                  icon={<SchoolIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="ภาคการศึกษา"
+                  name="semester"
+                  icon={<SchoolIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  select
+                  options={semesterOptions}
+                  setValidatePassword={setValidatePassword}
+                />
               </Grid>
 
-              {/* ช่อง ชื่อสถานประกอบการ และ ตำแหน่งฝึกงาน */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="ชื่อสถานประกอบการ"
-                    name="companyName"
-                    icon={<WorkIcon sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="ตำแหน่งฝึกงาน"
-                    name="internPosition"
-                    icon={<WorkIcon sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
+              {/* อีเมล & เบอร์โทรศัพท์ */}
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="อีเมล"
+                  name="email"
+                  icon={<Email sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="เบอร์โทรศัพท์"
+                  name="phone"
+                  icon={<Phone sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
               </Grid>
 
-              {/* ช่อง รหัสผ่าน และ ยืนยันรหัสผ่าน */}
-              <Grid item xs={12} container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="รหัสผ่าน"
-                    name="password"
-                    icon={<Lock sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    type="password"
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <CustomField
-                    label="ยืนยันรหัสผ่าน"
-                    name="confirmPassword"
-                    icon={<LockReset sx={{ color: "#00796b" }} />}
-                    formik={formik}
-                    type="password"
-                    setValidatePassword={setValidatePassword}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  {formik.values.password && (
-                    <Box sx={{ mt: -1, pl: 2, mb: 1 }}>
-                      <Typography
-                        component="p"
-                        sx={{
-                          fontSize: "10px",
-                          color:
-                            validatePassword.hasMinLength &&
-                            validatePassword.hasMaxLength
-                              ? "green"
-                              : "red",
-                          fontFamily: '"Kanit", sans-serif',
-                        }}
-                      >
-                        ตัวอักษร 8-16 ตัว
-                      </Typography>
-                      <Typography
-                        component="p"
-                        sx={{
-                          fontSize: "10px",
-                          color: validatePassword.hasLowercase
-                            ? "green"
-                            : "red",
-                          fontFamily: '"Kanit", sans-serif',
-                        }}
-                      >
-                        ตัวพิมพ์เล็กอย่างน้อย 1 ตัว
-                      </Typography>
-                      <Typography
-                        component="p"
-                        sx={{
-                          fontSize: "10px",
-                          color: validatePassword.hasUppercase
-                            ? "green"
-                            : "red",
-                          fontFamily: '"Kanit", sans-serif',
-                        }}
-                      >
-                        ตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว
-                      </Typography>
-                      <Typography
-                        component="p"
-                        sx={{
-                          fontSize: "10px",
-                          color: validatePassword.hasNumber ? "green" : "red",
-                          fontFamily: '"Kanit", sans-serif',
-                        }}
-                      >
-                        ตัวเลขอารบิกอย่างน้อย 1 ตัว
-                      </Typography>
-                      <Typography
-                        component="p"
-                        sx={{
-                          fontSize: "10px",
-                          color: validatePassword.hasOnlyAlphanumeric
-                            ? "green"
-                            : "red",
-                          fontFamily: '"Kanit", sans-serif',
-                        }}
-                      >
-                        สามารถใช้ได้เฉพาะตัวอักษรภาษาอังกฤษและตัวเลขอารบิก
-                      </Typography>
-                    </Box>
-                  )}
-                </Grid>
+              {/* ชื่อสถานประกอบการ & ตำแหน่งฝึกงาน */}
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="ชื่อสถานประกอบการ"
+                  name="companyName"
+                  icon={<WorkIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <CustomField
+                  label="ตำแหน่งฝึกงาน"
+                  name="internPosition"
+                  icon={<WorkIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  setValidatePassword={setValidatePassword}
+                />
               </Grid>
 
+              {/* รหัสผ่าน & ยืนยันรหัสผ่าน */}
+              <Grid item xs={12}>
+                <CustomField
+                  label="รหัสผ่าน"
+                  name="password"
+                  icon={<Lock sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  type="password"
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <CustomField
+                  label="ยืนยันรหัสผ่าน"
+                  name="confirmPassword"
+                  icon={<LockReset sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  type="password"
+                  setValidatePassword={setValidatePassword}
+                />
+              </Grid>
+
+              {/* ตัวช่วยเงื่อนไขรหัสผ่าน */}
+              <Grid item xs={12}>
+                {formik.values.password && (
+                  <Box sx={{ mt: -1, pl: 1, mb: 1 }}>
+                    <Typography component="p" sx={{ fontSize: "12px", color:
+                      validatePassword.hasMinLength && validatePassword.hasMaxLength ? "green" : "red" }}>
+                      ตัวอักษร 8–16 ตัว
+                    </Typography>
+                    <Typography component="p" sx={{ fontSize: "12px", color: validatePassword.hasLowercase ? "green" : "red" }}>
+                      ตัวพิมพ์เล็กอย่างน้อย 1 ตัว
+                    </Typography>
+                    <Typography component="p" sx={{ fontSize: "12px", color: validatePassword.hasUppercase ? "green" : "red" }}>
+                      ตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว
+                    </Typography>
+                    <Typography component="p" sx={{ fontSize: "12px", color: validatePassword.hasNumber ? "green" : "red" }}>
+                      ตัวเลขอารบิกอย่างน้อย 1 ตัว
+                    </Typography>
+                    <Typography component="p" sx={{ fontSize: "12px", color:
+                      validatePassword.hasOnlyAlphanumeric ? "green" : "red" }}>
+                      ใช้ได้เฉพาะตัวอักษรอังกฤษและตัวเลข
+                    </Typography>
+                  </Box>
+                )}
+              </Grid>
+
+              {/* Error จาก API */}
               {formik.errors.api && (
-                <Alert severity="error" sx={{ my: 2 }}>
-                  {formik.errors.api}
-                </Alert>
+                <Grid item xs={12}>
+                  <Alert severity="error">{formik.errors.api}</Alert>
+                </Grid>
               )}
             </Grid>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{
-                  mt: 3,
-                  py: 1.5,
-                  fontWeight: 700,
-                  backgroundColor: "#00796b",
-                  borderRadius: 3,
-                  fontSize: isSmallScreen ? "1rem" : "1.1rem",
-                  "&:hover": {
-                    backgroundColor: "#024f46",
-                    boxShadow: "0 4px 12px rgba(0,91,181,0.4)",
-                  },
-                  textTransform: "none",
-                  fontFamily: '"Kanit", sans-serif',
-                }}
-                disabled={formik.isSubmitting}
-              >
-                ลงทะเบียน
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Button
-                fullWidth
-                sx={{
-                  mt: 2,
-                  textTransform: "none",
-                  color: "#00796b",
-                  fontWeight: 600,
-                  fontSize: isSmallScreen ? "1rem" : "1em",
-                  "&:hover": {
-                    textDecoration: "underline",
-                    backgroundColor: "transparent",
-                  },
-                  fontFamily: '"Kanit", sans-serif',
-                }}
-                onClick={() => navigate("/")}
-                startIcon={<ArrowBack />}
-              >
-                กลับไปหน้าเข้าสู่ระบบ
-              </Button>
-            </motion.div>
-          </form>
+          </Box>
+        </Paper>
+
+        {/* ✅ ปุ่มอยู่นอกการ์ด ตามดีไซน์ */}
+        <Box sx={{ mt: 3 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              type="submit"
+              form="register-form" // (ไม่จำเป็นเพราะเรา submit จากปุ่มนี้ด้วย onClick)
+              onClick={formik.handleSubmit}
+              fullWidth
+              variant="contained"
+              disabled={!formik.isValid || formik.isSubmitting}
+              sx={{
+                py: 1.25,
+                fontWeight: 700,
+                backgroundColor: "#0b7a6b",
+                borderRadius: 10,
+                textTransform: "none",
+                boxShadow: "0 4px 10px rgba(11,122,107,.25)",
+                "&:hover": {
+                  backgroundColor: "#095f52",
+                  boxShadow: "0 6px 14px rgba(11,122,107,.28)",
+                },
+              }}
+            >
+              ลงทะเบียน
+            </Button>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              fullWidth
+              startIcon={<ArrowBack />}
+              onClick={() => navigate("/")}
+              sx={{
+                mt: 1.5,
+                color: "#0b7a6b",
+                fontWeight: 600,
+                textTransform: "none",
+                bgcolor: "#e7efee",
+                borderRadius: 10,
+                "&:hover": {
+                  bgcolor: "#dbe7e5",
+                },
+              }}
+            >
+              กลับไปหน้าเข้าสู่ระบบ
+            </Button>
+          </motion.div>
         </Box>
-      </motion.div>
+      </Box>
     </Box>
   );
 }
-
-export default RegisterPage;

@@ -85,9 +85,14 @@ router.get('/', authenticateToken, async (req, res) => {
       select: {
         id: true,
         fullName: true,
+        studentId: true,
         email: true,
         phone: true,
-        address: true,
+        course: true,
+        semester: true,
+        academicYear: true,
+        companyName: true,
+        internPosition: true,
         profileImage: true,
       },
     });
