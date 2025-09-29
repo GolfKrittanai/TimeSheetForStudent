@@ -1,14 +1,28 @@
 const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
-const sendEmail = require('../utils/sendEmail'); 
+const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 
 // ✅ REGISTER
 async function register(req, res) {
-  const { studentId, fullName, password, email, phone, address, role = 'student' } = req.body;
+  const {
+    studentId,
+    fullName,
+    password,
+    email,
+    phone,
+    role = 'student',
+    course,
+    semester,
+    academicYear,
+    companyName,
+    internPosition,
+    profileImage,
+  } = req.body;
 
-  if (!studentId || !fullName || !password || !email || !phone || !address) {
+
+  if (!studentId || !fullName || !password || !email || !phone) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
 
@@ -26,9 +40,14 @@ async function register(req, res) {
         fullName,
         email,
         phone,
-        address,
         passwordHash,
         role,
+        course,
+        semester,
+        academicYear,
+        companyName,
+        internPosition,
+        profileImage,
       },
     });
 
@@ -39,10 +58,16 @@ async function register(req, res) {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        address: user.address,
         role: user.role,
+        course: user.course,
+        semester: user.semester,
+        academicYear: user.academicYear,
+        companyName: user.companyName,
+        internPosition: user.internPosition,
+        profileImage: user.profileImage,
       },
     });
+
   } catch (error) {
     console.error('Register error:', error);
     return res.status(500).json({
@@ -81,7 +106,6 @@ async function login(req, res) {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        address: user.address,
         role: user.role,
       },
     });
@@ -96,7 +120,7 @@ async function login(req, res) {
 // ✅ FORGOT PASSWORD
 async function forgotPassword(req, res) {
   const { email } = req.body;
-  
+
   if (!email) {
     return res.status(400).json({ message: 'กรุณากรอกอีเมล' });
   }
@@ -104,10 +128,10 @@ async function forgotPassword(req, res) {
   try {
     // ✅ เปลี่ยนจาก findUnique เป็น findFirst
     const user = await prisma.user.findFirst({ where: { email } });
-    
+
     if (!user) {
       // ✅ ส่งสถานะ 404 (Not Found) และข้อความแจ้งเตือนที่ชัดเจน
-      return res.status(404).json({ message: 'ไม่พบอีเมลนี้ในระบบ' }); 
+      return res.status(404).json({ message: 'ไม่พบอีเมลนี้ในระบบ' });
     }
 
     // ... โค้ดส่วนที่เหลือเหมือนเดิม ...
@@ -121,7 +145,7 @@ async function forgotPassword(req, res) {
     });
 
     const resetURL = `http://localhost:3000/reset-password?token=${resetToken}`;
-    
+
     await sendEmail({
       email: user.email,
       subject: 'Timesheet: ลิงก์สำหรับรีเซ็ตรหัสผ่าน',
@@ -139,7 +163,7 @@ async function forgotPassword(req, res) {
 async function resetPassword(req, res) {
   // รับ Token จาก URL parameter หรือ body
   // โดยปกติจะส่งมาทาง query parameter (reset-password?token=xxxx)
-  const { token, password } = req.body; 
+  const { token, password } = req.body;
 
   if (!token || !password) {
     return res.status(400).json({ message: 'Token หรือรหัสผ่านไม่ถูกต้อง' });

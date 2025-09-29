@@ -10,10 +10,7 @@ import {
   useTheme,
   useMediaQuery,
   Grid,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
+  IconButton,
 } from "@mui/material";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
@@ -22,385 +19,310 @@ import { useNavigate } from "react-router-dom";
 import {
   getUserProfile,
   updateUserProfile,
-  changePassword,
 } from "../services/userService";
 
-function ProfilePage() {
-  const { token, user } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingUpdate, setLoadingUpdate] = useState(false);
-  const [loadingPwd, setLoadingPwd] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+export default function ProfilePage() {
+  const { token } = useAuth();
   const navigate = useNavigate();
+
+  const [profile, setProfile] = useState({
+    fullName: "",
+    studentId: "",
+    email: "",
+    phone: "",
+    course: "",
+    semester: "",
+    academicYear: "",
+    companyName: "",
+    internPosition: "",
+    profileImage: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+
   const API_BASE = process.env.REACT_APP_API || "";
   const API_STATIC_BASE = API_BASE.replace(/\/api$/, "");
 
-  // สเตทสำหรับจัดการไฟล์รูปที่เลือก
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
-
   useEffect(() => {
-    // ทำงานตอน component จะ unmount หรือ previewImage เปลี่ยนแปลง
-    return () => {
-      if (previewImage) {
-        URL.revokeObjectURL(previewImage);
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    (async () => {
+      try {
+        const data = await getUserProfile(token);
+        const p =
+          data?.profile ??
+          data?.data ??
+          (Array.isArray(data) ? data[0] : data) ??
+          {};
+        setProfile((prev) => ({ ...prev, ...p }));
+      } catch (err) {
+        console.error("Failed to fetch user profile", err);
+        setProfile((prev) => ({ ...prev }));
+      } finally {
+        setLoading(false);
       }
-    };
-  }, [previewImage]);
+    })();
+  }, [token, navigate]);
 
-  const fetchProfile = async () => {
-    try {
-      const data = await getUserProfile(token);
-      setProfile(data);
-    } catch (error) {
-      console.error("Failed to fetch user profile", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchProfile();
-    }
-  }, [token]);
-
-  const handleUpdateChange = (e) => {
+  const onChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prevProfile) => ({
-      ...prevProfile,
-      [name]: value,
-    }));
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleUpdateSubmit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    setLoadingUpdate(true);
+    setSaving(true);
     try {
       await updateUserProfile(profile, token);
       Swal.fire({
-        title: "สำเร็จ!",
-        text: "ข้อมูลโปรไฟล์ถูกอัปเดตแล้ว",
         icon: "success",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#00796b",
+        title: "บันทึกสำเร็จ",
+        text: "อัปเดตข้อมูลโปรไฟล์แล้ว",
+        confirmButtonColor: "#0b7a6b",
       });
-    } catch (error) {
-      console.error("Failed to update profile", error);
+    } catch (err) {
+      console.error(err);
       Swal.fire({
-        title: "ผิดพลาด!",
-        text: "ไม่สามารถอัปเดตข้อมูลได้",
         icon: "error",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#00796b",
+        title: "บันทึกล้มเหลว",
+        text: "โปรดลองอีกครั้ง",
+        confirmButtonColor: "#0b7a6b",
       });
     } finally {
-      setLoadingUpdate(false);
+      setSaving(false);
     }
   };
-
-  const handleChangePasswordSubmit = async (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmNewPassword) {
-      Swal.fire({
-        title: "ผิดพลาด!",
-        text: "รหัสผ่านใหม่และรหัสผ่านยืนยันไม่ตรงกัน",
-        icon: "error",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#00796b",
-      });
-      return;
-    }
-    setLoadingPwd(true);
-    try {
-      await changePassword(currentPassword, newPassword, token);
-      Swal.fire({
-        title: "สำเร็จ!",
-        text: "เปลี่ยนรหัสผ่านเรียบร้อย",
-        icon: "success",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#00796b",
-      });
-      // Reset password fields
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-    } catch (error) {
-      console.error("Failed to change password", error);
-      Swal.fire({
-        title: "ผิดพลาด!",
-        text: error.message || "ไม่สามารถเปลี่ยนรหัสผ่านได้",
-        icon: "error",
-        confirmButtonText: "ตกลง",
-        confirmButtonColor: "#00796b",
-      });
-    } finally {
-      setLoadingPwd(false);
-    }
-  };
-
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
+      <Box sx={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7f9" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#eef3f5" }}>
       <Sidebar />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          mt: 8,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "column",
-        }}
-      >
-        {profile && (
-          <>
-            <Paper
-              elevation={3}
-              sx={{ p: 4, maxWidth: 800, width: "100%", borderRadius: 4 }}
+
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 } }}>
+        <Box sx={{ maxWidth: 880, mx: "auto" }}>
+          {/* Segmented header */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1,
+              mb: 2,
+              display: "flex",
+              gap: 1,
+              borderRadius: 3,
+              bgcolor: "#ffffff",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: "#0b7a6b",
+                "&:hover": { bgcolor: "#095f52" },
+                borderRadius: 2,
+              }}
+              onClick={() => { }}
             >
-              <Box
+              แก้ไขข้อมูลส่วนตัว
+            </Button>
+            <Button
+              fullWidth
+              variant="text"
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: "transparent",
+                borderRadius: 2,
+                color: "#0b7a6b",
+                border: "1px solid #cfd8dc",
+                "&:hover": { bgcolor: "#f4fbfa" },
+              }}
+              onClick={() => navigate("/reset-password")}
+            >
+              เปลี่ยนรหัสผ่าน
+            </Button>
+          </Paper>
+
+          {/* Card */}
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 4,
+              p: { xs: 2, md: 4 },
+              bgcolor: "#fff",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            {/* Avatar + title */}
+            <Box sx={{ textAlign: "center", mb: { xs: 2, md: 3 } }}>
+              <Avatar
+                alt={profile.fullName || "student"}
+                src={profile.profileImage ? `${API_STATIC_BASE}${profile.profileImage}` : undefined}
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  mb: 3,
+                  width: isSmall ? 108 : 128,
+                  height: isSmall ? 108 : 128,
+                  mx: "auto",
+                  mb: 1.5,
+                  border: "3px solid #0b7a6b",
                 }}
-              >
-                <Avatar
-                  alt={profile.fullName}
-                  src={
-                    previewImage ||
-                    (profile.profileImage
-                      ? `${API_STATIC_BASE}${profile.profileImage}`
-                      : null)
-                  }
-                  sx={{
-                    width: isSmallScreen ? 100 : 120,
-                    height: isSmallScreen ? 100 : 120,
-                    mb: 2,
-                    border: "3px solid #00796b",
-                  }}
-                />
-                <Typography
-                  variant="h5"
-                  gutterBottom
-                  sx={{ fontWeight: "bold" }}
-                >
-                  {profile.fullName}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  color="textSecondary"
-                  gutterBottom
-                >
-                  {profile.studentId}
-                </Typography>
-              </Box>
+              />
+              <Typography variant="h6" sx={{ color: "#0b7a6b", fontWeight: 800 }}>
+                แก้ไขข้อมูลส่วนตัว
+              </Typography>
+            </Box>
 
-              <form onSubmit={handleUpdateSubmit}>
-                <Grid container spacing={isSmallScreen ? 2 : 3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="ชื่อ-นามสกุล"
-                      name="fullName"
-                      value={profile.fullName || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="เบอร์โทร"
-                      name="phone"
-                      value={profile.phone || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      label="อีเมล"
-                      name="email"
-                      value={profile.email || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
+            {/* Form */}
+            <Box component="form" onSubmit={onSubmit}>
+              <Grid container spacing={2.4}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="สิทธิการเข้าใช้งาน"
+                    value="นักศึกษา"
+                    disabled
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} />
 
-                  {/* ✅ ฟิลด์ข้อมูลเพิ่มเติมสำหรับนักศึกษา */}
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="หลักสูตร"
-                      name="course"
-                      value={profile.course || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="ภาคการศึกษา"
-                      name="semester"
-                      value={profile.semester || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="ปีการศึกษา"
-                      name="academicYear"
-                      value={profile.academicYear || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="ชื่อสถานประกอบการ"
-                      name="companyName"
-                      value={profile.companyName || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      label="ตำแหน่งฝึกงาน"
-                      name="internPosition" // ✅ ตรงกับชื่อใน schema.prisma
-                      value={profile.internPosition || ""}
-                      onChange={handleUpdateChange}
-                      fullWidth
-                      variant="outlined"
-                      size={isSmallScreen ? "small" : "medium"}
-                    />
-                  </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="รหัสประจำตัว"
+                    name="studentId"
+                    value={profile.studentId || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="ชื่อ-นามสกุล"
+                    name="fullName"
+                    value={profile.fullName || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
                 </Grid>
 
-                <Button
-                  variant="contained"
-                  type="submit"
-                  disabled={loadingUpdate}
-                  sx={{
-                    mt: 3,
-                    backgroundColor: "#00796b",
-                    "&:hover": { backgroundColor: "#024f46" },
-                    textTransform: "none",
-                    fontWeight: 700,
-                    py: 1.5,
-                    fontSize: isSmallScreen ? "0.9rem" : "1rem",
-                  }}
-                >
-                  {loadingUpdate ? "กำลังบันทึก..." : "บันทึกข้อมูลโปรไฟล์"}
-                </Button>
-              </form>
-            </Paper>
+                <Grid item xs={12}>
+                  <TextField
+                    label="หลักสูตร(ปี)"
+                    name="course"
+                    value={profile.course || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
 
-            <Paper
-              elevation={3}
-              sx={{
-                p: 4,
-                maxWidth: 800,
-                width: "100%",
-                mt: 4,
-                borderRadius: 4,
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                เปลี่ยนรหัสผ่าน
-              </Typography>
-              <form onSubmit={handleChangePasswordSubmit}>
-                <TextField
-                  label="รหัสผ่านปัจจุบัน"
-                  type="password"
-                  fullWidth
-                  margin="normal"
-                  variant="outlined"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  size={isSmallScreen ? "small" : "medium"}
-                />
-                <TextField
-                  label="รหัสผ่านใหม่"
-                  type="password"
-                  fullWidth
-                  margin="normal"
-                  variant="outlined"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  size={isSmallScreen ? "small" : "medium"}
-                />
-                <TextField
-                  label="ยืนยันรหัสผ่านใหม่"
-                  type="password"
-                  fullWidth
-                  margin="normal"
-                  variant="outlined"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  size={isSmallScreen ? "small" : "medium"}
-                />
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="อีเมล"
+                    name="email"
+                    value={profile.email || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="เบอร์โทรศัพท์"
+                    name="phone"
+                    value={profile.phone || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="ชื่อสถานประกอบการ"
+                    name="companyName"
+                    value={profile.companyName || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="ตำแหน่งฝึกงาน"
+                    name="internPosition"
+                    value={profile.internPosition || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="ภาคการศึกษา"
+                    name="semester"
+                    value={profile.semester || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="ปีการศึกษา"
+                    name="academicYear"
+                    value={profile.academicYear || ""}
+                    onChange={onChange}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+
+              <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 3 }}>
                 <Button
-                  variant="contained"
-                  type="submit"
-                  disabled={loadingPwd}
+                  variant="outlined"
+                  onClick={() => navigate(-1)}
                   sx={{
-                    mt: 3,
-                    backgroundColor: "#00796b",
-                    "&:hover": { backgroundColor: "#024f46" },
+                    px: 4,
+                    py: 1.2,
+                    borderRadius: 2,
                     textTransform: "none",
+                    borderColor: "#0b7a6b",
+                    color: "#0b7a6b",
+                    "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" },
                     fontWeight: 700,
-                    py: 1.5,
-                    fontSize: isSmallScreen ? "0.9rem" : "1rem",
                   }}
                 >
-                  {loadingPwd ? "กำลังเปลี่ยนรหัส..." : "เปลี่ยนรหัสผ่าน"}
+                  ย้อนกลับ
                 </Button>
-              </form>
-            </Paper>
-          </>
-        )}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={saving}
+                  sx={{
+                    px: 4,
+                    py: 1.2,
+                    borderRadius: 2,
+                    textTransform: "none",
+                    bgcolor: "#0b7a6b",
+                    "&:hover": { bgcolor: "#095f52" },
+                    fontWeight: 700,
+                  }}
+                >
+                  แก้ไข
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
       </Box>
     </Box>
   );
 }
-
-export default ProfilePage;
