@@ -2,6 +2,7 @@ const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
+const { buildResetPasswordEmail } = require('../utils/emailTemplates');
 const crypto = require('crypto');
 
 // ✅ REGISTER
@@ -126,36 +127,56 @@ async function forgotPassword(req, res) {
   }
 
   try {
-    // ✅ เปลี่ยนจาก findUnique เป็น findFirst
     const user = await prisma.user.findFirst({ where: { email } });
-
     if (!user) {
-      // ✅ ส่งสถานะ 404 (Not Found) และข้อความแจ้งเตือนที่ชัดเจน
       return res.status(404).json({ message: 'ไม่พบอีเมลนี้ในระบบ' });
     }
 
-    // ... โค้ดส่วนที่เหลือเหมือนเดิม ...
+    // สร้าง token + hash เก็บใน DB
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const passwordResetExpires = new Date(Date.now() + 3600000);
+    const passwordResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    const passwordResetExpires = new Date(Date.now() + 3600000); // 1 ชั่วโมง
 
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordResetToken, passwordResetExpires },
     });
 
-    const resetURL = `http://localhost:3000/reset-password?token=${resetToken}`;
+    // ลิงก์รีเซ็ตจาก ENV (prod: vercel, dev: localhost)
+    const base =
+      process.env.RESET_PASSWORD_URL ||
+      `${process.env.FRONTEND_URL || 'http://localhost:3000'}${process.env.RESET_PASSWORD_PATH || '/reset-password'
+      }`;
+    const resetURL = `${base}?token=${resetToken}`;
 
-    await sendEmail({
-      email: user.email,
-      subject: 'Timesheet: ลิงก์สำหรับรีเซ็ตรหัสผ่าน',
-      message: `คลิกที่ลิงก์นี้เพื่อรีเซ็ตรหัสผ่าน: ${resetURL}`,
+    // ✅ ใช้เทมเพลตอีเมลแบบสวยงาม (HTML + text)
+    const { html, text, subject } = buildResetPasswordEmail({
+      fullName: user.fullName,
+      resetURL,
+      brandName: 'TIMESHEET',
+      // heroImage: process.env.RESET_EMAIL_HERO, // ถ้ามี
+      supportUrl: 'https://time-sheet-for-student.vercel.app/help',
     });
 
-    res.status(200).json({ message: 'ส่งคำขอรีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว' });
+    // ✅ ส่งด้วย sendEmail แบบใหม่ (รับ to/subject/html/text)
+    await sendEmail({
+      to: user.email,
+      subject,
+      html,
+      text,
+    });
+
+    return res
+      .status(200)
+      .json({ message: 'ส่งคำขอรีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดำเนินการ' });
+    return res
+      .status(500)
+      .json({ message: 'เกิดข้อผิดพลาดในการดำเนินการ' });
   }
 }
 
