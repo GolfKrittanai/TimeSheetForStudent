@@ -123,6 +123,7 @@ function CustomField({
   required = false,
 }) {
   const [show, setShow] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
   const isPassword = type === "password";
   const showErrors = formik.submitCount > 0;
 
@@ -150,6 +151,8 @@ function CustomField({
             setValidatePassword(validation);
           }
         }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         multiline={multiline}
         rows={rows}
         error={showErrors && Boolean(formik.errors[name])}
@@ -161,19 +164,20 @@ function CustomField({
           startAdornment: icon ? (
             <InputAdornment position="start">{icon}</InputAdornment>
           ) : undefined,
-          endAdornment: isPassword ? (
-            <InputAdornment position="end">
-              <IconButton
-                onClick={() => setShow((v) => !v)}
-                onMouseDown={(e) => e.preventDefault()}
-                edge="end"
-                sx={{ color: "#0b7a6b" }}
-                aria-label={show ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-              >
-                {show ? <Visibility /> : <VisibilityOff />}
-              </IconButton>
-            </InputAdornment>
-          ) : undefined,
+          endAdornment:
+            isPassword && (focused || !!formik.values[name]) ? (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShow((v) => !v)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  edge="end"
+                  sx={{ color: "#0b7a6b" }}
+                  aria-label={show ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                >
+                  {show ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
           // <<— ใช้สไตล์เดียวกับ Login
           sx: textFieldSx,
         }}
