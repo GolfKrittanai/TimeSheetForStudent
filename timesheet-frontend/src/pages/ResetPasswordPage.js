@@ -75,7 +75,7 @@ const ResetPasswordPage = () => {
 
   const textFieldSx = {
     borderRadius: 2,
-    backgroundColor: "#f9fbfb",
+    backgroundColor: "#ffffffff",
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#cfd8dc" },
     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#0b7a6b" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
