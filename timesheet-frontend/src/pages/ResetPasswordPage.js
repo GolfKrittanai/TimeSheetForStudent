@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/pages/ResetPasswordPage.js
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -6,54 +7,31 @@ import {
   Button,
   useMediaQuery,
   useTheme,
-  InputAdornment,
   IconButton,
+  Paper,
+  InputAdornment,
 } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { ArrowBack, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { resetPassword } from "../services/authService"; // Import ฟังก์ชันที่เพิ่มใหม่
-import { useNavigate, useSearchParams } from "react-router-dom"; // ใช้ useSearchParams
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 
+// TODO: แก้ import ให้ตรงกับโปรเจกต์ของคุณ
+import { resetPassword } from "../services/authService";
+
 const ResetPasswordPage = () => {
-  const navigate = useNavigate();
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-  const handleClickShowConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  useEffect(() => {
-    // หากไม่มี token ใน URL ให้เด้งกลับไปหน้า login
-    if (!token) {
-      Swal.fire({
-        icon: "error",
-        title: "Token ไม่ถูกต้อง!",
-        text: "ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง",
-        confirmButtonColor: "#00796b",
-      }).then(() => {
-        navigate("/login");
-      });
-    }
-  }, [token, navigate]);
-
   const formik = useFormik({
-    initialValues: {
-      password: "",
-      confirmPassword: "",
-    },
+    initialValues: { password: "", confirmPassword: "" },
     validationSchema: Yup.object({
       password: Yup.string()
         .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
@@ -62,27 +40,30 @@ const ResetPasswordPage = () => {
         .oneOf([Yup.ref("password"), null], "รหัสผ่านไม่ตรงกัน")
         .required("กรุณายืนยันรหัสผ่าน"),
     }),
+    // ให้ขึ้น error เฉพาะตอนกด submit
+    validateOnChange: false,
+    validateOnBlur: false,
     onSubmit: async (values, { setSubmitting }) => {
       try {
         await resetPassword({
           token,
           password: values.password,
         });
-
-        Swal.fire({
+        await Swal.fire({
           icon: "success",
-          title: "รีเซ็ตรหัสผ่านสำเร็จ!",
-          text: "คุณสามารถใช้รหัสผ่านใหม่เข้าสู่ระบบได้แล้ว",
-          confirmButtonColor: "#00796b",
-        }).then(() => {
-          navigate("/login");
+          title: "ตั้งรหัสผ่านใหม่สำเร็จ",
+          text: "กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่ของคุณ",
+          confirmButtonColor: "#0b7a6b",
         });
-      } catch (error) {
+        navigate("/login");
+      } catch (err) {
         Swal.fire({
           icon: "error",
-          title: "เกิดข้อผิดพลาด",
-          text: error.response?.data?.message || "Token ไม่ถูกต้องหรือหมดอายุแล้ว",
-          confirmButtonColor: "#00796b",
+          title: "ไม่สามารถตั้งรหัสผ่านได้",
+          text:
+            err?.response?.data?.message ||
+            "กรุณาลองใหม่อีกครั้งหรือติดต่อผู้ดูแลระบบ",
+          confirmButtonColor: "#0b7a6b",
         });
       } finally {
         setSubmitting(false);
@@ -90,198 +71,194 @@ const ResetPasswordPage = () => {
     },
   });
 
-  if (!token) {
-    return null; // ไม่แสดงหน้าเพจหากไม่มี token
-  }
+  const textFieldSx = {
+    borderRadius: 2,
+    backgroundColor: "#f9fbfb",
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#cfd8dc" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#0b7a6b" },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#0b7a6b",
+      //boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
+    },
+  };
 
   return (
     <Box
       sx={{
-        height: "100vh",
-        width: "100vw",
-        background: "linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)",
+        minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: 2,
-        fontFamily: '"Kanit", sans-serif',
+        p: 2.5,
+        bgcolor: "linear-gradient(135deg,#f2f6f7 0%,#e6eef0 100%)",
+        fontFamily: `"Kanit", sans-serif`,
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.45 }}
       >
-        <Box
+        <Paper
+          elevation={0}
           sx={{
-            maxWidth: isSmallScreen ? "90vw" : 400,
-            width: "100%",
-            bgcolor: "#ffffff",
-            p: isSmallScreen ? 3 : 5,
-            borderRadius: 3,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            width: isSmall ? "92vw" : 470,
+            borderRadius: 16,
+            p: { xs: 3, sm: 5 },
+            border: "1px solid #cfd8dc",
+            boxShadow: "0 6px 22px rgba(0,0,0,.06)",
             textAlign: "center",
+            position: "relative",
           }}
         >
-          <Typography
-            variant={isSmallScreen ? "h5" : "h3"}
-            sx={{
-              fontWeight: 700,
-              color: "#00796b",
-              mb: 1.5,
-              fontFamily: '"Kanit", sans-serif',
-            }}
+          {/* ปุ่มย้อนกลับ */}
+          <IconButton
+            onClick={() => navigate("/login")}
+            sx={{ position: "absolute", top: 14, left: 14, color: "#0b7a6b" }}
+            aria-label="back"
           >
-            Timesheet
-          </Typography>
-          <Typography
-            variant={isSmallScreen ? "h6" : "h5"}
-            sx={{
-              fontWeight: 700,
-              color: "#000000ff",
-              mb: 1.5,
-              fontFamily: '"Kanit", sans-serif',
-            }}
-          >
+            <ArrowBack />
+          </IconButton>
+
+          {/* หัวข้อให้เหมือนหน้า Login */}
+          <Typography sx={{ color: "#4f5b62", mb: 0.5, fontWeight: 600 }}>
             ตั้งรหัสผ่านใหม่
           </Typography>
           <Typography
-            variant="subtitle1"
             sx={{
-              color: "#666",
-              mb: 2,
-              fontFamily: '"Kanit", sans-serif',
+              fontSize: { xs: 38, sm: 44 },
+              letterSpacing: 4,
+              fontWeight: 800,
+              color: "#0b7a6b",
+              lineHeight: 1.15,
             }}
           >
-            โปรดตั้งรหัสผ่านใหม่
+            TIMESHEET
+          </Typography>
+          <Typography sx={{ color: "#4f5b62", mt: 0.5, mb: 2 }}>
+            กรอกรหัสผ่านใหม่และยืนยันรหัสผ่าน
           </Typography>
 
-          <form onSubmit={formik.handleSubmit} noValidate>
+          {/* ฟอร์ม */}
+          <Box
+            component="form"
+            onSubmit={formik.handleSubmit}
+            noValidate
+            sx={{ textAlign: "left" }}
+          >
+            <Typography sx={{ color: "#455a64" }}>รหัสผ่านใหม่</Typography>
             <TextField
-              label="รหัสผ่านใหม่"
               name="password"
-              type={showPassword ? "text" : "password"}
+              type={showPwd ? "text" : "password"}
+              placeholder="กรอกรหัสผ่านใหม่"
               fullWidth
-              margin="normal"
               value={formik.values.password}
               onChange={formik.handleChange}
-              error={formik.touched.password && Boolean(formik.errors.password)}
-              helperText={formik.touched.password && formik.errors.password}
-              autoFocus
-              // ✅ เพิ่ม onFocus และ onBlur
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
+              error={formik.submitCount > 0 && Boolean(formik.errors.password)}
+              helperText={
+                formik.submitCount > 0 && formik.errors.password
+                  ? formik.errors.password
+                  : " "
+              }
               InputProps={{
-                // ✅ เพิ่มเงื่อนไขการแสดงผล
-                endAdornment: (formik.values.password || passwordFocused) && (
+                sx: textFieldSx,
+                endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
+                      onClick={() => setShowPwd((v) => !v)}
                       edge="end"
+                      aria-label="toggle password visibility"
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPwd ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                    boxShadow: "0 0 5px 0 #00796b",
-                  },
-                },
               }}
-              InputLabelProps={{
-                sx: {
-                  color: "",
-                  "&.Mui-focused": {
-                    color: "#00796b",
-                  },
-                },
-              }}
+              margin="dense"
             />
+
+            <Typography sx={{ color: "#455a64", mt: 1 }}>
+              ยืนยันรหัสผ่านใหม่
+            </Typography>
             <TextField
-              label="ยืนยันรหัสผ่านใหม่"
               name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
+              type={showConfirm ? "text" : "password"}
+              placeholder="ยืนยันรหัสผ่านใหม่"
               fullWidth
-              margin="normal"
               value={formik.values.confirmPassword}
               onChange={formik.handleChange}
               error={
-                formik.touched.confirmPassword &&
+                formik.submitCount > 0 &&
                 Boolean(formik.errors.confirmPassword)
               }
               helperText={
-                formik.touched.confirmPassword && formik.errors.confirmPassword
+                formik.submitCount > 0 && formik.errors.confirmPassword
+                  ? formik.errors.confirmPassword
+                  : " "
               }
-              // ✅ เพิ่ม onFocus และ onBlur
-              onFocus={() => setConfirmPasswordFocused(true)}
-              onBlur={() => setConfirmPasswordFocused(false)}
               InputProps={{
-                // ✅ เพิ่มเงื่อนไขการแสดงผล
-                endAdornment: (formik.values.confirmPassword || confirmPasswordFocused) && (
+                sx: textFieldSx,
+                endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowConfirmPassword}
+                      onClick={() => setShowConfirm((v) => !v)}
                       edge="end"
+                      aria-label="toggle confirm password visibility"
                     >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      {showConfirm ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                    boxShadow: "0 0 5px 0 #00796b",
-                  },
-                },
               }}
-              InputLabelProps={{
-                sx: {
-                  color: "",
-                  "&.Mui-focused": {
-                    color: "#00796b",
-                  },
-                },
-              }}
+              margin="dense"
             />
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{
-                  mt: 4,
-                  py: 1.5,
-                  fontWeight: 700,
-                  backgroundColor: "#00796b",
-                  borderRadius: 3,
-                  "&:hover": { backgroundColor: "#024f46" },
-                  textTransform: "none",
-                  fontFamily: '"Kanit", sans-serif',
-                }}
                 disabled={formik.isSubmitting}
+                sx={{
+                  mt: 2,
+                  py: 1.5,
+                  borderRadius: 3,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: isSmall ? "1rem" : "1.05rem",
+                  backgroundColor: "#0b7a6b",
+                  boxShadow: "0 6px 14px rgba(11,122,107,.25)",
+                  "&:hover": {
+                    backgroundColor: "#095f52",
+                    boxShadow: "0 8px 18px rgba(11,122,107,.28)",
+                  },
+                }}
               >
                 ยืนยัน
               </Button>
             </motion.div>
-          </form>
-        </Box>
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                fullWidth
+                type="button"
+                onClick={() => navigate("/login")}
+                sx={{
+                  mt: 1.5,
+                  py: 1.2,
+                  borderRadius: 3,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#0b7a6b",
+                  bgcolor: "#e7efee",
+                  "&:hover": { bgcolor: "#dbe7e5" },
+                }}
+              >
+                กลับหน้าเข้าสู่ระบบ
+              </Button>
+            </motion.div>
+          </Box>
+        </Paper>
       </motion.div>
     </Box>
   );
