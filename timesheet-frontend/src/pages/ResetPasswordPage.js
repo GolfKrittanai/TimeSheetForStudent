@@ -24,6 +24,8 @@ import { resetPassword } from "../services/authService";
 const ResetPasswordPage = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [pwdFocused, setPwdFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
@@ -154,6 +156,8 @@ const ResetPasswordPage = () => {
               fullWidth
               value={formik.values.password}
               onChange={formik.handleChange}
+              onFocus={() => setPwdFocused(true)}
+              onBlur={() => setPwdFocused(false)}
               error={formik.submitCount > 0 && Boolean(formik.errors.password)}
               helperText={
                 formik.submitCount > 0 && formik.errors.password
@@ -162,17 +166,19 @@ const ResetPasswordPage = () => {
               }
               InputProps={{
                 sx: textFieldSx,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPwd((v) => !v)}
-                      edge="end"
-                      aria-label="toggle password visibility"
-                    >
-                      {showPwd ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+                endAdornment:
+                  (pwdFocused || !!formik.values.password) ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPwd(v => !v)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {showPwd ? <Visibility /> : <VisibilityOff />}
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
               }}
               margin="dense"
             />
@@ -187,6 +193,8 @@ const ResetPasswordPage = () => {
               fullWidth
               value={formik.values.confirmPassword}
               onChange={formik.handleChange}
+              onFocus={() => setConfirmFocused(true)}
+              onBlur={() => setConfirmFocused(false)}
               error={
                 formik.submitCount > 0 &&
                 Boolean(formik.errors.confirmPassword)
@@ -198,17 +206,19 @@ const ResetPasswordPage = () => {
               }
               InputProps={{
                 sx: textFieldSx,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowConfirm((v) => !v)}
-                      edge="end"
-                      aria-label="toggle confirm password visibility"
-                    >
-                      {showConfirm ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+                endAdornment:
+                  (confirmFocused || !!formik.values.confirmPassword) ?
+                    (<InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirm(v => !v)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        edge="end"
+                        aria-label="toggle confirm password visibility"
+                      >
+                        {showConfirm ? <Visibility /> : <VisibilityOff />}
+                      </IconButton>
+                    </InputAdornment>
+                    ) : null,
               }}
               margin="dense"
             />
@@ -224,7 +234,7 @@ const ResetPasswordPage = () => {
                   py: 1.5,
                   borderRadius: 3,
                   textTransform: "none",
-                  fontWeight: 700,
+                  fontWeight: 500,
                   fontSize: isSmall ? "1rem" : "1.05rem",
                   backgroundColor: "#0b7a6b",
                   boxShadow: "0 6px 14px rgba(11,122,107,.25)",
@@ -248,7 +258,7 @@ const ResetPasswordPage = () => {
                   py: 1.2,
                   borderRadius: 3,
                   textTransform: "none",
-                  fontWeight: 600,
+                  fontWeight: 500,
                   color: "#0b7a6b",
                   bgcolor: "#e7efee",
                   "&:hover": { bgcolor: "#dbe7e5" },
