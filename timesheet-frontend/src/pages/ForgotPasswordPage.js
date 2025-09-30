@@ -1,5 +1,4 @@
-// ในไฟล์ timesheet-frontend/src/pages/ForgotPasswordPage.js
-
+// src/pages/ForgotPasswordPage.js
 import React from "react";
 import {
   Box,
@@ -9,6 +8,7 @@ import {
   useMediaQuery,
   useTheme,
   IconButton,
+  Paper,
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { useFormik } from "formik";
@@ -21,33 +21,32 @@ import { motion } from "framer-motion";
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
 
   const formik = useFormik({
-    initialValues: {
-      email: "",
-    },
+    initialValues: { email: "" },
     validationSchema: Yup.object({
       email: Yup.string()
         .email("รูปแบบอีเมลไม่ถูกต้อง")
         .required("กรุณากรอกอีเมล"),
     }),
+    validateOnChange: false,
+    validateOnBlur: false,
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const res = await forgotPassword(values);
         Swal.fire({
           icon: "success",
-          title: "คำขอส่งแล้ว!",
+          title: "ส่งคำขอแล้ว",
           text: res.data.message,
-          confirmButtonColor: "#00796b",
+          confirmButtonColor: "#0b7a6b",
         });
       } catch (error) {
         Swal.fire({
           icon: "error",
           title: "เกิดข้อผิดพลาด",
-          text:
-            error.response?.data?.message || "ไม่สามารถดำเนินการได้ในขณะนี้",
-          confirmButtonColor: "#00796b",
+          text: error.response?.data?.message || "ไม่สามารถดำเนินการได้",
+          confirmButtonColor: "#0b7a6b",
         });
       } finally {
         setSubmitting(false);
@@ -55,137 +54,109 @@ const ForgotPasswordPage = () => {
     },
   });
 
+  const textFieldSx = {
+    borderRadius: 2,
+    backgroundColor: "#f9fbfb",
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#cfd8dc" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#0b7a6b" },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#0b7a6b",
+      //boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
+    },
+  };
+
   return (
     <Box
       sx={{
-        height: "100vh",
-        width: "100vw",
-        background: "linear-gradient(135deg, #f0f0f5 0%, #d9e2ec 100%)",
+        minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: 2,
-        fontFamily: '"Kanit", sans-serif',
+        p: 2.5,
+        bgcolor: "linear-gradient(135deg,#f2f6f7 0%,#e6eef0 100%)",
+        fontFamily: `"Kanit", sans-serif`,
       }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Box
+      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <Paper
+          elevation={0}
           sx={{
-            maxWidth: isSmallScreen ? "90vw" : 500,
-            width: "100%",
-            bgcolor: "#ffffff",
-            p: isSmallScreen ? 3 : 9,
-            borderRadius: 3,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            width: isSmall ? "92vw" : 470,
+            borderRadius: 16,
+            p: { xs: 3, sm: 5 },
+            border: "1px solid #cfd8dc",
+            boxShadow: "0 6px 22px rgba(0,0,0,.06)",
             textAlign: "center",
             position: "relative",
           }}
         >
+          {/* back icon */}
           <IconButton
             onClick={() => navigate("/login")}
-            sx={{
-              position: "absolute",
-              top: 8,
-              left: 8,
-              color: "#00796b",
-            }}
+            sx={{ position: "absolute", top: 14, left: 14, color: "#0b7a6b" }}
+            aria-label="back"
           >
-            <ArrowBack/>
+            <ArrowBack />
           </IconButton>
-          <Typography
-            variant={isSmallScreen ? "h6" : "h5"}
-            sx={{
-              fontWeight: 700,
-              color: "#00796b",
-              mb: 1,
-              fontFamily: '"Kanit", sans-serif',
-            }}
-          >
+
+          {/* Headings (match Login style) */}
+          <Typography sx={{ color: "#4f5b62", mb: 0.5, fontWeight: 600 }}>
             ลืมรหัสผ่าน ?
           </Typography>
           <Typography
-            variant={isSmallScreen ? "h5" : "h3"}
             sx={{
-              fontWeight: 700,
-              color: "#00796b",
-              mb: 1,
-              fontFamily: '"Kanit", sans-serif',
+              fontSize: { xs: 38, sm: 44 },
+              letterSpacing: 4,
+              fontWeight: 800,
+              color: "#0b7a6b",
+              lineHeight: 1.15,
             }}
           >
-           Timesheet
+            TIMESHEET
           </Typography>
-          <Typography
-            variant="subtitle1"
-            sx={{
-              color: "#666",
-              mb: 2,
-              fontFamily: '"Kanit", sans-serif',
-            }}
-          >
+          <Typography sx={{ color: "#4f5b62", mt: 0.5, mb: 2 }}>
             รีเซ็ตรหัสผ่านด้วยอีเมลที่ใช้งาน
           </Typography>
 
-          <form onSubmit={formik.handleSubmit} noValidate>
+          {/* Form */}
+          <Box component="form" onSubmit={formik.handleSubmit} noValidate sx={{ textAlign: "left" }}>
+            <Typography sx={{ color: "#455a64" }}>อีเมล</Typography>
             <TextField
-              label="อีเมล"
               name="email"
-              type="email"
+              placeholder="กรอกอีเมลของคุณ"
               fullWidth
-              margin="normal"
               value={formik.values.email}
               onChange={formik.handleChange}
-              error={formik.touched.email && Boolean(formik.errors.email)}
-              helperText={formik.touched.email && formik.errors.email}
-              autoFocus
-              InputProps={{
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: "#fafafa",
-                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#00796b",
-                    boxShadow: "0 0 5px 0 #00796b",
-                  },
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  color: "",
-                  "&.Mui-focused": {
-                    color: "#00796b",
-                  },
-                },
-              }}
+              onBlur={formik.handleBlur}
+              error={formik.submitCount > 0 && Boolean(formik.errors.email)}
+              helperText={formik.submitCount > 0 && formik.errors.email ? formik.errors.email : " "}
+              InputProps={{ sx: textFieldSx }}
+              margin="dense"
             />
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{
-                  mt: 4,
-                  py: 1.5,
-                  fontWeight: 700,
-                  backgroundColor: "#00796b",
-                  borderRadius: 3,
-                  "&:hover": { backgroundColor: "#024f46" },
-                  textTransform: "none",
-                  fontFamily: '"Kanit", sans-serif',
-                }}
                 disabled={formik.isSubmitting}
+                sx={{
+                  mt: 2,
+                  py: 1.5,
+                  borderRadius: 3,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: isSmall ? "1rem" : "1.05rem",
+                  backgroundColor: "#0b7a6b",
+                  boxShadow: "0 6px 14px rgba(11,122,107,.25)",
+                  "&:hover": { backgroundColor: "#095f52", boxShadow: "0 8px 18px rgba(11,122,107,.28)" },
+                }}
               >
                 ส่ง
               </Button>
             </motion.div>
-          </form>
-        </Box>
+          </Box>
+        </Paper>
       </motion.div>
     </Box>
   );

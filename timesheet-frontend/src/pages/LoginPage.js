@@ -71,12 +71,12 @@ export default function LoginPage() {
 
   const textFieldSx = {
     borderRadius: 2,
-    backgroundColor: "#f9fbfb",
+    backgroundColor: "#ffffff",
     "& .MuiOutlinedInput-notchedOutline": { borderColor: "#cfd8dc" },
     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#0b7a6b" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
       borderColor: "#0b7a6b",
-      boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
+      //boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
     },
   };
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
           {/* Form */}
           <Box component="form" onSubmit={formik.handleSubmit} noValidate sx={{ textAlign: "left" }}>
             {/* ===== Label เหนือช่อง: รหัสประจำตัว ===== */}
-            <Typography sx={{ color: "#455a64", mb: 0.75 }}>รหัสประจำตัว</Typography>
+            <Typography sx={{ color: "#455a64" }}>รหัสประจำตัว</Typography>
             <TextField
               name="studentId"
               placeholder="รหัสประจำตัว"
@@ -140,7 +140,7 @@ export default function LoginPage() {
             />
 
             {/* ===== Label เหนือช่อง: รหัสผ่าน ===== */}
-            <Typography sx={{ color: "#455a64", mt: 1, mb: 0.75 }}>รหัสผ่าน</Typography>
+            <Typography sx={{ color: "#455a64" }}>รหัสผ่าน</Typography>
             <TextField
               name="password"
               type={showPassword ? "text" : "password"}
