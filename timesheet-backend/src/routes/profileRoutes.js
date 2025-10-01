@@ -8,54 +8,41 @@ const path = require("path");
 const { authenticateToken } = require("../middleware/authMiddleware");
 const { createClient } = require("@supabase/supabase-js");
 
-/* =========================
-   Supabase client (Server)
-   ========================= */
+/* Supabase client */
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // ใช้เฉพาะฝั่งเซิร์ฟเวอร์เท่านั้น
+  process.env.SUPABASE_SERVICE_KEY
 );
 const BUCKET = process.env.SUPABASE_BUCKET || "profile";
 
-/* =========================
-   Multer: ใช้ memory storage
-   ========================= */
+/* Multer memory storage */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ok = /^image\/(png|jpe?g|webp)$/i.test(file.mimetype);
     cb(ok ? null : new Error("รองรับเฉพาะไฟล์ .jpg .jpeg .png .webp"), ok);
   },
 });
 
-/* ==========================================================================
-   PUT /api/profile/upload-avatar
-   - รับไฟล์จาก FE -> อัปโหลดเข้า Supabase Storage -> อัปเดต URL ใน DB
-   - ถ้ามีรูปเก่าและเป็นของบักเก็ตเดียวกัน -> ลบทิ้งให้ด้วย
-   ========================================================================== */
+/* PUT /api/profile/upload-avatar (Supabase) */
 router.put(
   "/upload-avatar",
   authenticateToken,
   upload.single("profileImage"),
   async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ message: "กรุณาอัปโหลดไฟล์รูป" });
-      }
+      if (!req.file) return res.status(400).json({ message: "กรุณาอัปโหลดไฟล์รูป" });
 
-      // 1) ดึง URL รูปเก่า (ถ้ามี)
       const current = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { profileImage: true },
       });
       const oldUrl = current?.profileImage || "";
 
-      // 2) สร้างชื่อไฟล์ใหม่ในบักเก็ต
       const ext = (path.extname(req.file.originalname) || ".png").toLowerCase();
       const objectName = `profile/${req.user.id}_${Date.now()}${ext}`;
 
-      // 3) อัปโหลดไฟล์เข้า Supabase
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
         .upload(objectName, req.file.buffer, {
@@ -67,10 +54,8 @@ router.put(
         return res.status(500).json({ message: "อัปโหลดไฟล์ไปที่ Storage ไม่สำเร็จ" });
       }
 
-      // 4) สร้าง URL สำหรับสาธารณะ (กรณี bucket เป็น public)
       const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${objectName}`;
 
-      // 5) อัปเดต DB
       const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
         data: { profileImage: publicUrl },
@@ -82,6 +67,7 @@ router.put(
           email: true,
           phone: true,
           course: true,
+          branch: true,             // << เพิ่ม branch
           semester: true,
           academicYear: true,
           companyName: true,
@@ -90,15 +76,14 @@ router.put(
         },
       });
 
-      // 6) ลบรูปเก่าใน Supabase (ถ้าเป็นของบักเก็ตเดียวกัน)
+      // ลบรูปเก่าในบักเก็ต (ถ้าตรงบักเก็ตเดียวกัน)
       try {
         const base = `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
         if (oldUrl && oldUrl.startsWith(base)) {
-          const oldObject = oldUrl.replace(base, ""); // ได้เป็น "profile/xxx.png"
+          const oldObject = oldUrl.replace(base, "");
           await supabase.storage.from(BUCKET).remove([oldObject]);
         }
       } catch (rmErr) {
-        // ไม่ต้อง fail ทั้งงาน ถ้าลบไม่ได้ให้แค่ log ไว้
         console.warn("Remove old avatar failed:", rmErr?.message || rmErr);
       }
 
@@ -109,16 +94,12 @@ router.put(
       });
     } catch (error) {
       console.error("อัปโหลดรูปโปรไฟล์ผิดพลาด:", error);
-      return res
-        .status(500)
-        .json({ message: "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์" });
+      return res.status(500).json({ message: "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์" });
     }
   }
 );
 
-/* ==========================================================================
-   GET /api/profile - ดึงข้อมูลโปรไฟล์ของผู้ใช้ปัจจุบัน
-   ========================================================================== */
+/* GET /api/profile */
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -131,6 +112,7 @@ router.get("/", authenticateToken, async (req, res) => {
         email: true,
         phone: true,
         course: true,
+        branch: true,            // << เพิ่ม branch
         semester: true,
         academicYear: true,
         companyName: true,
@@ -145,17 +127,16 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-/* ==========================================================================
-   PUT /api/profile - อัปเดตข้อมูลโปรไฟล์ (เฉพาะฟิลด์ข้อความ)
-   ========================================================================== */
+/* PUT /api/profile (update ฟิลด์ข้อความ) */
 router.put("/", authenticateToken, async (req, res) => {
-  const { fullName, email, phone, companyName, internPosition } = req.body;
+  const { fullName, email, phone, companyName, internPosition, branch } = req.body;
   const data = {};
   if (fullName !== undefined) data.fullName = fullName;
   if (email !== undefined) data.email = email;
   if (phone !== undefined) data.phone = phone;
   if (companyName !== undefined) data.companyName = companyName;
   if (internPosition !== undefined) data.internPosition = internPosition;
+  if (branch !== undefined) data.branch = branch; // << รองรับ branch
 
   try {
     const updatedUser = await prisma.user.update({
@@ -169,6 +150,7 @@ router.put("/", authenticateToken, async (req, res) => {
         email: true,
         phone: true,
         course: true,
+        branch: true,
         semester: true,
         academicYear: true,
         companyName: true,
@@ -183,9 +165,7 @@ router.put("/", authenticateToken, async (req, res) => {
   }
 });
 
-/* ==========================================================================
-   PUT /api/profile/change-password - เปลี่ยนรหัสผ่าน
-   ========================================================================== */
+/* PUT /api/profile/change-password */
 router.put("/change-password", authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { currentPassword, newPassword } = req.body;
