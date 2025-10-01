@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+// src/components/Sidebar.js
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Drawer,
   Box,
@@ -28,17 +29,27 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getUserProfile } from "../services/userService";
 
 const drawerWidth = 240;
 const BRAND = "#00423b";
 const BRAND_HOVER = "#024f46";
 const ACTIVE = "#FFC107";
 
+// helper: คืน src ให้ถูกเสมอ (รองรับ Supabase URL และพาธเก่า /uploads/...)
+const getAvatarSrc = (obj) => {
+  const raw = obj?.profileImage;
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw; // URL เต็ม (Supabase/อื่น)
+  const API = process.env.REACT_APP_API || "";
+  const BASE = API.replace(/\/api$/, "");
+  return `${BASE}${raw}`; // ต่อ host ให้พาธเก่า
+};
+
 function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -46,14 +57,45 @@ function Sidebar() {
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
+  // ดึงโปรไฟล์เหมือนหน้า Profile (ให้ Sidebar ใช้เอง)
+  const [sdProfile, setSdProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    if (!sdProfile) {
+      setLoadingProfile(true);
+      getUserProfile(token)
+        .then(({ data }) => setSdProfile(data))
+        .catch((e) => console.warn("Sidebar: fetch /profile failed:", e?.message || e))
+        .finally(() => setLoadingProfile(false));
+    }
+  }, [token, sdProfile]);
+
+  // รวมข้อมูลแสดงผล (ให้ sdProfile มาก่อน แล้วค่อยตกมาใช้ user จาก context)
+  const display = useMemo(() => {
+    const role = sdProfile?.role ?? user?.role ?? "student";
+    const avatarSrc = getAvatarSrc(sdProfile) || getAvatarSrc(user);
+    return {
+      fullName: sdProfile?.fullName ?? user?.fullName ?? "User",
+      studentId: sdProfile?.studentId ?? user?.studentId ?? "-",
+      role,
+      avatarSrc, // แสดงรูปทุกบทบาท (student / teacher / admin)
+    };
+  }, [sdProfile, user]);
 
   const adminMenuItems = useMemo(
     () => [
       { text: "Management data", icon: <DashboardIcon />, path: "/admin" },
+      { text: "Export Report", icon: <ReportIcon />, path: "/report" },
+      { text: "My account", icon: <ProfileIcon />, path: "/profile" },
+    ],
+    []
+  );
+
+  const teacherMenuItems = useMemo(
+    () => [
+      { text: "Management data", icon: <DashboardIcon />, path: "/teacher" },
       { text: "Export Report", icon: <ReportIcon />, path: "/report" },
       { text: "My account", icon: <ProfileIcon />, path: "/profile" },
     ],
@@ -69,7 +111,18 @@ function Sidebar() {
     []
   );
 
-  const currentMenuItems = user?.role === "admin" ? adminMenuItems : studentMenuItems;
+  const currentMenuItems =
+    display.role === "admin"
+      ? adminMenuItems
+      : display.role === "teacher"
+      ? teacherMenuItems
+      : studentMenuItems;
+
+  const handleLogout = () => {
+    setSdProfile(null); // เคลียร์ cache เล็กน้อยฝั่ง Sidebar
+    logout();
+    navigate("/");
+  };
 
   const MenuList = (
     <>
@@ -105,13 +158,7 @@ function Sidebar() {
 
       <List sx={{ mt: "auto", mb: 1 }}>
         <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              handleLogout();
-              if (isMobile) closeMobile();
-            }}
-            sx={{ "&:hover": { bgcolor: BRAND_HOVER } }}
-          >
+          <ListItemButton onClick={handleLogout} sx={{ "&:hover": { bgcolor: BRAND_HOVER } }}>
             <ListItemIcon sx={{ color: "#fff" }}>
               <LogoutIcon />
             </ListItemIcon>
@@ -122,82 +169,42 @@ function Sidebar() {
     </>
   );
 
-  // ===== มือถือ: TopBar (ซ้ายเมนู / ขวาชื่อ) + Drawer โผล่ซ้าย =====
+  // ========== มือถือ: TopBar + Drawer ==========
   if (isMobile) {
     return (
       <>
         <AppBar position="fixed" elevation={3} sx={{ bgcolor: BRAND }}>
           <Toolbar sx={{ minHeight: 64, px: 1 }}>
-            {/* ซ้าย: ปุ่มแฮมเบอร์เกอร์ */}
             <IconButton
               aria-label="open menu"
               onClick={toggleMobile}
               edge="start"
-              sx={{
-                color: "#fff",
-                mr: 1,
-                "&:hover": { bgcolor: BRAND_HOVER },
-              }}
+              sx={{ color: "#fff", mr: 1, "&:hover": { bgcolor: BRAND_HOVER } }}
             >
               <MenuIcon />
             </IconButton>
-
-            {/* ตัวดันกลางให้ชื่อไปชิดขวา */}
             <Box sx={{ flex: 1 }} />
-
-            {/* ขวา: ชื่อ/อวาตาร์ */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
-              {user?.role === "admin" ? (
-                <>
-                  <Typography
-                    variant="subtitle1"
-                    noWrap
-                    sx={{ fontWeight: 500, letterSpacing: 0.3 }}
-                  >
-                    TIMESHEET
-                  </Typography>
-                  <Avatar
-                    alt={user?.fullName || "User"}
-                    src={user?.profileImage || undefined}
-                    sx={{ width: 28, height: 28, bgcolor: "#fff", color: BRAND }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
-                    </Typography>
-                  </Avatar>
-                </>
-              ) : (
-                <>
-                  <Tooltip title={user?.fullName || "User"}>
-                    <Typography
-                      variant="subtitle2"
-                      noWrap
-                      sx={{ fontWeight: 500, maxWidth: "60vw" }}
-                    >
-                      {user?.fullName || "User"}
-                    </Typography>
-                  </Tooltip>
-                  <Avatar
-                    alt={user?.fullName || "User"}
-                    src={user?.profileImage || undefined}
-                    sx={{ width: 28, height: 28, bgcolor: "#fff", color: BRAND }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                      {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
-                    </Typography>
-                  </Avatar>
-
-                </>
-              )}
+              <Tooltip title={display.fullName || "User"}>
+                <Typography variant="subtitle2" noWrap sx={{ fontWeight: 500, maxWidth: "60vw" }}>
+                  {display.fullName || "User"}
+                </Typography>
+              </Tooltip>
+              <Avatar
+                alt={display.fullName || "User"}
+                src={display.avatarSrc}
+                sx={{ width: 28, height: 28, bgcolor: "#fff", color: BRAND }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {display.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </Typography>
+              </Avatar>
             </Box>
-
           </Toolbar>
         </AppBar>
 
-        {/* กันพื้นที่ไม่ให้ content ถูก AppBar ทับ */}
         <Toolbar sx={{ minHeight: 64 }} />
 
-        {/* Drawer แบบ temporary โผล่จากซ้าย */}
         <Drawer
           anchor="left"
           variant="temporary"
@@ -213,11 +220,10 @@ function Sidebar() {
             },
           }}
         >
-          {/* Header ใน Drawer */}
           <Box sx={{ p: 2, pt: 2.5, textAlign: "center" }}>
             <Avatar
-              alt={user?.fullName || "User"}
-              src={user?.profileImage || undefined}
+              alt={display.fullName || "User"}
+              src={display.avatarSrc}
               sx={{
                 width: 56,
                 height: 56,
@@ -227,25 +233,26 @@ function Sidebar() {
                 mb: 1,
                 border: "2px solid rgba(255,255,255,0.7)",
               }}
+              onError={(e) => {
+                console.warn("Sidebar avatar load failed:", display.avatarSrc);
+                e.currentTarget.src = ""; // fallback เป็นอักษร
+              }}
             >
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                {display.fullName?.charAt(0)?.toUpperCase() || "U"}
               </Typography>
             </Avatar>
 
-            <Typography variant="h6" sx={{ fontWeight: 500 }}>
-              {user?.fullName || (user?.role === "admin" ? "Admin" : "User")}
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {display.fullName}
             </Typography>
 
-            {user?.role === "admin" ? (
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                Role: {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
-              </Typography>
-            ) : (
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                Student ID: {user?.studentId || "-"}
-              </Typography>
-            )}
+            <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
+              ID : {display.studentId || "-"}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }}>
+              {display.role?.charAt(0).toUpperCase() + display.role?.slice(1)}
+            </Typography>
           </Box>
 
           <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)" }} />
@@ -258,7 +265,7 @@ function Sidebar() {
     );
   }
 
-  // ===== เดสก์ท็อป: Sidebar ถาวร =====
+  // ========== เดสก์ท็อป: Sidebar ถาวร ==========
   return (
     <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
       <Drawer
@@ -274,47 +281,42 @@ function Sidebar() {
           },
         }}
       >
-        {user?.role === "admin" ? (
-          <Box sx={{ p: 2, textAlign: "center", pt: 5, pb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#fff", mb: 1 }}>
-              TIMESHEET SYSTEM
-            </Typography>
-            <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)", mb: 2 }} />
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#fff" }}>
-              {user?.fullName}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", mb: 1 }}>
-              {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
-            </Typography>
-          </Box>
-        ) : (
-          <Box sx={{ p: 2, textAlign: "center", pt: 4, pb: 2 }}>
-            <Tooltip title={user?.fullName}>
-              <Avatar
-                sx={{
-                  alt: user?.fullName,
-                  src: user?.profileImage || "",
-                  width: 64,
-                  height: 64,
-                  bgcolor: "#fff",
-                  color: BRAND,
-                  m: "0 auto",
-                  mb: 1,
-                }}
-              >
-                <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                  {user?.fullName?.charAt(0).toUpperCase() || "U"}
-                </Typography>
-              </Avatar>
-            </Tooltip>
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#fff" }}>
-              {user?.fullName}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", mb: 1 }}>
-              {user?.studentId}
-            </Typography>
-          </Box>
-        )}
+        <Box sx={{ p: 2, textAlign: "center", pt: 4, pb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: "500", color: "#fff", mb: 1 }}>
+            TIMESHEET SYSTEM
+          </Typography>
+          <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)", mb: 2 }} />
+
+          <Tooltip title={display.fullName}>
+            <Avatar
+              alt={display.fullName || "User"}
+              src={display.avatarSrc}
+              sx={{ width: 128, height: 128, bgcolor: "#fff", color: BRAND, m: "0 auto", mb: 1 }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: "500" }}>
+                {display.fullName?.charAt(0)?.toUpperCase() || "U"}
+              </Typography>
+            </Avatar>
+          </Tooltip>
+
+          <Typography variant="h6" sx={{ fontWeight: "500", color: "#fff" }}>
+            {display.fullName}
+          </Typography>
+
+          <Typography
+            variant="caption"
+            sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", display: "block" }}
+          >
+            ID : {display.studentId || "-"}
+          </Typography>
+
+          <Typography
+            variant="caption"
+            sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", mb: 1 }}
+          >
+            {display.role?.charAt(0).toUpperCase() + display.role?.slice(1)}
+          </Typography>
+        </Box>
 
         <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)" }} />
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>

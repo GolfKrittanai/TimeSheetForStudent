@@ -1,11 +1,12 @@
+// src/controllers/authController.js
 const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
-const { buildResetPasswordEmail } = require('../utils/emailTemplates');
+const { buildResetPasswordEmail } = require('../utils/emailTemplates'); // จากไฟล์หลัก
 const crypto = require('crypto');
 
-// ✅ REGISTER
+// REGISTER
 async function register(req, res) {
   const {
     studentId,
@@ -15,13 +16,13 @@ async function register(req, res) {
     phone,
     role = 'student',
     course,
+    branch,
     semester,
     academicYear,
     companyName,
     internPosition,
     profileImage,
   } = req.body;
-
 
   if (!studentId || !fullName || !password || !email || !phone) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
@@ -35,6 +36,9 @@ async function register(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // เงื่อนไขสำหรับ student เท่านั้น
+    const isStudent = (role || '').toLowerCase() === 'student';
+
     const user = await prisma.user.create({
       data: {
         studentId,
@@ -43,11 +47,12 @@ async function register(req, res) {
         phone,
         passwordHash,
         role,
-        course,
-        semester,
-        academicYear,
-        companyName,
-        internPosition,
+        course: isStudent ? course : null,
+        branch, // เก็บสาขาไว้ได้ทุก role (ใช้ในระบบ admin/teacher ได้)
+        semester: isStudent ? semester : null,
+        academicYear: isStudent ? academicYear : null,
+        companyName: isStudent ? companyName : null,
+        internPosition: isStudent ? internPosition : null,
         profileImage,
       },
     });
@@ -61,6 +66,7 @@ async function register(req, res) {
         phone: user.phone,
         role: user.role,
         course: user.course,
+        branch: user.branch,
         semester: user.semester,
         academicYear: user.academicYear,
         companyName: user.companyName,
@@ -68,7 +74,6 @@ async function register(req, res) {
         profileImage: user.profileImage,
       },
     });
-
   } catch (error) {
     console.error('Register error:', error);
     return res.status(500).json({
@@ -78,7 +83,7 @@ async function register(req, res) {
   }
 }
 
-// ✅ LOGIN
+// LOGIN
 async function login(req, res) {
   const { studentId, password } = req.body;
 
@@ -105,6 +110,7 @@ async function login(req, res) {
         id: user.id,
         studentId: user.studentId,
         fullName: user.fullName,
+        branch: user.branch, // รวมจากไฟล์ A
         email: user.email,
         phone: user.phone,
         role: user.role,
@@ -118,26 +124,23 @@ async function login(req, res) {
     });
   }
 }
-// ✅ FORGOT PASSWORD
+
+// FORGOT PASSWORD (ใช้ template + FRONTEND_ORIGIN/RESET_PASSWORD_URL)
 async function forgotPassword(req, res) {
   const { email } = req.body;
-
   if (!email) {
     return res.status(400).json({ message: 'กรุณากรอกอีเมล' });
   }
 
   try {
+    // ใช้ findFirst ให้ยืดหยุ่นกว่า
     const user = await prisma.user.findFirst({ where: { email } });
     if (!user) {
       return res.status(404).json({ message: 'ไม่พบอีเมลนี้ในระบบ' });
     }
 
-    // สร้าง token + hash เก็บใน DB
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const passwordResetExpires = new Date(Date.now() + 3600000); // 1 ชั่วโมง
 
     await prisma.user.update({
@@ -145,47 +148,33 @@ async function forgotPassword(req, res) {
       data: { passwordResetToken, passwordResetExpires },
     });
 
-    // ลิงก์รีเซ็ตจาก ENV (prod: vercel, dev: localhost)
     const base =
       process.env.RESET_PASSWORD_URL ||
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}${process.env.RESET_PASSWORD_PATH || '/reset-password'}`;
+      `${process.env.FRONTEND_URL || 'http://localhost:3000'}${
+        process.env.RESET_PASSWORD_PATH || '/reset-password'
+      }`;
     const resetURL = `${base}?token=${resetToken}`;
 
-    // ✅ ใช้เทมเพลตอีเมลแบบสวยงาม (HTML + text)
     const { html, text, subject } = buildResetPasswordEmail({
       fullName: user.fullName,
       resetURL,
       brandName: 'TIMESHEET',
-      // ถ้าต้องการใช้รูป hero จากฝั่ง FE:
       heroImage: `${process.env.FRONTEND_ORIGIN || 'https://time-sheet-for-student.vercel.app'}/email/ResetPassword.png`,
       supportUrl: 'https://time-sheet-for-student.vercel.app/help',
     });
 
-    // ✅ ส่งด้วย sendEmail แบบใหม่ (รับ to/subject/html/text)
-    await sendEmail({
-      to: user.email,
-      subject,
-      html,
-      text,
-    });
+    await sendEmail({ to: user.email, subject, html, text });
 
-    return res
-      .status(200)
-      .json({ message: 'ส่งคำขอรีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว' });
+    return res.status(200).json({ message: 'ส่งคำขอรีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    return res
-      .status(500)
-      .json({ message: 'เกิดข้อผิดพลาดในการดำเนินการ' });
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดำเนินการ' });
   }
 }
 
-// ✅ RESET PASSWORD
+// RESET PASSWORD
 async function resetPassword(req, res) {
-  // รับ Token จาก URL parameter หรือ body
-  // โดยปกติจะส่งมาทาง query parameter (reset-password?token=xxxx)
   const { token, password } = req.body;
-
   if (!token || !password) {
     return res.status(400).json({ message: 'Token หรือรหัสผ่านไม่ถูกต้อง' });
   }
@@ -196,20 +185,15 @@ async function resetPassword(req, res) {
     const user = await prisma.user.findFirst({
       where: {
         passwordResetToken,
-        passwordResetExpires: {
-          gt: new Date(), // ตรวจสอบว่า Token ยังไม่หมดอายุ
-        },
+        passwordResetExpires: { gt: new Date() },
       },
     });
-
     if (!user) {
       return res.status(400).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุแล้ว' });
     }
 
-    // Hash รหัสผ่านใหม่
     const newPasswordHash = await bcrypt.hash(password, 10);
 
-    // อัปเดตรหัสผ่านและลบ Token
     await prisma.user.update({
       where: { id: user.id },
       data: {
