@@ -51,9 +51,6 @@ app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 
-// ไฟล์อัปโหลด (รูปโปรไฟล์ ฯลฯ)
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-
 /* -------------------------------- START ---------------------------------- */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

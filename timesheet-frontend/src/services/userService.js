@@ -27,3 +27,13 @@ export const changePassword = (currentPassword, newPassword, token) =>
       headers: { Authorization: `Bearer ${token}` },
     }
   );
+
+// อัปโหลดรูปโปรไฟล์ (ผ่าน BE ไป Supabase)
+export const uploadAvatar = (file, token) => {
+  const form = new FormData();
+  form.append("profileImage", file); // ต้องชื่อ profileImage ให้ตรงกับ BE
+  return axios.put(`${API_URL}/profile/upload-avatar`, form, {
+    headers: { Authorization: `Bearer ${token}` }, // ไม่ต้องกำหนด Content-Type เอง
+  });
+};
+
