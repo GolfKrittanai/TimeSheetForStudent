@@ -34,6 +34,7 @@ model user {
   phone        String?     @db.VarChar(20)
 
   course                String?     @db.VarChar(50) // ✅ เพิ่มฟิลด์ใหม่: หลักสูตร
+  branch                String?     @db.VarChar(50) // ✅ ฟิลด์ใหม่: สาขา
   semester              String?     @db.VarChar(20) // ✅ เพิ่มฟิลด์ใหม่: ภาคการศึกษา
   academicYear          String?     @db.VarChar(10) // ✅ เพิ่มฟิลด์ใหม่: ปีการศึกษา
   companyName           String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์ใหม่: ชื่อสถานประกอบการ

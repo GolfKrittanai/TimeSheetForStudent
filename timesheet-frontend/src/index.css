@@ -16,3 +16,8 @@ body {
   font-family: 'Kanit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif !important;
 }
+.swal2-confirm,
+.swal2-cancel {
+  width: 120px !important; /* ปรับขนาดความกว้างตามที่ต้องการ */
+  border-radius: 8px !important;
+}
