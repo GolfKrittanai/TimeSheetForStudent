@@ -436,13 +436,14 @@ function AdminDashboard() {
           </Typography>
           {/* ------------------ Tabs (ปรับ Icon/Text ให้อยู่แถวเดียวกัน) ------------------ */}
           <Paper
-            elevation={0}
+            // 🎯 CHANGE: เพิ่มเงา (elevation) เป็น 2 และลบ border
+            elevation={2}
             sx={{
               mb: 3,
               bgcolor: "#fff",
               borderRadius: 2,
               overflow: "hidden",
-              border: "1px solid #c0c0c0",
+              // border: "1px solid #c0c0c0", // <--- REMOVED
             }}
           >
             <Tabs
@@ -518,12 +519,13 @@ function AdminDashboard() {
                 {/* Summary Card 1: จำนวนนักศึกษา */}
                 <Grid item xs={12} sm={6}>
                   <Paper
-                    elevation={0}
+                    // 🎯 CHANGE: เพิ่มเงา (elevation) เป็น 2 และลบ border
+                    elevation={2}
                     sx={{
                       p: 3, // เพิ่ม Padding ให้การ์ดดูใหญ่ขึ้น
                       bgcolor: "#fff",
                       borderRadius: 2,
-                      border: "1px solid #ddd",
+                      // border: "1px solid #ddd", // <--- REMOVED
                       // ✅ FIX: เปลี่ยนเป็น Flex Row เพื่อจัดไอคอนซ้าย, ข้อความขวา
                       display: "flex",
                       alignItems: "center",
@@ -570,12 +572,13 @@ function AdminDashboard() {
                 {/* Summary Card 2: Timesheets ทั้งหมด */}
                 <Grid item xs={12} sm={6}>
                   <Paper
-                    elevation={0}
+                    // 🎯 CHANGE: เพิ่มเงา (elevation) เป็น 2 และลบ border
+                    elevation={2}
                     sx={{
                       p: 3, // เพิ่ม Padding ให้การ์ดดูใหญ่ขึ้น
                       bgcolor: "#fff",
                       borderRadius: 2,
-                      border: "1px solid #ddd",
+                      // border: "1px solid #ddd", // <--- REMOVED
                       // ✅ FIX: เปลี่ยนเป็น Flex Row เพื่อจัดไอคอนซ้าย, ข้อความขวา
                       display: "flex",
                       alignItems: "center",
@@ -624,11 +627,13 @@ function AdminDashboard() {
 
             {/* =================================================================
             // ✅ NEW: Combined Search/Filter UI for Students
+            // 🎯 CHANGE: เปลี่ยน Box เป็น Paper และเพิ่ม elevation
             // ================================================================= */}
-            <Box
+            <Paper
+              elevation={1}
               sx={{
                 mb: 2,
-                border: "1px solid #ccc",
+                // border: "1px solid #ccc", // <--- REMOVED
                 p: 2,
                 borderRadius: 2,
                 bgcolor: "#fff",
@@ -639,7 +644,7 @@ function AdminDashboard() {
                 gutterBottom
                 sx={{
                   fontWeight: "bold",
-                  color: "#333",
+                  color: "#575757",
                   mb: 2,
                   fontFamily: '"Kanit", sans-serif',
                 }}
@@ -900,7 +905,7 @@ function AdminDashboard() {
                   </FormControl>
                 )}
               </Box>
-            </Box>
+            </Paper>
             {/* ================================================================= */}
 
             {loading ? (
@@ -914,7 +919,7 @@ function AdminDashboard() {
                   py: 4,
                   bgcolor: "#fff",
                   borderRadius: 2,
-                  border: "1px solid #e0e0e0",
+                  // border: "1px solid #e0e0e0", // <--- REMOVED
                   mt: 2,
                 }}
               >
@@ -941,7 +946,7 @@ function AdminDashboard() {
                 sx={{
                   overflowX: "auto",
                   borderRadius: 2,
-                  border: "1px solid #e0e0e0",
+                  // border: "1px solid #e0e0e0", // <--- REMOVED
                   "& td, & th": {
                     fontSize: isSmallScreen ? "0.75rem" : "1rem",
                     padding: isSmallScreen ? "6px 8px" : "12px 16px",
@@ -1079,12 +1084,13 @@ function AdminDashboard() {
                 {/* Summary Card 1: จำนวนอาจารย์ */}
                 <Grid item xs={12} sm={6}>
                   <Paper
-                    elevation={0}
+                    // 🎯 CHANGE: เพิ่มเงา (elevation) เป็น 2 และลบ border
+                    elevation={2}
                     sx={{
                       p: 3, // เพิ่ม Padding ให้การ์ดดูใหญ่ขึ้น
                       bgcolor: "#fff",
                       borderRadius: 2,
-                      border: "1px solid #ddd",
+                      // border: "1px solid #ddd", // <--- REMOVED
                       // ✅ FIX: เปลี่ยนเป็น Flex Row เพื่อจัดไอคอนซ้าย, ข้อความขวา
                       display: "flex",
                       alignItems: "center",
@@ -1131,12 +1137,13 @@ function AdminDashboard() {
                 {/* Summary Card 2: จำนวน Admin */}
                 <Grid item xs={12} sm={6}>
                   <Paper
-                    elevation={0}
+                    // 🎯 CHANGE: เพิ่มเงา (elevation) เป็น 2 และลบ border
+                    elevation={2}
                     sx={{
                       p: 3, // เพิ่ม Padding ให้การ์ดดูใหญ่ขึ้น
                       bgcolor: "#fff",
                       borderRadius: 2,
-                      border: "1px solid #ddd",
+                      // border: "1px solid #ddd", // <--- REMOVED
                       // ✅ FIX: เปลี่ยนเป็น Flex Row เพื่อจัดไอคอนซ้าย, ข้อความขวา
                       display: "flex",
                       alignItems: "center",
@@ -1185,11 +1192,13 @@ function AdminDashboard() {
 
             {/* =================================================================
             // 🎯 REVISED: Search UI for System User Tab (Index 1)
+            // 🎯 CHANGE: เปลี่ยน Box เป็น Paper และเพิ่ม elevation
             // ================================================================= */}
-            <Box
+            <Paper
+              elevation={1}
               sx={{
                 mb: 2,
-                border: "1px solid #ccc",
+                // border: "1px solid #ccc", // <--- REMOVED
                 p: 2,
                 borderRadius: 2,
                 bgcolor: "#fff",
@@ -1201,7 +1210,7 @@ function AdminDashboard() {
                 gutterBottom
                 sx={{
                   fontWeight: "bold",
-                  color: "#333",
+                  color: "#575757",
                   mb: 2,
                   fontFamily: '"Kanit", sans-serif',
                 }}
@@ -1243,7 +1252,7 @@ function AdminDashboard() {
                 </Box>
 
                 {/* 2. กลุ่ม: [ค้นหา] [ล้าง] (อยู่ขวา) */}
-                <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                   <Button
                     variant="contained"
                     sx={{
@@ -1278,7 +1287,7 @@ function AdminDashboard() {
                 </Box>
                 {/* ปุ่ม + เพิ่มผู้ใช้ (อยู่ขวา) */}
               </Box>
-            </Box>
+            </Paper>
             <Box
               sx={{
                 width: "100%",
@@ -1317,7 +1326,7 @@ function AdminDashboard() {
                   py: 4,
                   bgcolor: "#fff",
                   borderRadius: 2,
-                  border: "1px solid #e0e0e0",
+                  // border: "1px solid #e0e0e0", // <--- REMOVED
                 }}
               >
                 <Typography
@@ -1345,7 +1354,7 @@ function AdminDashboard() {
                 sx={{
                   overflowX: "auto",
                   borderRadius: 2,
-                  border: "1px solid #e0e0e0",
+                  // border: "1px solid #e0e0e0", // <--- REMOVED
                   "& td, & th": {
                     fontSize: isSmallScreen ? "0.75rem" : "1rem",
                     padding: isSmallScreen ? "6px 8px" : "12px 16px",
