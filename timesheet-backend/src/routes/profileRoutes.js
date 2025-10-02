@@ -55,6 +55,11 @@ router.put(
       }
 
       const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${objectName}`;
+      
+      // แปลง profileImage เป็น null ถ้าฝั่ง FE ส่ง "" มา
+      if (req.body && Object.prototype.hasOwnProperty.call(req.body, "profileImage")) {
+        data.profileImage = req.body.profileImage || null;
+      }
 
       const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
@@ -162,6 +167,48 @@ router.put("/", authenticateToken, async (req, res) => {
   } catch (error) {
     console.error("อัปเดต profile error:", error);
     return res.status(500).json({ message: "อัปเดตข้อมูลโปรไฟล์ไม่สำเร็จ" });
+  }
+});
+
+// DELETE /api/profile/avatar  — ลบไฟล์ใน Supabase แล้วเคลียร์ profileImage ใน DB
+router.delete("/avatar", authenticateToken, async (req, res) => {
+  try {
+    // 1) ดึง URL รูปปัจจุบันจาก DB
+    const me = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { profileImage: true },
+    });
+
+    if (!me?.profileImage) {
+      // ไม่มีรูปให้ลบ แต่ก็ให้ 200 (idempotent)
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { profileImage: null },
+      });
+      return res.json({ message: "removed", profileImage: null });
+    }
+
+    // 2) ถ้าเป็นรูปในบักเก็ตนี้ ให้ลบออกด้วย
+    const publicPrefix = `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
+    if (me.profileImage.startsWith(publicPrefix)) {
+      const objectName = me.profileImage.replace(publicPrefix, "");
+      const { error: rmErr } = await supabase.storage.from(BUCKET).remove([objectName]);
+      if (rmErr) {
+        console.warn("Supabase remove error:", rmErr.message || rmErr);
+        // ไม่เป็นไร ปล่อยผ่าน แล้วเคลียร์ DB ต่อ
+      }
+    }
+
+    // 3) เคลียร์ค่าใน DB
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { profileImage: null },
+    });
+
+    return res.json({ message: "removed", profileImage: null });
+  } catch (err) {
+    console.error("remove avatar error:", err);
+    return res.status(500).json({ message: "ลบรูปโปรไฟล์ไม่สำเร็จ" });
   }
 });
 

@@ -73,7 +73,7 @@ const ForgotPasswordPage = () => {
         alignItems: "center",
         justifyContent: "center",
         p: 2.5,
-        bgcolor: "linear-gradient(135deg,#f2f6f7 0%,#e6eef0 100%)",
+        bgcolor: "#eef3f5",
         fontFamily: `"Kanit", sans-serif`,
       }}
     >

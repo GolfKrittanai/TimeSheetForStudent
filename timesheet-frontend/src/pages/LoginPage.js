@@ -88,7 +88,7 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         p: 2.5,
-        bgcolor: "linear-gradient(135deg,#f2f6f7 0%,#e6eef0 100%)",
+        bgcolor: "#eef3f5",
         fontFamily: `"Kanit", sans-serif`,
       }}
     >
@@ -203,7 +203,7 @@ export default function LoginPage() {
                   fontWeight: 700,
                   fontSize: isSm ? "1rem" : "1.05rem",
                   backgroundColor: "#0b7a6b",
-                  boxShadow: "0 6px 14px rgba(11,122,107,.25)",
+                  //boxShadow: "0 6px 14px rgba(11,122,107,.25)",
                   "&:hover": { backgroundColor: "#095f52", boxShadow: "0 8px 18px rgba(11,122,107,.28)" },
                 }}
               >
