@@ -75,6 +75,7 @@ export default function ProfilePage() {
     email: "",
     phone: "",
     course: "",
+    branch: "",
     semester: "",
     academicYear: "",
     companyName: "",
@@ -473,7 +474,7 @@ export default function ProfilePage() {
                   {isStudent && (
                     <>
                       {/* ชื่อ-นามสกุล (เต็มบรรทัด) */}
-                      <Grid item xs={12}>
+                      <Grid item xs={12} sm={6}>
                         <FieldLabel>ชื่อ-นามสกุล</FieldLabel>
                         <TextField
                           name="fullName"
@@ -493,6 +494,18 @@ export default function ProfilePage() {
                         <TextField
                           name="studentId"
                           value={profile.studentId || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>สาขา</FieldLabel>
+                        <TextField
+                          name="branch"
+                          value={profile.branch || ""}
                           disabled
                           fullWidth
                           size="medium"
@@ -660,7 +673,6 @@ export default function ProfilePage() {
                 </Box>
               </Box>
             )}
-
 
             {/* --- CHANGE PASSWORD TAB --- */}
             {activeTab === "password" && (
