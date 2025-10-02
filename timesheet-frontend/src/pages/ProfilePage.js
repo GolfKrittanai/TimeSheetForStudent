@@ -180,6 +180,9 @@ export default function ProfilePage() {
     admin: "ผู้ดูแลระบบ",
   };
 
+  const isStudent = profile.role === "student";
+  const isStaff = profile.role === "teacher" || profile.role === "admin";
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!isEditing) return;
@@ -392,8 +395,8 @@ export default function ProfilePage() {
             {/* --- PROFILE TAB --- */}
             {activeTab === "profile" && (
               <Box component="form" onSubmit={onSubmit}>
+                {/* แถว: สิทธิการเข้าใช้งาน */}
                 <Grid container spacing={2.4}>
-                  {/* สิทธิการเข้าใช้งาน (ปิดเสมอ) */}
                   <Grid item xs={12}>
                     <FieldLabel>สิทธิการเข้าใช้งาน</FieldLabel>
                     <TextField
@@ -403,147 +406,199 @@ export default function ProfilePage() {
                       size="medium"
                       margin="none"
                       InputProps={{ sx: textFieldSx }}
-                      FormHelperTextProps={{ sx: { mt: 0.25, fontSize: 12, lineHeight: 1.2, m: 0 } }}
                     />
                   </Grid>
 
-                  {/* ชื่อ-นามสกุล */}
-                  <Grid item xs={12}>
-                    <FieldLabel>ชื่อ-นามสกุล</FieldLabel>
-                    <TextField
-                      name="fullName"
-                      value={profile.fullName || ""}
-                      onChange={onChange}
-                      disabled={!isEditing}
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                  {/* ====== STAFF (admin/teacher) layout ====== */}
+                  {isStaff && (
+                    <>
+                      {/* แถว: รหัสประจำตัว | ชื่อ-นามสกุล */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>รหัสประจำตัว</FieldLabel>
+                        <TextField
+                          name="studentId"
+                          value={profile.studentId || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>ชื่อ-นามสกุล</FieldLabel>
+                        <TextField
+                          name="fullName"
+                          value={profile.fullName || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
 
-                  {/* รหัสประจำตัว (ปิดเสมอ) */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>รหัสประจำตัว</FieldLabel>
-                    <TextField
-                      name="studentId"
-                      value={profile.studentId || ""}
-                      onChange={onChange}
-                      disabled
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                      {/* แถว: อีเมล | เบอร์โทรศัพท์ */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>อีเมล</FieldLabel>
+                        <TextField
+                          name="email"
+                          value={profile.email || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>เบอร์โทรศัพท์</FieldLabel>
+                        <TextField
+                          name="phone"
+                          value={profile.phone || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                    </>
+                  )}
 
-                  {/* หลักสูตร(ปี) (ปิดเสมอ) */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>หลักสูตร(ปี)</FieldLabel>
-                    <TextField
-                      name="course"
-                      value={profile.course || ""}
-                      onChange={onChange}
-                      disabled
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                  {/* ====== STUDENT layout (เดิม) ====== */}
+                  {isStudent && (
+                    <>
+                      {/* ชื่อ-นามสกุล (เต็มบรรทัด) */}
+                      <Grid item xs={12}>
+                        <FieldLabel>ชื่อ-นามสกุล</FieldLabel>
+                        <TextField
+                          name="fullName"
+                          value={profile.fullName || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
 
-                  {/* ภาคการศึกษา (ปิดเสมอ) */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>ภาคการศึกษา</FieldLabel>
-                    <TextField
-                      name="semester"
-                      value={profile.semester || ""}
-                      onChange={onChange}
-                      disabled
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                      {/* รหัสประจำตัว | หลักสูตร(ปี) */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>รหัสประจำตัว</FieldLabel>
+                        <TextField
+                          name="studentId"
+                          value={profile.studentId || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>หลักสูตร(ปี)</FieldLabel>
+                        <TextField
+                          name="course"
+                          value={profile.course || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
 
-                  {/* ปีการศึกษา (ปิดเสมอ) */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>ปีการศึกษา</FieldLabel>
-                    <TextField
-                      name="academicYear"
-                      value={profile.academicYear || ""}
-                      onChange={onChange}
-                      disabled
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                      {/* ภาคการศึกษา | ปีการศึกษา */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>ภาคการศึกษา</FieldLabel>
+                        <TextField
+                          name="semester"
+                          value={profile.semester || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>ปีการศึกษา</FieldLabel>
+                        <TextField
+                          name="academicYear"
+                          value={profile.academicYear || ""}
+                          disabled
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
 
-                  {/* อีเมล */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>อีเมล</FieldLabel>
-                    <TextField
-                      name="email"
-                      value={profile.email || ""}
-                      onChange={onChange}
-                      disabled={!isEditing}
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                      {/* อีเมล | เบอร์โทรศัพท์ */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>อีเมล</FieldLabel>
+                        <TextField
+                          name="email"
+                          value={profile.email || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>เบอร์โทรศัพท์</FieldLabel>
+                        <TextField
+                          name="phone"
+                          value={profile.phone || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
 
-                  {/* เบอร์โทรศัพท์ */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>เบอร์โทรศัพท์</FieldLabel>
-                    <TextField
-                      name="phone"
-                      value={profile.phone || ""}
-                      onChange={onChange}
-                      disabled={!isEditing}
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
-
-                  {/* ชื่อสถานประกอบการ */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>ชื่อสถานประกอบการ</FieldLabel>
-                    <TextField
-                      name="companyName"
-                      value={profile.companyName || ""}
-                      onChange={onChange}
-                      disabled={!isEditing}
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
-
-                  {/* ตำแหน่งฝึกงาน */}
-                  <Grid item xs={12} sm={6}>
-                    <FieldLabel>ตำแหน่งฝึกงาน</FieldLabel>
-                    <TextField
-                      name="internPosition"
-                      value={profile.internPosition || ""}
-                      onChange={onChange}
-                      disabled={!isEditing}
-                      fullWidth
-                      size="medium"
-                      margin="none"
-                      InputProps={{ sx: textFieldSx }}
-                    />
-                  </Grid>
+                      {/* ชื่อสถานประกอบการ | ตำแหน่งฝึกงาน */}
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>ชื่อสถานประกอบการ</FieldLabel>
+                        <TextField
+                          name="companyName"
+                          value={profile.companyName || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FieldLabel>ตำแหน่งฝึกงาน</FieldLabel>
+                        <TextField
+                          name="internPosition"
+                          value={profile.internPosition || ""}
+                          onChange={onChange}
+                          disabled={!isEditing}
+                          fullWidth
+                          size="medium"
+                          margin="none"
+                          InputProps={{ sx: textFieldSx }}
+                        />
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
 
-                {/* ปุ่มล่าง: เท่ากัน 2 ฝั่ง กึ่งกลาง */}
+                {/* ปุ่มล่าง (คงเดิม) */}
                 <Box sx={{ mt: 3 }}>
                   <Box sx={{ maxWidth: 560, mx: "auto" }}>
                     {!isEditing ? (
@@ -555,13 +610,9 @@ export default function ProfilePage() {
                             variant="outlined"
                             onClick={() => navigate(-1)}
                             sx={{
-                              py: 1.2,
-                              borderRadius: 2,
-                              textTransform: "none",
-                              borderColor: "#0b7a6b",
-                              color: "#0b7a6b",
-                              "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" },
-                              fontWeight: 500,
+                              py: 1.2, borderRadius: 2, textTransform: "none",
+                              borderColor: "#0b7a6b", color: "#0b7a6b",
+                              "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" }, fontWeight: 500,
                             }}
                           >
                             ย้อนกลับ
@@ -571,19 +622,9 @@ export default function ProfilePage() {
                           <Button
                             type="button"
                             fullWidth
-                            onClick={(e) => {
-                              e.preventDefault();
-                              startEdit();
-                            }}
+                            onClick={(e) => { e.preventDefault(); startEdit(); }}
                             variant="contained"
-                            sx={{
-                              py: 1.2,
-                              borderRadius: 2,
-                              textTransform: "none",
-                              bgcolor: "#0b7a6b",
-                              "&:hover": { bgcolor: "#095f52" },
-                              fontWeight: 500,
-                            }}
+                            sx={{ py: 1.2, borderRadius: 2, textTransform: "none", bgcolor: "#0b7a6b", "&:hover": { bgcolor: "#095f52" }, fontWeight: 500 }}
                           >
                             แก้ไข
                           </Button>
@@ -597,15 +638,7 @@ export default function ProfilePage() {
                             fullWidth
                             variant="outlined"
                             onClick={cancelEdit}
-                            sx={{
-                              py: 1.2,
-                              borderRadius: 2,
-                              textTransform: "none",
-                              borderColor: "#0b7a6b",
-                              color: "#0b7a6b",
-                              "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" },
-                              fontWeight: 500,
-                            }}
+                            sx={{ py: 1.2, borderRadius: 2, textTransform: "none", borderColor: "#0b7a6b", color: "#0b7a6b", "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" }, fontWeight: 500 }}
                           >
                             ยกเลิก
                           </Button>
@@ -616,14 +649,7 @@ export default function ProfilePage() {
                             fullWidth
                             variant="contained"
                             disabled={saving}
-                            sx={{
-                              py: 1.2,
-                              borderRadius: 2,
-                              textTransform: "none",
-                              bgcolor: "#0b7a6b",
-                              "&:hover": { bgcolor: "#095f52" },
-                              fontWeight: 500,
-                            }}
+                            sx={{ py: 1.2, borderRadius: 2, textTransform: "none", bgcolor: "#0b7a6b", "&:hover": { bgcolor: "#095f52" }, fontWeight: 500 }}
                           >
                             บันทึกข้อมูล
                           </Button>
@@ -634,6 +660,7 @@ export default function ProfilePage() {
                 </Box>
               </Box>
             )}
+
 
             {/* --- CHANGE PASSWORD TAB --- */}
             {activeTab === "password" && (
