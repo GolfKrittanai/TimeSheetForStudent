@@ -80,6 +80,18 @@ export default function ResetPasswordTab({ token, onBack }) {
     };
     const [validate, setValidate] = useState(handlePasswordValidate(""));
 
+    // true = ผ่านทุกเงื่อนไข
+    const isPasswordValid = (v) => {
+        return (
+            /[a-z]/.test(v) &&          // มีตัวพิมพ์เล็ก
+            /[A-Z]/.test(v) &&          // มีตัวพิมพ์ใหญ่
+            /\d/.test(v) &&             // มีตัวเลข
+            v.length >= 8 &&
+            v.length <= 16 &&
+            /^[A-Za-z0-9]*$/.test(v)    // a-z A-Z 0-9 เท่านั้น (และไม่ใช่ค่าว่าง)
+        );
+    };
+
     const onChange = (e) => {
         const { name, value } = e.target;
         setPwd((prev) => ({ ...prev, [name]: value }));
@@ -92,18 +104,8 @@ export default function ResetPasswordTab({ token, onBack }) {
     const handleToggle = (key) => setShow((s) => ({ ...s, [key]: !s[key] }));
 
     // invalid ของ "รหัสผ่านใหม่" — แสดงกรอบแดงเฉพาะตอนกด submit
-    const newPwInvalid = useMemo(() => {
-        if (!showErrors) return false;
-        const v = pwd.newPassword;
-        const pass =
-            /[a-z]/.test(v) &&
-            /[A-Z]/.test(v) &&
-            /\d/.test(v) &&
-            v.length >= 8 &&
-            v.length <= 16 &&
-            /^[A-Za-z0-9]*$/.test(v);
-        return !pass;
-    }, [pwd.newPassword, showErrors]);
+    // invalid ของ "รหัสผ่านใหม่" — แสดงกรอบแดงเฉพาะตอนกด submit
+    const newPwInvalid = showErrors && !isPasswordValid(pwd.newPassword);
 
     const confirmInvalid =
         showErrors && (!!pwd.confirmPassword ? pwd.confirmPassword !== pwd.newPassword : true);
@@ -113,14 +115,23 @@ export default function ResetPasswordTab({ token, onBack }) {
 
     const onSubmit = async (e) => {
         e.preventDefault();
+
+        // คำนวณความถูกต้อง "สด ๆ" ก่อน setState
+        const missing = !pwd.currentPassword || !pwd.newPassword || !pwd.confirmPassword;
+        const badNew = !isPasswordValid(pwd.newPassword);
+        const badConfirm = !pwd.confirmPassword || pwd.confirmPassword !== pwd.newPassword;
+
+        // เปิดโหมดแสดง error
         setShowErrors(true);
-        if (formMissing || newPwInvalid || confirmInvalid) return;
+
+        // ถ้าไม่ผ่าน เงียบและไม่ยิง API
+        if (missing || badNew || badConfirm) return;
 
         setSaving(true);
         try {
             await changePassword(pwd.currentPassword, pwd.newPassword, token);
             setPwd({ currentPassword: "", newPassword: "", confirmPassword: "" });
-            setValidate(handlePasswordValidate(""));
+            setValidate(handlePasswordValidate(""));  // รีค่า bullet
             setShowErrors(false);
             setShowGuideline(false);
             Swal.fire({ icon: "success", title: "เปลี่ยนรหัสผ่านสำเร็จ" });
@@ -228,7 +239,7 @@ export default function ResetPasswordTab({ token, onBack }) {
                         />
                         {/* กติกา (ซ่อนจนกว่าจะเริ่มกรอก/โฟกัส) */}
                         {showGuideline && (
-                            <Box sx={{ mt: -1, pl: 1, mb: 1 }}>
+                            <Box sx={{ mt: 0.5, pl: 1, mb: 1 }}>
                                 <Typography component="p" sx={{ fontSize: 12, color: (validate.hasMinLength && validate.hasMaxLength) ? "green" : "red" }}>
                                     ตัวอักษร 8–16 ตัว
                                 </Typography>
