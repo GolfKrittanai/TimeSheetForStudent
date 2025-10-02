@@ -288,7 +288,7 @@ function TimesheetHistoryPage() {
           flexGrow: 1,
           p: isSmallScreen ? 2 : 4,
           mt: isSmallScreen ? 5 : 0,
-          minHeight: "90vh",
+          minHeight: "100vh",
           backgroundColor: "#f5f7fa",
           display: "flex",
           flexDirection: "column",
