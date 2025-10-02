@@ -1641,7 +1641,7 @@ function AdminDashboard() {
                 <Box component="form" onSubmit={(e) => e.preventDefault()}>
                   <Grid container spacing={2}>
                     {/* Row 1: Role (สิทธิ์การใช้งาน) & Student ID (รหัสประจำตัว) */}
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={value === 0 ? 6 : 12}>
                       <FormControl
                         fullWidth
                         sx={inputStyle}
@@ -1687,17 +1687,21 @@ function AdminDashboard() {
                         sx={inputStyle}
                       />
                     </Grid>
-                    {/* <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="สาขา"
-                        name="branch"
-                        value={formData.branch}
-                        onChange={handleChange}
-                        fullWidth
-                        size="small"
-                        sx={inputStyle}
-                      />
-                    </Grid> */}
+                    {value === 0 && (
+                      <>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="สาขา"
+                            name="branch"
+                            value={formData.branch}
+                            onChange={handleChange}
+                            fullWidth
+                            size="small"
+                            sx={inputStyle}
+                          />
+                        </Grid>
+                      </>
+                    )}
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="อีเมล"
