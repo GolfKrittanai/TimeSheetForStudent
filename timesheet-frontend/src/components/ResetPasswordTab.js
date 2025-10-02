@@ -29,7 +29,7 @@ const textFieldSx = {
 const FieldLabel = ({ children, required }) => (
     <Typography
         sx={{
-            fontSize: 13,
+            fontSize: 14,
             lineHeight: 1.2,
             color: "#455a64",
             mb: 0.5,

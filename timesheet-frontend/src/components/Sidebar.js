@@ -72,6 +72,16 @@ function Sidebar() {
     }
   }, [token, sdProfile]);
 
+  // ฟังสัญญาณเปลี่ยนรูปโปรไฟล์จากหน้า Profile → อัปเดตทันที
+  useEffect(() => {
+    const handler = (e) => {
+      const url = e?.detail ?? "";
+      setSdProfile((prev) => ({ ...(prev || {}), profileImage: url }));
+    };
+    window.addEventListener("profile-image-updated", handler);
+    return () => window.removeEventListener("profile-image-updated", handler);
+  }, []);
+
   // รวมข้อมูลแสดงผล (ให้ sdProfile มาก่อน แล้วค่อยตกมาใช้ user จาก context)
   const display = useMemo(() => {
     const role = sdProfile?.role ?? user?.role ?? "student";
@@ -115,8 +125,8 @@ function Sidebar() {
     display.role === "admin"
       ? adminMenuItems
       : display.role === "teacher"
-      ? teacherMenuItems
-      : studentMenuItems;
+        ? teacherMenuItems
+        : studentMenuItems;
 
   const handleLogout = () => {
     setSdProfile(null); // เคลียร์ cache เล็กน้อยฝั่ง Sidebar
@@ -293,7 +303,7 @@ function Sidebar() {
               src={display.avatarSrc}
               sx={{ width: 128, height: 128, bgcolor: "#fff", color: BRAND, m: "0 auto", mb: 1 }}
             >
-              <Typography variant="h5" sx={{ fontWeight: "500" }}>
+              <Typography variant="h2" sx={{ fontWeight: "500" }}>
                 {display.fullName?.charAt(0)?.toUpperCase() || "U"}
               </Typography>
             </Avatar>

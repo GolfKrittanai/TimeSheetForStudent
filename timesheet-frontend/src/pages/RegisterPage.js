@@ -288,7 +288,7 @@ export default function RegisterPage() {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "linear-gradient(to bottom right, #e8f3f1, #ffffff)",
+        bgcolor: "#eef3f5",
         py: { xs: 3, md: 6 },
       }}
     >
@@ -522,7 +522,7 @@ export default function RegisterPage() {
                 backgroundColor: "#0b7a6b",
                 borderRadius: 3,
                 textTransform: "none",
-                boxShadow: "0 4px 10px rgba(11,122,107,.25)",
+                //boxShadow: "0 4px 10px rgba(11,122,107,.25)",
                 "&:hover": {
                   backgroundColor: "#095f52",
                   boxShadow: "0 6px 14px rgba(11,122,107,.28)",

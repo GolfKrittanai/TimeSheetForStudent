@@ -10,7 +10,11 @@ import {
   useTheme,
   useMediaQuery,
   Grid,
+  IconButton,
+  Tooltip
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import Swal from "sweetalert2";
@@ -19,6 +23,7 @@ import {
   getUserProfile,
   updateUserProfile,
   uploadAvatar,
+  deleteAvatar
 } from "../services/userService";
 import ResetPasswordTab from "../components/ResetPasswordTab";
 
@@ -34,7 +39,7 @@ const textFieldSx = {
   },
   /* ตอน disabled ให้ดูซอฟต์เหมือน read-only */
   "&.Mui-disabled": {
-    backgroundColor: "#f9fbfb",
+    backgroundColor: "#E4E4E7",
   },
   "& .MuiOutlinedInput-input.Mui-disabled": {
     WebkitTextFillColor: "#546e7a",
@@ -45,7 +50,7 @@ const textFieldSx = {
 const FieldLabel = ({ children, required }) => (
   <Typography
     sx={{
-      fontSize: 13,
+      fontSize: 14,
       lineHeight: 1.2,
       color: "#455a64",
       mb: 0.5,
@@ -95,6 +100,7 @@ export default function ProfilePage() {
 
   // แท็บ: 'profile' | 'password'
   const [activeTab, setActiveTab] = useState("profile");
+  const [removeAvatar, setRemoveAvatar] = useState(false); // ลบรูป (ฝั่ง UI/เซิร์ฟเวอร์)
 
   useEffect(() => {
     if (!token) {
@@ -133,6 +139,7 @@ export default function ProfilePage() {
       Swal.fire({ icon: "warning", title: "ไฟล์ไม่ใช่รูปภาพ" });
       return;
     }
+    setRemoveAvatar(false);
     setNewImageFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl((old) => {
@@ -149,6 +156,11 @@ export default function ProfilePage() {
     setPreviewUrl("");
   };
 
+  const handleRemoveAvatar = () => {
+    setRemoveAvatar(true);
+    clearPickedImage();
+    setProfile((p) => ({ ...p, profileImage: "" })); // ให้ UI เป็นค่าว่างทันที
+  };
 
   const startEdit = () => {
     setOriginalProfile(profile);
@@ -158,6 +170,7 @@ export default function ProfilePage() {
   const cancelEdit = () => {
     if (originalProfile) setProfile(originalProfile);
     setIsEditing(false);
+    setRemoveAvatar(false);
     clearPickedImage();
   };
 
@@ -183,16 +196,40 @@ export default function ProfilePage() {
         },
         token
       );
+      let finalUrl = profile.profileImage || "";
 
-      // 2) ถ้ามีเลือกรูปใหม่ → อัปโหลดไป Supabase ผ่าน BE
       if (newImageFile) {
+        // อัปโหลดรูปใหม่
         const res = await uploadAvatar(newImageFile, token);
         const newUrl = res?.data?.profileImage || res?.data?.user?.profileImage;
         if (newUrl) {
           setProfile((p) => ({ ...p, profileImage: newUrl }));
+          finalUrl = newUrl;
         }
         clearPickedImage();
+        setRemoveAvatar(false);
+      } else if (removeAvatar) {
+        // ลบรูปจริง: เรียก API ใหม่
+        try {
+          await deleteAvatar(token);
+          finalUrl = "";
+          setProfile((p) => ({ ...p, profileImage: "" }));
+        } catch (e) {
+          console.warn("Delete avatar failed:", e?.message || e);
+        }
+        setRemoveAvatar(false);
       }
+
+      // 3) แจ้ง Sidebar ให้เปลี่ยนรูปทันที (ไม่ต้องรีเฟรช)
+      try {
+        window.dispatchEvent(new CustomEvent("profile-image-updated", { detail: finalUrl }));
+        // ถ้าเก็บ user ลง localStorage ให้ sync ด้วย (เพื่อกันกลับไปเป็นรูปเก่า)
+        const cache = JSON.parse(localStorage.getItem("user") || "null");
+        if (cache) {
+          cache.profileImage = finalUrl;
+          localStorage.setItem("user", JSON.stringify(cache));
+        }
+      } catch { }
 
       setOriginalProfile(profile);
       setIsEditing(false);
@@ -256,7 +293,7 @@ export default function ProfilePage() {
                   bgcolor: activeTab === "profile" ? "#0b7a6b" : "transparent",
                   color: activeTab === "profile" ? "#fff" : "#0b7a6b",
                   "&:hover": { bgcolor: activeTab === "profile" ? "#095f52" : "#f4fbfa" },
-                  borderRadius: 2,
+                  borderRadius: 1,
                   border: activeTab === "profile" ? "none" : "1px solid #cfd8dc",
                 }}
                 onClick={goProfileTab}
@@ -273,7 +310,7 @@ export default function ProfilePage() {
                   bgcolor: activeTab === "password" ? "#0b7a6b" : "transparent",
                   color: activeTab === "password" ? "#fff" : "#0b7a6b",
                   "&:hover": { bgcolor: activeTab === "password" ? "#095f52" : "#f4fbfa" },
-                  borderRadius: 2,
+                  borderRadius: 1,
                   border: activeTab === "password" ? "none" : "1px solid #cfd8dc",
                 }}
                 onClick={goPasswordTab}
@@ -285,18 +322,8 @@ export default function ProfilePage() {
             {/* Avatar + Title — แสดงเฉพาะแท็บข้อมูลส่วนตัว */}
             {activeTab === "profile" && (
               <Box sx={{ textAlign: "center", mb: { xs: 2, md: 3 } }}>
-                <Avatar
-                  alt={profile.fullName || "student"}
-                  src={previewUrl ? previewUrl : (profile.profileImage || undefined)}
-                  sx={{
-                    width: isSmall ? 108 : 128,
-                    height: isSmall ? 108 : 128,
-                    mx: "auto",
-                    mb: 1.5,
-                    border: "3px solid #0b7a6b",
-                  }}
-                />
                 <Box sx={{ textAlign: "center", mb: 2 }}>
+                  {/* ซ่อน input file ไว้ เรียกด้วย triggerPickImage */}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -304,31 +331,57 @@ export default function ProfilePage() {
                     hidden
                     onChange={onPickImage}
                   />
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={triggerPickImage}
-                    disabled={!isEditing}
+
+                  {/* รูป + overlay ปุ่มแก้ไข/ลบ — โผล่ “ทันที” เมื่ออยู่โหมดแก้ไข */}
+                  <Box
                     sx={{
-                      mt: 0.5,
-                      borderColor: "#0b7a6b",
-                      color: "#0b7a6b",
-                      textTransform: "none",
-                      "&:hover": { borderColor: "#095f52", bgcolor: "#f4fbfa" },
+                      position: "relative",
+                      width: isSmall ? 108 : 150,
+                      height: isSmall ? 108 : 150,
+                      mx: "auto",
+                      mb: 1.5,
+                      borderRadius: "50%",
                     }}
                   >
-                    เปลี่ยนรูปโปรไฟล์
-                  </Button>
-                  {previewUrl && (
-                    <Button
-                      variant="text"
-                      size="small"
-                      onClick={clearPickedImage}
-                      sx={{ ml: 1, textTransform: "none", color: "#e53935" }}
-                    >
-                      ยกเลิกรูปที่เลือก
-                    </Button>
-                  )}
+                    <Avatar
+                      alt={profile.fullName || "student"}
+                      src={previewUrl ? previewUrl : (profile.profileImage || undefined)}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        border: "2px solid #0b7a6b",
+                      }}
+                    />
+
+                    {isEditing && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          inset: 0,
+                          borderRadius: "50%",
+                          bgcolor: "rgba(0,0,0,0.45)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          ":hover": { bgcolor: "rgba(0,0,0,0.6)" },
+                          gap: 1.2,
+                          opacity: 1,               // << โผล่ทันทีเมื่อ isEditing = true
+                          transition: "opacity .2s",
+                        }}
+                      >
+                        <Tooltip title="แก้ไขรูป">
+                          <IconButton size="small" onClick={triggerPickImage} sx={{ color: "#fff" }}>
+                            <EditIcon fontSize="medium" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="ลบรูป">
+                          <IconButton size="small" onClick={handleRemoveAvatar} sx={{ color: "#fff" }}>
+                            <DeleteIcon fontSize="medium" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
                 <Typography variant="h5" sx={{ color: "#0b7a6b", fontWeight: 500 }}>
                   แก้ไขข้อมูลส่วนตัว

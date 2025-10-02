@@ -37,3 +37,6 @@ export const uploadAvatar = (file, token) => {
   });
 };
 
+// ⬇️ ใหม่: ลบรูปจาก Supabase + เคลียร์ DB
+export const deleteAvatar = (token) =>
+  axios.delete(`${API_URL}/profile/avatar`, { headers: { Authorization: `Bearer ${token}` } });
