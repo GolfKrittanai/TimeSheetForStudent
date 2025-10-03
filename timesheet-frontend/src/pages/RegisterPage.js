@@ -36,7 +36,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 /* ----------------------------- ตัวเลือก select ----------------------------- */
-const courseOptions = ["4 ปี", "2 ปี"];
+const courseOptions = ["2 ปี", "4 ปี"];
 const semesterOptions = ["1", "2", "3 (ฤดูร้อน)"];
 
 /* ------------------------------- TextField สไตล์ ------------------------------- */
