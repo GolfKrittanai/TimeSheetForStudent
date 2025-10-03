@@ -75,7 +75,7 @@ export default function ReportExport() {
   /* ----------------------
      สถานะฟอร์ม (ช่องค้นหา)
      ---------------------- */
-  const [semester, setSemester] = useState("1");
+  const [semester, setSemester] = useState(SEMESTERS[0].value); // เริ่มที่ "ทั้งหมด"
   const [academicYear, setAcademicYear] = useState(ACADEMIC_YEARS[0]); // เริ่มที่ "ทั้งหมด"
   const [studentId, setStudentId] = useState("");
   const [course, setCourse] = useState("ทั้งหมด");
