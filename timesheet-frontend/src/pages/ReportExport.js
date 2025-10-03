@@ -29,6 +29,7 @@ const API_URL = process.env.REACT_APP_API;
    ตัวเลือก (ตามสเปกล่าสุด)
    ========================= */
 const SEMESTERS = [
+  { value: "ทั้งหมด", label: "ทั้งหมด" },
   { value: "1", label: "1" },
   { value: "2", label: "2" },
   { value: "3", label: "3 (ฤดูร้อน)" },
@@ -90,7 +91,7 @@ export default function ReportExport() {
 
   const params = useMemo(
     () => ({
-      semester,
+      semester: semester === "ทั้งหมด" ? undefined : semester,
       academicYear: academicYear === "ทั้งหมด" ? undefined : academicYear, // "ทั้งหมด" = ไม่กรอง
       studentId: studentId?.trim() || undefined,
       course: course === "ทั้งหมด" ? undefined : course,
@@ -372,7 +373,9 @@ export default function ReportExport() {
                   </Typography>
                 </Box>
                 <Box sx={{ bgcolor: "#e7f4f2", color: "#0b7a6b", py: 0.75, textAlign: "center" }}>
-                  <Typography sx={{ fontWeight: 500 }}>ภาคเรียนที่ {semester}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>
+                    ภาคเรียนที่ {semester === "ทั้งหมด" ? "ทั้งหมด" : semester}
+                  </Typography>
                 </Box>
 
                 <TableContainer sx={{ maxHeight: 360 }}>
