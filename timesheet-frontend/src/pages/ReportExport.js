@@ -170,7 +170,7 @@ export default function ReportExport() {
 
   // ล้างค่าแบบครบชุด + ล้างผลพรีวิว
   const handleClear = () => {
-    setSemester("1");              // ค่าเริ่มต้นภาคเรียน
+    setSemester("ทั้งหมด");              // ค่าเริ่มต้นภาคเรียน
     setAcademicYear("ทั้งหมด");   // ปีการศึกษา: ทั้งหมด
     setStudentId("");
     setCourse("ทั้งหมด");
@@ -385,7 +385,7 @@ export default function ReportExport() {
                         <TableCell align="center" sx={{ width: 72 }}>
                           ลำดับ
                         </TableCell>
-                        <TableCell align="center" sx={{ width: 140 }}>
+                        <TableCell sx={{ width: 140 }}>
                           รหัสประจำตัว
                         </TableCell>
                         <TableCell sx={{ width: 220 }}>ชื่อ-นามสกุล</TableCell>
@@ -411,7 +411,7 @@ export default function ReportExport() {
                         previewData.map((it, idx) => (
                           <TableRow key={`${it.studentId}-${idx}`} hover>
                             <TableCell align="center">{idx + 1}</TableCell>
-                            <TableCell align="center">{it.studentId || "-"}</TableCell>
+                            <TableCell>{it.studentId || "-"}</TableCell>
                             <TableCell>{it.fullName || "-"}</TableCell>
                             <TableCell>{it.companyName || "-"}</TableCell>
                             <TableCell>{it.internPosition || "-"}</TableCell>
