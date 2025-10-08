@@ -116,6 +116,9 @@ const semesterOptions = [
   { value: "3", label: " 3 (ภาคฤดูร้อน)" },
 ];
 
+const courseTypeOptions = ["2 ปี", "4 ปี"];
+const editSemesterOptions = ["1", "2", "3 (ฤดูร้อน)"];
+
 function TeacherDashboard() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -1136,15 +1139,22 @@ function TeacherDashboard() {
                     </Grid>
                     {/* Row 4: Course */}
                     <Grid item xs={12} sm={12}>
-                      <TextField
-                        label="หลักสูตร"
-                        name="course"
-                        value={formData.course}
-                        onChange={handleChange}
-                        fullWidth
-                        size="small"
-                        sx={inputStyle}
-                      />
+                      <FormControl fullWidth size="small" sx={inputStyle}>
+                        <InputLabel id="course-label">หลักสูตร</InputLabel>
+                        <Select
+                          labelId="course-label"
+                          name="course"
+                          value={formData.course || ""}
+                          label="หลักสูตร"
+                          onChange={handleChange}
+                        >
+                          {courseTypeOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                              {option}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </Grid>
                     {/* Row 5: Company Name & Position */}
                     <Grid item xs={12} sm={6}>
@@ -1172,15 +1182,22 @@ function TeacherDashboard() {
 
                     {/* Row 6: Semester & Academic Year */}
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="ภาคการศึกษา"
-                        name="semester"
-                        value={formData.semester}
-                        onChange={handleChange}
-                        fullWidth
-                        size="small"
-                        sx={inputStyle}
-                      />
+                      <FormControl fullWidth size="small" sx={inputStyle}>
+                        <InputLabel id="semester-label">ภาคเรียน</InputLabel>
+                        <Select
+                          labelId="semester-label"
+                          name="semester"
+                          value={formData.semester || ""}
+                          label="ภาคเรียน"
+                          onChange={handleChange}
+                        >
+                          {editSemesterOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                              {option}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <TextField

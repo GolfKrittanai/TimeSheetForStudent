@@ -526,9 +526,9 @@ export default function ProfilePage() {
                         />
                       </Grid>
 
-                      {/* ภาคการศึกษา | ปีการศึกษา */}
+                      {/* ภาคเรียน | ปีการศึกษา */}
                       <Grid item xs={12} sm={6}>
-                        <FieldLabel>ภาคการศึกษา</FieldLabel>
+                        <FieldLabel>ภาคเรียน</FieldLabel>
                         <TextField
                           name="semester"
                           value={profile.semester || ""}
