@@ -241,6 +241,7 @@ function StudentDashboard() {
                 helperText={formErrors.checkInTime}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
+                inputProps={{ step: 300 }}
               />
               
               <StyledTextField
@@ -253,6 +254,7 @@ function StudentDashboard() {
                 helperText={formErrors.checkOutTime}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
+                inputProps={{ step: 300 }}
               />
             </Box>
             <StyledTextField
