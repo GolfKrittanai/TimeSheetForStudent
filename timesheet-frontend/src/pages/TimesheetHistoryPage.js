@@ -180,11 +180,22 @@ function TimesheetHistoryPage() {
   );
 
   const handleEditOpen = (timesheet) => {
+    const formattedCheckIn = formatInTimeZone(
+      timesheet.checkInTime,
+      "Asia/Bangkok",
+      "HH:mm" // ใช้ format "HH:mm" เพื่อให้ตรงกับ input type="time"
+    );
+
+    const formattedCheckOut = formatInTimeZone(
+      timesheet.checkOutTime,
+      "Asia/Bangkok",
+      "HH:mm"
+    );
     setEditData({
       id: timesheet.id,
       date: timesheet.date.slice(0, 10),
-      checkInTime: timesheet.checkInTime.slice(11, 16),
-      checkOutTime: timesheet.checkOutTime.slice(11, 16),
+      checkInTime: formattedCheckIn,
+      checkOutTime: formattedCheckOut,
       activity: timesheet.activity || "",
     });
     setEditOpen(true);
@@ -784,22 +795,24 @@ function TimesheetHistoryPage() {
                 name="checkInTime"
                 type="time"
                 fullWidth
-                InputLabelProps={{ shrink: true }}
                 value={editData?.checkInTime || ""}
                 onChange={handleEditChange}
                 error={Boolean(editErrors.checkInTime)}
                 helperText={editErrors.checkInTime}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ step: 300 }}
               />
               <StyledTextField
                 label="เวลาออก"
                 name="checkOutTime"
                 type="time"
                 fullWidth
-                InputLabelProps={{ shrink: true }}
                 value={editData?.checkOutTime || ""}
                 onChange={handleEditChange}
                 error={Boolean(editErrors.checkOutTime)}
                 helperText={editErrors.checkOutTime}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ step: 300 }}
               />
               <StyledTextField
                 label="กิจกรรม"

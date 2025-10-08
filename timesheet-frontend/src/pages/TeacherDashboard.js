@@ -113,7 +113,7 @@ const academicYearOptions = generateAcademicYearOptions();
 const semesterOptions = [
   { value: "1", label: " 1" },
   { value: "2", label: " 2" },
-  { value: "3", label: " 3 (ภาคฤดูร้อน)" },
+  { value: "3 (ฤดูร้อน)", label: " 3 (ฤดูร้อน)" },
 ];
 
 const courseTypeOptions = ["2 ปี", "4 ปี"];
