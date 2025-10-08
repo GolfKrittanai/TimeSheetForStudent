@@ -65,7 +65,6 @@ function AddAccount() {
     role: "teacher",
     studentId: "",
     fullName: "",
-    branch: "",
     email: "",
     phone: "",
     password: "",
@@ -84,9 +83,6 @@ function AddAccount() {
     }
     if (!formData.fullName || formData.fullName.trim() === "") {
       newErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
-    }
-    if (!formData.branch || formData.branch.trim() === "") {
-      newErrors.branch = "กรุณาเลือกหรือกรอกสาขา";
     }
     if (!formData.email || formData.email.trim() === "") {
       newErrors.email = "กรุณากรอกอีเมล";
@@ -197,7 +193,7 @@ function AddAccount() {
       Swal.fire({
         title: "เกิดข้อผิดพลาด",
         text:
-          "ไม่สามารถเพิ่มบัญชีได้: " +
+          "ไม่สามารถเพิ่มบัญชีได้ " +
           (error.response?.data?.message || "โปรดตรวจสอบข้อมูล"),
         icon: "error",
         confirmButtonColor: "#00796b",
@@ -336,7 +332,7 @@ function AddAccount() {
               </Grid>
 
               <Grid container spacing={2} sx={{ my: 1 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <Typography sx={{ mb: 0.5 }}>
                     ชื่อ-นามสกุล
                     <span style={{ color: "red" }}>*</span>
@@ -366,25 +362,6 @@ function AddAccount() {
                         </Box>
                       ),
                     }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography sx={{ mb: 0.5 }}>
-                    สาขา
-                    <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  <TextField
-                    placeholder="สาขา"
-                    name="branch"
-                    value={formData.branch}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    size="small"
-                    sx={inputStyle}
-                    // เพิ่ม Error/HelperText
-                    error={!!errors.branch}
-                    helperText={errors.branch}
                   />
                 </Grid>
               </Grid>

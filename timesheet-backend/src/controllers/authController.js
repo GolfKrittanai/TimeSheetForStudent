@@ -31,7 +31,7 @@ async function register(req, res) {
   try {
     const existingUser = await prisma.user.findUnique({ where: { studentId } });
     if (existingUser) {
-      return res.status(400).json({ message: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
+      return res.status(400).json({ message: 'รหัสประจำตัวนี้มีในระบบแล้ว' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);

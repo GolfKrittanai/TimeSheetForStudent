@@ -39,6 +39,8 @@ import { useNavigate } from "react-router-dom";
 const courseOptions = ["2 ปี", "4 ปี"];
 const semesterOptions = ["1", "2", "3 (ฤดูร้อน)"];
 
+const CURRENT_YEAR_BE = new Date().getFullYear() + 543;
+
 /* ------------------------------- TextField สไตล์ ------------------------------- */
 // const StyledTextField = styled(TextField)(({ theme }) => ({
 //   "& .MuiInputBase-root": {
@@ -67,6 +69,20 @@ const textFieldSx = {
   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: "#0b7a6b",
     //boxShadow: "0 0 0 3px rgba(11,122,107,.15)",
+  },
+  "& .Mui-disabled": {
+    backgroundColor: "#f5f5f5", // สีเทาอ่อน (พื้นหลัง)
+    color: "#616161", // สีข้อความด้านใน Input Area
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#e0e0e0", // ขอบจางลง
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#e0e0e0", // ยกเลิก hover effect
+    },
+    // กำหนดสีของไอคอนให้กลมกลืนกับสถานะ disabled
+    "& .MuiInputAdornment-root .MuiSvgIcon-root": {
+      color: "#9e9e9e !important", // สีไอคอนเป็นสีเทาเข้มกว่าพื้นหลังเล็กน้อย
+    },
   },
 };
 
@@ -121,6 +137,7 @@ function CustomField({
   rows = 1,
   setValidatePassword,
   required = false,
+  disabled = false,
 }) {
   const [show, setShow] = React.useState(false);
   const [focused, setFocused] = React.useState(false);
@@ -159,7 +176,10 @@ function CustomField({
         helperText={
           showErrors && formik.errors[name] ? formik.errors[name] : " "
         }
-        FormHelperTextProps={{ sx: { mt: 0.25, fontSize: 12, lineHeight: 1.2, m: 0 } }}
+        FormHelperTextProps={{
+          sx: { mt: 0.25, fontSize: 12, lineHeight: 1.2, m: 0 },
+        }}
+        disabled={disabled}
         InputProps={{
           startAdornment: icon ? (
             <InputAdornment position="start">{icon}</InputAdornment>
@@ -181,7 +201,7 @@ function CustomField({
           // <<— ใช้สไตล์เดียวกับ Login
           sx: textFieldSx,
         }}
-      // ไม่ต้องใช้ InputLabelProps อีกต่อไป เพราะเราแยกหัวข้อไว้ด้านบนแล้ว
+        // ไม่ต้องใช้ InputLabelProps อีกต่อไป เพราะเราแยกหัวข้อไว้ด้านบนแล้ว
       >
         {select &&
           options.map((option) => (
@@ -205,8 +225,19 @@ export default function RegisterPage() {
     fullName: Yup.string().required("กรอกชื่อ-นามสกุล"),
     studentId: Yup.string().required("กรอกรหัสประจำตัว"),
     course: Yup.string().required("เลือกหลักสูตร"),
-    semester: Yup.string().required("เลือกภาคการศึกษา"),
-    academicYear: Yup.string().required("กรอกปีการศึกษา"),
+    semester: Yup.string().required("เลือกภาคเรียน"),
+    //branch: Yup.string().required("กรอกสาขา"),
+    academicYear: Yup.string()
+      .required("กรอกปีการศึกษา")
+      .test(
+        "is-current-or-past-year",
+        `ปีการศึกษาต้องไม่เกินปีปัจจุบัน (${CURRENT_YEAR_BE})`,
+        (value) => {
+          if (!value) return true; // ผ่านถ้าไม่กรอก
+          const year = parseInt(value, 10);
+          return year <= CURRENT_YEAR_BE;
+        }
+      ),
     email: Yup.string().email("อีเมลไม่ถูกต้อง").required("กรอกอีเมล"),
     phone: Yup.string().required("กรอกเบอร์โทรศัพท์"),
     companyName: Yup.string().required("กรอกชื่อสถานประกอบการ"),
@@ -229,6 +260,7 @@ export default function RegisterPage() {
       course: "",
       semester: "",
       academicYear: "",
+      branch: "ระบบสารสนเทศทางธุรกิจ",
       email: "",
       phone: "",
       companyName: "",
@@ -249,6 +281,7 @@ export default function RegisterPage() {
           phone: values.phone.trim(),
           password: values.password,
           role: "student",
+          branch: values.branch.trim() || undefined,
           course: values.course || undefined,
           semester: values.semester || undefined,
           academicYear: values.academicYear || undefined,
@@ -340,7 +373,7 @@ export default function RegisterPage() {
           <Box component="form" onSubmit={formik.handleSubmit} sx={{ p: { xs: 2, sm: 3 } }}>
             <Grid container columnSpacing={1.5}>
               {/* ชื่อ-นามสกุล */}
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <CustomField
                   label="ชื่อ-นามสกุล"
                   name="fullName"
@@ -350,8 +383,6 @@ export default function RegisterPage() {
                   required
                 />
               </Grid>
-
-              {/* รหัสประจำตัว & หลักสูตร */}
               <Grid item xs={12} sm={6}>
                 <CustomField
                   label="รหัสประจำตัว"
@@ -362,6 +393,19 @@ export default function RegisterPage() {
                   required
                 />
               </Grid>
+              <Grid item xs={12} sm={6}>
+                {/* ✅ ช่องกรอกสาขาใหม่ */}
+                <CustomField
+                  label="สาขา"
+                  name="branch"
+                  icon={<SchoolIcon sx={{ color: "#00796b" }} />}
+                  formik={formik}
+                  disabled
+                  required
+                />
+              </Grid>
+
+              {/* รหัสประจำตัว & หลักสูตร */}
               <Grid item xs={12} sm={6}>
                 <CustomField
                   label="หลักสูตร"
@@ -375,7 +419,7 @@ export default function RegisterPage() {
                 />
               </Grid>
 
-              {/* ปีการศึกษา & ภาคการศึกษา */}
+              {/* ปีการศึกษา & ภาคเรียน */}
               <Grid item xs={12} sm={6}>
                 <CustomField
                   label="ปีการศึกษา"
@@ -388,7 +432,7 @@ export default function RegisterPage() {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <CustomField
-                  label="ภาคการศึกษา"
+                  label="ภาคเรียน"
                   name="semester"
                   icon={<SchoolIcon sx={{ color: "#00796b" }} />}
                   formik={formik}

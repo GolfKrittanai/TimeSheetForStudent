@@ -25,6 +25,27 @@ import Sidebar from "../components/Sidebar";
 
 const API_URL = process.env.REACT_APP_API;
 
+const getCurrentYear = () => {
+  const currentChristianYear = new Date().getFullYear();
+  const currentBuddhistYear = currentChristianYear + 543;
+  return currentBuddhistYear;
+};
+
+// ✅ NEW: สร้างตัวเลือกปีการศึกษาแบบไดนามิก (ตามที่ต้องการ)
+function generateAcademicYearOptions() {
+  const currentYear = getCurrentYear(); // เช่น 2568
+
+  const options = [
+    { value: "ทั้งหมด", label: "ทั้งหมด" },
+    { value: currentYear.toString(), label: `ปีปัจจุบัน` },
+    { value: (currentYear - 1).toString(), label: `${currentYear - 1}` },
+    { value: (currentYear - 2).toString(), label: `${currentYear - 2}` },
+  ];
+  return options;
+}
+
+const academicYearOptions = generateAcademicYearOptions();
+
 /* =========================
    ตัวเลือก (ตามสเปกล่าสุด)
    ========================= */
@@ -32,10 +53,10 @@ const SEMESTERS = [
   { value: "ทั้งหมด", label: "ทั้งหมด" },
   { value: "1", label: "1" },
   { value: "2", label: "2" },
-  { value: "3", label: "3 (ฤดูร้อน)" },
+  { value: "3 (ฤดูร้อน)", label: "3 (ฤดูร้อน)" },
 ];
 
-const ACADEMIC_YEARS = ["ทั้งหมด", "2566", "2567", "2568"];
+//const ACADEMIC_YEARS = ["ทั้งหมด", "2566", "2567", "2568"];
 const COURSES = ["ทั้งหมด", "2 ปี", "4 ปี"]; // หลักสูตร(ปี)
 
 /* =========================
@@ -76,7 +97,7 @@ export default function ReportExport() {
      สถานะฟอร์ม (ช่องค้นหา)
      ---------------------- */
   const [semester, setSemester] = useState(SEMESTERS[0].value); // เริ่มที่ "ทั้งหมด"
-  const [academicYear, setAcademicYear] = useState(ACADEMIC_YEARS[0]); // เริ่มที่ "ทั้งหมด"
+  const [academicYear, setAcademicYear] = useState(academicYearOptions[0].value); // เริ่มที่ "ทั้งหมด"
   const [studentId, setStudentId] = useState("");
   const [course, setCourse] = useState("ทั้งหมด");
   const [companyName, setCompanyName] = useState("");
@@ -170,8 +191,8 @@ export default function ReportExport() {
 
   // ล้างค่าแบบครบชุด + ล้างผลพรีวิว
   const handleClear = () => {
-    setSemester("ทั้งหมด");              // ค่าเริ่มต้นภาคเรียน
-    setAcademicYear("ทั้งหมด");   // ปีการศึกษา: ทั้งหมด
+    setSemester(SEMESTERS[0].value);              // ค่าเริ่มต้นภาคเรียน
+    setAcademicYear(academicYearOptions[0].value);   // ปีการศึกษา: ทั้งหมด
     setStudentId("");
     setCourse("ทั้งหมด");
     setCompanyName("");
@@ -245,9 +266,10 @@ export default function ReportExport() {
                   onChange={(e) => setAcademicYear(e.target.value)}
                   sx={textFieldSx}
                 >
-                  {ACADEMIC_YEARS.map((y) => (
-                    <MenuItem key={y} value={y}>
-                      {y}
+                  {/* ✅ NEW: ใช้ academicYearOptions ใหม่ */}
+                  {academicYearOptions.map((y) => ( 
+                    <MenuItem key={y.value} value={y.value}>
+                      {y.label}
                     </MenuItem>
                   ))}
                 </Select>
