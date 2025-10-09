@@ -180,17 +180,8 @@ function TimesheetHistoryPage() {
   );
 
   const handleEditOpen = (timesheet) => {
-    const formattedCheckIn = formatInTimeZone(
-      timesheet.checkInTime,
-      "Asia/Bangkok",
-      "HH:mm" // ใช้ format "HH:mm" เพื่อให้ตรงกับ input type="time"
-    );
-
-    const formattedCheckOut = formatInTimeZone(
-      timesheet.checkOutTime,
-      "Asia/Bangkok",
-      "HH:mm"
-    );
+    const formattedCheckIn = timesheet.checkInTime.slice(11, 16);
+    const formattedCheckOut = timesheet.checkOutTime.slice(11, 16);
     setEditData({
       id: timesheet.id,
       date: timesheet.date.slice(0, 10),
@@ -551,7 +542,7 @@ function TimesheetHistoryPage() {
                         textAlign: "center",
                       }}
                     >
-                      {formatInTimeZone(t.checkInTime, "Asia/Bangkok", "HH:mm")}
+                      {t.checkInTime.slice(11, 16)}
                     </GreenTableCell>
                     <RedTableCell
                       sx={{
@@ -560,11 +551,7 @@ function TimesheetHistoryPage() {
                         textAlign: "center",
                       }}
                     >
-                      {formatInTimeZone(
-                        t.checkOutTime,
-                        "Asia/Bangkok",
-                        "HH:mm"
-                      )}
+                      {t.checkOutTime.slice(11, 16)}
                     </RedTableCell>
                     <TableCell
                       sx={{
