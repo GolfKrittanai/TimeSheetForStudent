@@ -230,14 +230,15 @@ router.put("/change-password", authenticateToken, async (req, res) => {
     if (!user.passwordHash)
       return res.status(400).json({ message: "ไม่มีรหัสผ่านในระบบ" });
 
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    // const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isMatch = (currentPassword === user.passwordHash);
     if (!isMatch)
       return res.status(400).json({ message: "รหัสผ่านปัจจุบันไม่ถูกต้อง" });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // const hashedPassword = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: hashedPassword },
+      data: { passwordHash: newPassword },
     });
 
     return res.json({ message: "เปลี่ยนรหัสผ่านสำเร็จ" });
