@@ -34,7 +34,7 @@ async function register(req, res) {
       return res.status(400).json({ message: 'รหัสประจำตัวนี้มีในระบบแล้ว' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // const passwordHash = await bcrypt.hash(password, 10);
 
     // เงื่อนไขสำหรับ student เท่านั้น
     const isStudent = (role || '').toLowerCase() === 'student';
@@ -45,7 +45,7 @@ async function register(req, res) {
         fullName,
         email,
         phone,
-        passwordHash,
+        passwordHash: password,
         role,
         course: isStudent ? course : null,
         branch, // เก็บสาขาไว้ได้ทุก role (ใช้ในระบบ admin/teacher ได้)
@@ -97,7 +97,8 @@ async function login(req, res) {
       return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    // const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = (password === user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ message: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' });
     }
@@ -192,12 +193,12 @@ async function resetPassword(req, res) {
       return res.status(400).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุแล้ว' });
     }
 
-    const newPasswordHash = await bcrypt.hash(password, 10);
+    // const newPasswordHash = await bcrypt.hash(password, 10);
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash: newPasswordHash,
+        passwordHash: password,
         passwordResetToken: null,
         passwordResetExpires: null,
       },
