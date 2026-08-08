@@ -19,14 +19,23 @@ CREATE TABLE `user` (
     `studentId` VARCHAR(191) NOT NULL,
     `fullName` VARCHAR(191) NOT NULL,
     `passwordHash` VARCHAR(191) NOT NULL,
-    `role` ENUM('admin', 'student') NOT NULL DEFAULT 'student',
+    `role` ENUM('admin', 'student', 'teacher') NOT NULL DEFAULT 'student',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `email` VARCHAR(255) NULL,
     `phone` VARCHAR(20) NULL,
-    `address` VARCHAR(255) NULL,
+    `course` VARCHAR(50) NULL,
+    `branch` VARCHAR(50) NULL,
+    `semester` VARCHAR(20) NULL,
+    `academicYear` VARCHAR(10) NULL,
+    `companyName` VARCHAR(255) NULL,
+    `internPosition` VARCHAR(255) NULL,
+    `profileImage` VARCHAR(255) NULL,
+    `passwordResetToken` VARCHAR(191) NULL,
+    `passwordResetExpires` DATETIME(3) NULL,
 
     UNIQUE INDEX `User_studentId_key`(`studentId`),
+    UNIQUE INDEX `user_passwordResetToken_key`(`passwordResetToken`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
