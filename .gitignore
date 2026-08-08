@@ -22,3 +22,7 @@ Thumbs.db
 
 # git pack leftovers
 *.pack
+# env files
+.env
+.env.*
+*.env
