@@ -11,7 +11,7 @@ services:
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
-        value: mysql://rice:Rice%402020@203.159.95.167:4406/db_timesheet_sk
+        value: mysql://root:zfgYMJvWAvqlkEXUIVZGfPbRFRajzyqu@sakura.proxy.rlwy.net:32852/railway
       - key: JWT_SECRET
         value: your_jwt_secret_here
       - key: PORT
