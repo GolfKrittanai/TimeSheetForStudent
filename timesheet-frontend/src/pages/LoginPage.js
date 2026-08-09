@@ -43,7 +43,7 @@ export default function LoginPage() {
         login({ token: res.data.token, user: res.data.user });
 
         if (res.data.user.role === "admin") navigate("/admin");
-        else if (res.data.user.role === "student") navigate("/student");
+        else if (res.data.user.role === "student") navigate("/student/scan");
         else navigate("/");
       } catch (error) {
         if (error?.response?.status === 401) {

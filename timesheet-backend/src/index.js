@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 
 const app = express();
 
@@ -42,6 +43,8 @@ app.use(express.json());
 // ถ้าใช้ express.json() แล้ว ไม่จำเป็นต้องใช้ body-parser ซ้ำ
 // const bodyParser = require('body-parser');
 // app.use(bodyParser.json());
+// ✅ 2. เพิ่ม Static Path ให้หน้าบ้านเรียกดูรูปภาพที่อัปโหลดได้
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
@@ -50,6 +53,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/documents', documentRoutes);
 
 /* -------------------------------- START ---------------------------------- */
 const PORT = process.env.PORT || 5000;

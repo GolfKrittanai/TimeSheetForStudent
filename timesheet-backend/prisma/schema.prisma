@@ -23,31 +23,55 @@ model timesheet {
 }
 
 model user {
-  id           Int         @id @default(autoincrement())
-  studentId    String      @unique(map: "User_studentId_key")
-  fullName     String
-  passwordHash String
-  role         user_role   @default(student)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  email        String?     @db.VarChar(255)
-  phone        String?     @db.VarChar(20)
+  id                  Int             @id @default(autoincrement())
+  studentId           String          @unique(map: "User_studentId_key")
+  fullName            String
+  passwordHash        String
+  role                user_role       @default(student)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  email               String?         @db.VarChar(255)
+  phone               String?         @db.VarChar(20)
 
-  course                String?     @db.VarChar(50) // ✅ เพิ่มฟิลด์ใหม่: หลักสูตร
-  branch                String?     @db.VarChar(50) // ✅ ฟิลด์ใหม่: สาขา
-  semester              String?     @db.VarChar(20) // ✅ เพิ่มฟิลด์ใหม่: ภาคการศึกษา
-  academicYear          String?     @db.VarChar(10) // ✅ เพิ่มฟิลด์ใหม่: ปีการศึกษา
-  companyName           String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์ใหม่: ชื่อสถานประกอบการ
-  internPosition        String?     @db.VarChar(255) 
-  profileImage String?     @db.VarChar(255) // ✅ เพิ่มฟิลด์สำหรับเก็บ URL หรือ path รูป
-  passwordResetToken    String?  @unique
-  passwordResetExpires  DateTime?
+  course              String?         @db.VarChar(50)  // หลักสูตร
+  branch              String?         @db.VarChar(50)  // สาขา
+  semester            String?         @db.VarChar(20)  // ภาคการศึกษา
+  academicYear        String?         @db.VarChar(10)  // ปีการศึกษา
+  companyName         String?         @db.VarChar(255) // ชื่อสถานประกอบการ
+  internPosition      String?         @db.VarChar(255) 
+  profileImage        String?         @db.VarChar(255) // URL หรือ path รูปโปรไฟล์
+  passwordResetToken  String?         @unique
+  passwordResetExpires DateTime?
 
-  timesheet    timesheet[]
+  timesheet           timesheet[]
+  documentScans       document_scan[] // ✅ ความสัมพันธ์ไปยังตารางเก็บประวัติการสแกนเอกสาร
+}
+
+// ✅ เพิ่ม Model สำหรับเก็บข้อมูลเอกสารที่อัปโหลดและผลการสแกน OCR
+model document_scan {
+  id            Int        @id @default(autoincrement())
+  userId        Int
+  docCategory   String     @db.VarChar(100) // ประเภทเอกสาร เช่น ใบสมัครสหกิจนักศึกษา, ใบรับรองแพทย์
+  fileUrl       String     @db.VarChar(255) // Path หรือ URL ของไฟล์ภาพที่อัปโหลด
+  extractedText String?    @db.Text         // ข้อความที่สแกนอ่านได้จากภาพ (OCR)
+  status        doc_status @default(pending) // สถานะการตรวจสอบ
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user          user       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ✅ Enum สำหรับสถานะการตรวจสอบเอกสาร
+enum doc_status {
+  pending
+  passed
+  failed
 }
 
 enum user_role {
-   admin
-   student
-   teacher
+  admin
+  student
+  teacher
 }

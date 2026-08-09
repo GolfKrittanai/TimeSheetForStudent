@@ -16,6 +16,10 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TimesheetHistoryPage from "./pages/TimesheetHistoryPage"; 
 // 💡 เพิ่ม import สำหรับหน้าดู Timesheet ของนักศึกษาโดย Admin/Teacher
 import StudentTimesheetView from "./pages/StudentTimesheetView"; 
+// เพิ่ม หน้าสแกนเอกสาร
+import DocumentScanDashboard from "./pages/DocumentScanDashboard";
+import DocumentScanUpload from "./pages/DocumentScanUpload";
+import DocumentScanHistory from "./pages/DocumentScanHistory";
 
 
 function App() {
@@ -35,7 +39,7 @@ function App() {
             ) : user.role === "teacher" ? ( // 💡 เพิ่มเงื่อนไขสำหรับ Teacher
               <Navigate to="/teacher" />
             ) : (
-              <Navigate to="/student" />
+              <Navigate to="/student/scan" />
             )
           }
         />
@@ -81,6 +85,9 @@ function App() {
         {/* ---------------- Student routes ---------------- */}
         {user?.role === "student" && (
           <>
+            <Route path="/student/scan" element={<DocumentScanDashboard />} />
+            <Route path="/student/scan-upload" element={<DocumentScanUpload />} />
+            <Route path="/student/scan-history" element={<DocumentScanHistory />} />
             <Route path="/student" element={<StudentDashboard />} />
             <Route
               path="/student/timesheet-history"
