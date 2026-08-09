@@ -26,6 +26,7 @@ import {
   AccountCircle as ProfileIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
+  DocumentScanner as ScannerIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -121,12 +122,45 @@ function Sidebar() {
     []
   );
 
+  const scanStudentMenuItems = useMemo(
+    () => [
+      { 
+        text: "ระบบสแกนเอกสาร", 
+        icon: <ScannerIcon />, 
+        path: "/student/scan" 
+      },
+      { 
+        text: "เข้าสู่ระบบ Timesheet", 
+        icon: <TimesheetIcon />, 
+        path: "/student" 
+      },
+      { 
+        text: "ประวัติการตรวจสอบ", 
+        icon: <HistoryIcon />, 
+        path: "/student/scan-history" 
+      },
+    ],
+    []
+  );
+
+  const isScanFlow = location.pathname.startsWith("/student/scan") || 
+                     location.pathname.startsWith("/student/inspection-history");
+
+  // const currentMenuItems =
+  //   display.role === "admin"
+  //     ? adminMenuItems
+  //     : display.role === "teacher"
+  //       ? teacherMenuItems
+  //       : studentMenuItems;
+
   const currentMenuItems =
     display.role === "admin"
       ? adminMenuItems
       : display.role === "teacher"
         ? teacherMenuItems
-        : studentMenuItems;
+        : isScanFlow
+          ? scanStudentMenuItems
+          : studentMenuItems;     
 
   const handleLogout = () => {
     setSdProfile(null); // เคลียร์ cache เล็กน้อยฝั่ง Sidebar
