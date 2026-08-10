@@ -24,7 +24,6 @@ import {
   Download as DownloadIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  HourglassEmpty as HourglassEmptyIcon,
   Close as CloseIcon,
   Description as DescriptionIcon,
   Person as PersonIcon,
@@ -34,15 +33,14 @@ import {
   Place as PlaceIcon,
   Badge as BadgeIcon,
   CropFree as CropFreeIcon,
-  AutoAwesomeMosaic as ProgramIcon,
   FormatListNumbered as CreditsIcon,
-  Event as SemesterIcon,
   AccessTime as AccessTimeIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { getUserDocumentHistory } from "../services/documentScanService";
+// เพิ่มนำเข้า cancelUserDocument
+import { getUserDocumentHistory, cancelUserDocument } from "../services/documentScanService";
 
 function DocumentScanHistory() {
   const navigate = useNavigate();
@@ -69,45 +67,46 @@ function DocumentScanHistory() {
     return `${BASE_URL}/${cleanPath}`;
   };
 
+  // แยก fetchHistory ออกมาเพื่อให้เรียกใช้งานซ้ำได้เมื่อกดยกเลิก
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const data = await getUserDocumentHistory(1);
+
+      const filteredData = (data || [])
+        .filter((item) => item.status !== "ยังไม่ได้ส่ง")
+        .map((item) => ({
+          id: item.id,
+          name: item.docCategory,
+          docCategory: item.docCategory,
+          status:
+            item.status === "passed" || item.status === "ผ่าน"
+              ? "ผ่าน"
+              : item.status === "pending" || item.status === "รอตรวจสอบ"
+              ? "รอตรวจสอบ"
+              : "ไม่ผ่าน",
+          date: item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString("th-TH", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : "-",
+          fileUrl: getFormattedFileUrl(item.fileUrl),
+          extractedText: item.extractedText || "",
+          extractedData: item.extractedData || {},
+        }));
+
+      setHistoryList(filteredData);
+    } catch (error) {
+      console.error("Failed to fetch document history:", error);
+      setHistoryList([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
-        const data = await getUserDocumentHistory(1);
-
-        const filteredData = (data || [])
-          .filter((item) => item.status !== "ยังไม่ได้ส่ง")
-          .map((item) => ({
-            id: item.id,
-            name: item.docCategory,
-            docCategory: item.docCategory,
-            status:
-              item.status === "passed" || item.status === "ผ่าน"
-                ? "ผ่าน"
-                : item.status === "pending" || item.status === "รอตรวจสอบ"
-                ? "รอตรวจสอบ"
-                : "ไม่ผ่าน",
-            date: item.createdAt
-              ? new Date(item.createdAt).toLocaleDateString("th-TH", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })
-              : "-",
-            fileUrl: getFormattedFileUrl(item.fileUrl),
-            extractedText: item.extractedText || "",
-            extractedData: item.extractedData || {},
-          }));
-
-        setHistoryList(filteredData);
-      } catch (error) {
-        console.error("Failed to fetch document history:", error);
-        setHistoryList([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHistory();
   }, []);
 
@@ -131,6 +130,7 @@ function DocumentScanHistory() {
     }
     return val;
   };
+
   const renderStatusChip = (status) => {
     switch (status) {
       case "ผ่าน":
@@ -284,7 +284,6 @@ function DocumentScanHistory() {
       );
     }
 
-    // รายงานผลการศึกษา (BA Co-op 05 หรือ Transcript)
     if (category.includes("BA Co-op 05") || category.includes("รายงานผลการศึกษา") || category.includes("Transcript")) {
       return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
@@ -362,11 +361,43 @@ function DocumentScanHistory() {
                     <TableCell>{row.name}</TableCell>
                     <TableCell align="center">{renderStatusChip(row.status)}</TableCell>
                     <TableCell align="center">{row.date}</TableCell>
+                    
+                    {/* ปรับแก้ปุ่มดำเนินการที่นี่ */}
                     <TableCell align="center">
-                      <Button size="small" onClick={() => handleOpenDetail(row)} sx={{ bgcolor: "#c8e6c9", color: "#2e7d32" }}>
-                        ดูรายละเอียด
-                      </Button>
+                      {row.status === "รอตรวจสอบ" ? (
+                        <Button
+                          size="small"
+                          onClick={async () => {
+                            if (window.confirm("คุณต้องการยกเลิกเอกสารนี้ใช่หรือไม่? ไฟล์ที่อัปโหลดจะถูกลบออก")) {
+                              try {
+                                await cancelUserDocument(row.id);
+                                fetchHistory(); // รีเฟรชตารางหลังยกเลิกสำเร็จ
+                              } catch (err) {
+                                alert("ไม่สามารถยกเลิกเอกสารได้");
+                              }
+                            }
+                          }}
+                          sx={{
+                            bgcolor: "#d32f2f",
+                            color: "#ffffff",
+                            borderRadius: 2,
+                            px: 2,
+                            py: 0.5,
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            textTransform: "none",
+                            "&:hover": { bgcolor: "#9a0007" },
+                          }}
+                        >
+                          ยกเลิก
+                        </Button>
+                      ) : (
+                        <Button size="small" onClick={() => handleOpenDetail(row)} sx={{ bgcolor: "#c8e6c9", color: "#2e7d32", textTransform: "none" }}>
+                          ดูรายละเอียด
+                        </Button>
+                      )}
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>

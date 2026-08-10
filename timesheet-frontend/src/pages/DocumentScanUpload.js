@@ -26,13 +26,13 @@ import {
   CloudUpload as CloudUploadIcon,
   Info as InfoIcon,
   Close as CloseIcon,
-  HourglassEmpty as HourglassEmptyIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
 import Sidebar from "../components/Sidebar";
-import { uploadAndScanDocument, getUserDocumentHistory } from "../services/documentScanService";
+// เพิ่มนำเข้า cancelUserDocument
+import { uploadAndScanDocument, getUserDocumentHistory, cancelUserDocument } from "../services/documentScanService";
 
 const INITIAL_DOCUMENTS = [
   { id: 1, code: "1", name: "BA Co-op 01: เอกสารติดต่อสหกิจศึกษา", status: "ยังไม่ได้ส่ง", date: "..." },
@@ -90,9 +90,15 @@ function DocumentScanUpload() {
                 ...doc,
                 status: mappedStatus,
                 date: formattedDate,
+                dbId: latest.id // เก็บ dbId เพื่อให้สามารถนำไปยกเลิกเอกสารได้
               };
             }
-            return doc;
+            return {
+              ...doc,
+              status: "ยังไม่ได้ส่ง",
+              date: "...",
+              dbId: null
+            };
           })
         );
       }
@@ -182,46 +188,46 @@ function DocumentScanUpload() {
   };
 
   const renderStatusChip = (status) => {
-  switch (status) {
-    case "ผ่าน":
-      return (
-        <Chip
-          icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#2e7d32 !important" }} />}
-          label={status}
-          size="small"
-          sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 600 }}
-        />
-      );
-    case "ไม่ผ่าน":
-      return (
-        <Chip
-          icon={<CancelIcon sx={{ fontSize: 16, color: "#d32f2f !important" }} />}
-          label={status}
-          size="small"
-          sx={{ bgcolor: "#ffebee", color: "#d32f2f", fontWeight: 600 }}
-        />
-      );
-    case "รอตรวจสอบ":
-    case "รอดำเนินการ":
-      return (
-        <Chip
-          icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#ed6c02 !important" }} />}
-          label={status}
-          size="small"
-          sx={{ bgcolor: "#fff3e0", color: "#ed6c02", fontWeight: 600 }}
-        />
-      );
-    default:
-      return (
-        <Chip
-          icon={<InfoIcon sx={{ fontSize: 16, color: "#757575 !important" }} />}
-          label={status || "ยังไม่ได้ส่ง"}
-          size="small"
-          sx={{ bgcolor: "#eee", color: "#616161", fontWeight: 600 }}
-        />
-      );
-  }
-};
+    switch (status) {
+      case "ผ่าน":
+        return (
+          <Chip
+            icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#2e7d32 !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 600 }}
+          />
+        );
+      case "ไม่ผ่าน":
+        return (
+          <Chip
+            icon={<CancelIcon sx={{ fontSize: 16, color: "#d32f2f !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#ffebee", color: "#d32f2f", fontWeight: 600 }}
+          />
+        );
+      case "รอตรวจสอบ":
+      case "รอดำเนินการ":
+        return (
+          <Chip
+            icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#ed6c02 !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#fff3e0", color: "#ed6c02", fontWeight: 600 }}
+          />
+        );
+      default:
+        return (
+          <Chip
+            icon={<InfoIcon sx={{ fontSize: 16, color: "#757575 !important" }} />}
+            label={status || "ยังไม่ได้ส่ง"}
+            size="small"
+            sx={{ bgcolor: "#eee", color: "#616161", fontWeight: 600 }}
+          />
+        );
+    }
+  };
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f8fafc", minHeight: "100vh" }}>
@@ -244,7 +250,7 @@ function DocumentScanUpload() {
           sx={{
             p: 3,
             borderRadius: 3,
-            border: "1px solid #e2e8f0",
+            border: "1px solid #007a5e",
             bgcolor: "#fff",
           }}
         >
@@ -295,27 +301,63 @@ function DocumentScanUpload() {
                       <TableCell align="center" sx={{ color: "#64748b" }}>
                         {row.date}
                       </TableCell>
+                      
+                      {/* ปรับแก้ปุ่มดำเนินการที่นี่ */}
                       <TableCell align="center">
-                        <Button
-                          size="small"
-                          onClick={() => handleOpenUploadModal(row)}
-                          sx={{
-                            bgcolor: "#00423b",
-                            color: "#ffffff",
-                            borderRadius: 2,
-                            px: 2.5,
-                            py: 0.5,
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                            textTransform: "none",
-                            "&:hover": {
-                              bgcolor: "#002b26",
-                            },
-                          }}
-                        >
-                          {row.status === "ยังไม่ได้ส่ง" ? "อัปโหลด" : "อัปโหลดใหม่"}
-                        </Button>
+                        {row.status === "รอตรวจสอบ" ? (
+                          <Button
+                            size="small"
+                            onClick={async () => {
+                              if (window.confirm("ต้องการยกเลิกการส่งเอกสารนี้?")) {
+                                if (row.dbId) {
+                                  try {
+                                    await cancelUserDocument(row.dbId);
+                                    loadLatestStatus(); // โหลดสถานะใหม่หลังจากลบสำเร็จ
+                                  } catch (error) {
+                                    alert("ไม่สามารถยกเลิกเอกสารได้");
+                                  }
+                                } else {
+                                  alert("ไม่พบรหัสเอกสารในระบบ");
+                                }
+                              }
+                            }}
+                            sx={{
+                              bgcolor: "#d32f2f",
+                              color: "#ffffff",
+                              borderRadius: 2,
+                              px: 2,
+                              py: 0.5,
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              textTransform: "none",
+                              "&:hover": { bgcolor: "#9a0007" },
+                            }}
+                          >
+                            ยกเลิก
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small"
+                            onClick={() => handleOpenUploadModal(row)}
+                            sx={{
+                              bgcolor: row.status === "ยังไม่ได้ส่ง" ? "#00423b" : "#007a5e",
+                              color: "#ffffff",
+                              borderRadius: 2,
+                              px: 2.5,
+                              py: 0.5,
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              textTransform: "none",
+                              "&:hover": {
+                                bgcolor: "#002b26",
+                              },
+                            }}
+                          >
+                            {row.status === "ยังไม่ได้ส่ง" ? "อัปโหลด" : "อัปโหลดใหม่"}
+                          </Button>
+                        )}
                       </TableCell>
+
                     </TableRow>
                   ))
                 )}

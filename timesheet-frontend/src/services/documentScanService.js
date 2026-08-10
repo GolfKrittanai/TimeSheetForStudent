@@ -45,3 +45,16 @@ export const getUserDocumentHistory = async (userId = 1) => {
     throw error.response?.data || error;
   }
 };
+
+// เพิ่มเข้าไปใน documentScanService.js
+export const cancelUserDocument = async (documentId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/cancel/${documentId}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error in cancelUserDocument:', error);
+    throw error.response?.data || error;
+  }
+};
