@@ -12,4 +12,7 @@ router.post('/upload-scan', authenticateToken, upload.single('file'), documentCo
 // Route ดึงประวัติการสแกนเอกสาร (GET)
 router.get('/history/:userId', authenticateToken, documentController.getUserDocumentHistory);
 
+// ใน documentRoutes.js
+router.delete('/cancel/:id', authenticateToken, documentController.cancelDocument);
+
 module.exports = router;

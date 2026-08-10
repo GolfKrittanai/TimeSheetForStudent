@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const Tesseract = require('tesseract.js');
 const path = require('path');
+const fs = require('fs');
 const { fromPath } = require("pdf2pic");
 
 // ปรับแต่ง cleanValue ไม่ให้ลบเครื่องหมายจุด (.) ออก เพื่อรักษาจุดทศนิยมของเกรดเฉลี่ยไว้
@@ -320,5 +321,38 @@ exports.getUserDocumentHistory = async (req, res) => {
   } catch (error) {
     console.error('Fetch History Error:', error);
     res.status(500).json({ message: 'ไม่สามารถดึงข้อมูลประวัติได้' });
+  }
+};
+
+exports.cancelDocument = async (req, res) => {
+  try {
+    const { id } = req.params; // ID ของเอกสารในตารางประวัติ
+    
+    // 1. ค้นหาข้อมูลเอกสารด้วย Prisma
+    const document = await prisma.document_scan.findUnique({
+      where: { id: parseInt(id) }
+    });
+    
+    if (!document) {
+      return res.status(404).json({ message: "ไม่พบเอกสารที่ต้องการยกเลิก" });
+    }
+
+    // 2. ลบไฟล์ออกจากโฟลเดอร์ uploads (ถ้ามีไฟล์)
+    if (document.fileUrl) {
+      const filePath = path.join(__dirname, '../../', document.fileUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // 3. ลบรายการเอกสารออกจากฐานข้อมูล
+    await prisma.document_scan.delete({
+      where: { id: parseInt(id) }
+    });
+
+    return res.status(200).json({ message: "ยกเลิกเอกสารและลบไฟล์สำเร็จ" });
+  } catch (error) {
+    console.error("Cancel Document Error:", error);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดในการยกเลิกเอกสาร" });
   }
 };
