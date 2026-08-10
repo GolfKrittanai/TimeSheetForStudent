@@ -63,7 +63,8 @@ function DocumentScanHistory() {
       return fileUrl;
     }
     const cleanPath = fileUrl.replace(/^\/+/, "").replace(/\\/g, "/");
-    return `http://localhost:5000/${cleanPath}`;
+    const BASE_URL = process.env.REACT_APP_FILE_BASE_URL || 'http://localhost:5000';
+    return `${BASE_URL}/${cleanPath}`;
   };
 
   // แยก fetchHistory ออกมาเพื่อให้เรียกใช้งานซ้ำได้เมื่อกดยกเลิก
