@@ -29,6 +29,7 @@ import {
   HourglassEmpty as HourglassEmptyIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
 import Sidebar from "../components/Sidebar";
 import { uploadAndScanDocument, getUserDocumentHistory } from "../services/documentScanService";
@@ -181,43 +182,46 @@ function DocumentScanUpload() {
   };
 
   const renderStatusChip = (status) => {
-    if (status === "รอตรวจสอบ") {
+  switch (status) {
+    case "ผ่าน":
       return (
         <Chip
-          icon={<HourglassEmptyIcon sx={{ fontSize: 16, color: "#eab308 !important" }} />}
-          label="รอตรวจสอบ"
+          icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#2e7d32 !important" }} />}
+          label={status}
           size="small"
-          sx={{ bgcolor: "#fef9c3", color: "#854d0e", fontWeight: 600 }}
+          sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 600 }}
         />
       );
-    } else if (status === "ผ่าน") {
+    case "ไม่ผ่าน":
       return (
         <Chip
-          icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#16a34a !important" }} />}
-          label="ผ่าน"
+          icon={<CancelIcon sx={{ fontSize: 16, color: "#d32f2f !important" }} />}
+          label={status}
           size="small"
-          sx={{ bgcolor: "#dcfce7", color: "#15803d", fontWeight: 600 }}
+          sx={{ bgcolor: "#ffebee", color: "#d32f2f", fontWeight: 600 }}
         />
       );
-    } else if (status === "ไม่ผ่าน") {
+    case "รอตรวจสอบ":
+    case "รอดำเนินการ":
       return (
         <Chip
-          icon={<CancelIcon sx={{ fontSize: 16, color: "#dc2626 !important" }} />}
-          label="ไม่ผ่าน"
+          icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#ed6c02 !important" }} />}
+          label={status}
           size="small"
-          sx={{ bgcolor: "#fee2e2", color: "#991b1b", fontWeight: 600 }}
+          sx={{ bgcolor: "#fff3e0", color: "#ed6c02", fontWeight: 600 }}
         />
       );
-    }
-    return (
-      <Chip
-        icon={<InfoIcon sx={{ fontSize: 16, color: "#757575 !important" }} />}
-        label="ยังไม่ได้ส่ง"
-        size="small"
-        sx={{ bgcolor: "#eee", color: "#616161", fontWeight: 600 }}
-      />
-    );
-  };
+    default:
+      return (
+        <Chip
+          icon={<InfoIcon sx={{ fontSize: 16, color: "#757575 !important" }} />}
+          label={status || "ยังไม่ได้ส่ง"}
+          size="small"
+          sx={{ bgcolor: "#eee", color: "#616161", fontWeight: 600 }}
+        />
+      );
+  }
+};
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f8fafc", minHeight: "100vh" }}>
