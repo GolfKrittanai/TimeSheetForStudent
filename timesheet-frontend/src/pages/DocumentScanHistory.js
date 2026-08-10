@@ -33,6 +33,12 @@ import {
   Phone as PhoneIcon,
   Place as PlaceIcon,
   Badge as BadgeIcon,
+  CropFree as CropFreeIcon,
+  AutoAwesomeMosaic as ProgramIcon,
+  FormatListNumbered as CreditsIcon,
+  Event as SemesterIcon,
+  AccessTime as AccessTimeIcon,
+  Info as InfoIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -124,6 +130,47 @@ function DocumentScanHistory() {
     }
     return val;
   };
+  const renderStatusChip = (status) => {
+    switch (status) {
+      case "ผ่าน":
+        return (
+          <Chip
+            icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#2e7d32 !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 600 }}
+          />
+        );
+      case "ไม่ผ่าน":
+        return (
+          <Chip
+            icon={<CancelIcon sx={{ fontSize: 16, color: "#d32f2f !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#ffebee", color: "#d32f2f", fontWeight: 600 }}
+          />
+        );
+      case "รอตรวจสอบ":
+      case "รอดำเนินการ":
+        return (
+          <Chip
+            icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#ed6c02 !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#fff3e0", color: "#ed6c02", fontWeight: 600 }}
+          />
+        );
+      default:
+        return (
+          <Chip
+            icon={<InfoIcon sx={{ fontSize: 16, color: "#757575 !important" }} />}
+            label={status}
+            size="small"
+            sx={{ bgcolor: "#eee", color: "#616161", fontWeight: 600 }}
+          />
+        );
+    }
+  };
 
   const renderStatusBanner = (status) => {
     if (status === "ผ่าน") {
@@ -134,14 +181,14 @@ function DocumentScanHistory() {
       );
     } else if (status === "ไม่ผ่าน") {
       return (
-        <Box sx={{ bgcolor: "#ffebee", color: "#c62828", borderRadius: 8, py: 1.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 1, fontWeight: 700, fontSize: "1.1rem", mt: 2 }}>
-          <CancelIcon sx={{ color: "#c62828", fontSize: 26 }} /> ไม่ผ่าน
+        <Box sx={{ bgcolor: "#ffebee", color: "#d32f2f", borderRadius: 8, py: 1.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 1, fontWeight: 700, fontSize: "1.1rem", mt: 2 }}>
+          <CancelIcon sx={{ color: "#d32f2f", fontSize: 26 }} /> ไม่ผ่าน
         </Box>
       );
     }
     return (
-      <Box sx={{ bgcolor: "#fff8e1", color: "#f57f17", borderRadius: 8, py: 1.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 1, fontWeight: 700, fontSize: "1.1rem", mt: 2 }}>
-        <HourglassEmptyIcon sx={{ color: "#f57f17", fontSize: 26 }} /> รอตรวจสอบ
+      <Box sx={{ bgcolor: "#fff3e0", color: "#ed6c02", borderRadius: 8, py: 1.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 1, fontWeight: 700, fontSize: "1.1rem", mt: 2 }}>
+        <AccessTimeIcon sx={{ color: "#ed6c02", fontSize: 26 }} /> รอตรวจสอบ
       </Box>
     );
   };
@@ -207,9 +254,9 @@ function DocumentScanHistory() {
           <Divider />
           <FieldRow icon={<BusinessIcon />} mainText={ext.companyName} subText="สถานประกอบการ" />
           <Divider />
-          <FieldRow icon={<PersonIcon />} mainText={ext.position} subText="ตำแหน่ง" />
+          <FieldRow icon={<CropFreeIcon />} mainText={ext.position} subText="ตำแหน่ง" />
           <Divider />
-          <FieldRow icon={<CalendarIcon />} mainText={ext.signedDate ? `วันที่ลงนาม : ${ext.signedDate}` : ext.signedDate} subText="วันที่ลงนาม" />
+          <FieldRow icon={<CalendarIcon />} mainText={ext.signedDate} subText="วันที่ลงนาม" />
         </Box>
       );
     }
@@ -223,11 +270,47 @@ function DocumentScanHistory() {
           <Divider />
           <FieldRow icon={<PlaceIcon />} mainText={ext.address} subText="ที่อยู่สถานที่ตั้ง" />
           <Divider />
-          <FieldRow icon={<PersonIcon />} mainText={ext.position} subText="ตำแหน่ง" />
+          <FieldRow icon={<CropFreeIcon />} mainText={ext.position} subText="ตำแหน่ง" />
           <Divider />
           <FieldRow icon={<CalendarIcon />} mainText={ext.period} subText="ระยะเวลา" />
           <Divider />
-          <FieldRow icon={<CalendarIcon />} mainText={ext.startDate ? `วันที่เริ่มงาน : ${ext.startDate}` : ext.startDate} subText="วันที่เริ่มงาน" />
+          <FieldRow 
+            icon={<CalendarIcon />} 
+            mainText={ext.startDate} 
+            subText="วันที่เริ่มงาน" 
+          />
+        </Box>
+      );
+    }
+
+    // รายงานผลการศึกษา (BA Co-op 05 หรือ Transcript)
+    if (category.includes("BA Co-op 05") || category.includes("รายงานผลการศึกษา") || category.includes("Transcript")) {
+      return (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          <FieldRow 
+            icon={<DescriptionIcon />} 
+            mainText={category || "เอกสารรายงานผลการศึกษา (ฉบับชั่วคราว)"} 
+            subText="รายละเอียดเอกสาร" 
+            isTitle 
+          />
+          <Divider />
+          <FieldRow 
+            icon={<PersonIcon />} 
+            mainText={ext.fullName} 
+            subText="ชื่อ-นามสกุล" 
+          />
+          <Divider />
+          <FieldRow 
+            icon={<BadgeIcon />} 
+            mainText={ext.studentId} 
+            subText="รหัสนักศึกษา" 
+          />
+          <Divider />
+          <FieldRow 
+            icon={<CreditsIcon />} 
+            mainText={ext.totalCredits} 
+            subText="คะแนนเฉลี่ยสะสม / หน่วยกิตสะสม" 
+          />
         </Box>
       );
     }
@@ -276,7 +359,7 @@ function DocumentScanHistory() {
                   <TableRow key={row.id || index} hover>
                     <TableCell align="center">{historyList.length - index}</TableCell>
                     <TableCell>{row.name}</TableCell>
-                    <TableCell align="center">{row.status}</TableCell>
+                    <TableCell align="center">{renderStatusChip(row.status)}</TableCell>
                     <TableCell align="center">{row.date}</TableCell>
                     <TableCell align="center">
                       <Button size="small" onClick={() => handleOpenDetail(row)} sx={{ bgcolor: "#c8e6c9", color: "#2e7d32" }}>
@@ -300,15 +383,35 @@ function DocumentScanHistory() {
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Box sx={{ bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 3, p: 2, height: "100%", minHeight: 400, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <img src={selectedDoc.fileUrl} alt="Preview" style={{ maxWidth: "100%", maxHeight: 400, objectFit: "contain" }} onError={(e) => { e.target.src = "https://via.placeholder.com/350x450?text=Cannot+Load"; }} />
+                      {selectedDoc.fileUrl && selectedDoc.fileUrl.toLowerCase().endsWith(".pdf") ? (
+                        <iframe
+                          src={selectedDoc.fileUrl}
+                          title="PDF Preview"
+                          width="100%"
+                          height="400px"
+                          style={{ border: "none", borderRadius: "8px" }}
+                        />
+                      ) : (
+                        <img 
+                          src={selectedDoc.fileUrl} 
+                          alt="Preview" 
+                          style={{ maxWidth: "100%", maxHeight: 400, objectFit: "contain" }} 
+                          onError={(e) => { e.target.src = "https://via.placeholder.com/350x450?text=Cannot+Load"; }} 
+                        />
+                      )}
                   </Box>
                 </Grid>
                 <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <Box sx={{ bgcolor: "#f8fcf9", p: 2.5, borderRadius: 3, border: "1px solid #e8f5e9" }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b", mb: 2 }}>
+                      รายละเอียด
+                    </Typography>
+                    
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                       <Typography variant="body1" sx={{ fontWeight: 700 }}>ระดับนักศึกษา</Typography>
                       <Chip label="ปริญญาตรี" sx={{ bgcolor: "#419361", color: "#fff" }} />
                     </Box>
+                    
                     {renderDocumentDetails(selectedDoc)}
                   </Box>
                   {renderStatusBanner(selectedDoc.status)}
