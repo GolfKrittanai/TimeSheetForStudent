@@ -1,7 +1,9 @@
 // src/services/documentScanService.js
 import axios from 'axios';
 
-const API_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/documents`;
+const API_URL = process.env.REACT_APP_API 
+  ? `${process.env.REACT_APP_API}/documents` 
+  : 'http://localhost:5000/api/documents';
 
 // ฟังก์ชันดึง Token จาก LocalStorage (ถ้ามีระบบ Auth)
 const getAuthHeaders = () => {
