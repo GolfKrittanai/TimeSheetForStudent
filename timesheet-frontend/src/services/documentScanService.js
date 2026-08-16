@@ -58,3 +58,38 @@ export const cancelUserDocument = async (documentId) => {
     throw error.response?.data || error;
   }
 };
+
+// 4. ดึงเอกสารทั้งหมดของนักศึกษาทุกคน (สำหรับ admin/อาจารย์ตรวจสอบ)
+// รองรับการกรองด้วย status ("pending" | "passed" | "failed") และคำค้นหา (ชื่อ/รหัสนักศึกษา)
+export const getAllDocumentsForReview = async (params = {}) => {
+  try {
+    const { status, search, docCategory } = params;
+    const response = await axios.get(`${API_URL}/admin/all`, {
+      headers: getAuthHeaders(),
+      params: {
+        ...(status && status !== 'all' ? { status } : {}),
+        ...(search ? { search } : {}),
+        ...(docCategory ? { docCategory } : {}),
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error in getAllDocumentsForReview:', error);
+    throw error.response?.data || error;
+  }
+};
+
+// 5. อนุมัติ / ไม่อนุมัติเอกสาร พร้อมหมายเหตุ (สำหรับ admin/อาจารย์)
+export const reviewDocument = async (documentId, status, remark = '') => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/review/${documentId}`,
+      { status, remark },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error in reviewDocument:', error);
+    throw error.response?.data || error;
+  }
+};

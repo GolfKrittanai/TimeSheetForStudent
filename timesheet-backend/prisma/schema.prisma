@@ -55,6 +55,9 @@ model document_scan {
   fileUrl       String     @db.VarChar(255) // Path หรือ URL ของไฟล์ภาพที่อัปโหลด
   extractedText String?    @db.Text         // ข้อความที่สแกนอ่านได้จากภาพ (OCR)
   status        doc_status @default(pending) // สถานะการตรวจสอบ
+  remark        String?    @db.Text         // หมายเหตุจาก admin/อาจารย์ตอนตรวจสอบ (เช่น เหตุผลที่ไม่ผ่าน)
+  reviewedBy    Int?                        // userId ของ admin/อาจารย์ที่ตรวจ (ถ้ามี)
+  reviewedAt    DateTime?                   // เวลาที่ตรวจสอบล่าสุด
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 

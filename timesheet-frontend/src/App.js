@@ -20,6 +20,7 @@ import StudentTimesheetView from "./pages/StudentTimesheetView";
 import DocumentScanDashboard from "./pages/DocumentScanDashboard";
 import DocumentScanUpload from "./pages/DocumentScanUpload";
 import DocumentScanHistory from "./pages/DocumentScanHistory";
+import DocumentReviewAdmin from "./pages/Documentreviewadmin";
 
 
 function App() {
@@ -60,7 +61,10 @@ function App() {
               path="/admin/student/:id/timesheets" 
               element={<StudentTimesheetView />} 
             />
-            
+            <Route 
+              path="/admin/documents/review" 
+              element={<DocumentReviewAdmin />} 
+            />
             <Route path="*" element={<Navigate to="/admin" />} />
           </>
         )}
@@ -76,6 +80,11 @@ function App() {
             <Route 
               path="/teacher/student/:id/timesheets" 
               element={<StudentTimesheetView />} 
+            />
+            
+            <Route 
+              path="/teacher/documents/review" 
+              element={<DocumentReviewAdmin />} 
             />
 
             <Route path="*" element={<Navigate to="/teacher" />} />
