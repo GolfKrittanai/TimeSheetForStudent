@@ -356,3 +356,112 @@ exports.cancelDocument = async (req, res) => {
     return res.status(500).json({ message: "เกิดข้อผิดพลาดในการยกเลิกเอกสาร" });
   }
 };
+
+// ✅ ดึงเอกสารของนักศึกษาทุกคน สำหรับหน้า admin/อาจารย์ตรวจสอบ
+// รองรับ query: ?status=pending|passed|failed&search=ชื่อหรือรหัสนักศึกษา&docCategory=...
+exports.getAllDocumentsForReview = async (req, res) => {
+  try {
+    // อนุญาตเฉพาะ admin และ teacher เท่านั้น
+    if (!req.user || !['admin', 'teacher'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'ไม่มีสิทธิ์เข้าถึงข้อมูลนี้' });
+    }
+
+    const { status, search, docCategory } = req.query;
+
+    const where = {};
+
+    if (status && ['pending', 'passed', 'failed'].includes(status)) {
+      where.status = status;
+    }
+
+    if (docCategory) {
+      where.docCategory = { contains: docCategory };
+    }
+
+    if (search) {
+      where.user = {
+        OR: [
+          { fullName: { contains: search } },
+          { studentId: { contains: search } },
+        ],
+      };
+    }
+
+    const documents = await prisma.document_scan.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, fullName: true, studentId: true },
+        },
+      },
+    });
+
+    // ปรับรูปแบบข้อมูลให้ใช้งานง่ายฝั่ง frontend (แปลง path ไฟล์ให้เป็น URL เต็ม)
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const formatted = documents.map((doc) => ({
+      id: doc.id,
+      userId: doc.userId,
+      studentName: doc.user?.fullName || null,
+      studentCode: doc.user?.studentId || null,
+      docCategory: doc.docCategory,
+      status: doc.status,
+      remark: doc.remark,
+      fileUrl: doc.fileUrl ? `${baseUrl}/${doc.fileUrl}` : null,
+      createdAt: doc.createdAt,
+      reviewedAt: doc.reviewedAt,
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Fetch Documents For Review Error:', error);
+    res.status(500).json({ message: 'ไม่สามารถดึงข้อมูลเอกสารได้' });
+  }
+};
+
+// ✅ บันทึกผลการตรวจสอบเอกสาร (ผ่าน/ไม่ผ่าน) พร้อมหมายเหตุ
+exports.reviewDocument = async (req, res) => {
+  try {
+    // อนุญาตเฉพาะ admin และ teacher เท่านั้น
+    if (!req.user || !['admin', 'teacher'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'ไม่มีสิทธิ์ดำเนินการนี้' });
+    }
+
+    const { id } = req.params;
+    const { status, remark } = req.body;
+
+    if (!['passed', 'failed'].includes(status)) {
+      return res.status(400).json({ message: 'สถานะไม่ถูกต้อง (ต้องเป็น passed หรือ failed)' });
+    }
+
+    if (status === 'failed' && (!remark || !remark.trim())) {
+      return res.status(400).json({ message: 'กรุณาระบุหมายเหตุเมื่อผลตรวจสอบคือไม่ผ่าน' });
+    }
+
+    const document = await prisma.document_scan.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!document) {
+      return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการตรวจสอบ' });
+    }
+
+    const updatedDoc = await prisma.document_scan.update({
+      where: { id: parseInt(id) },
+      data: {
+        status,
+        remark: remark || null,
+        reviewedBy: req.user.id ? parseInt(req.user.id) : null,
+        reviewedAt: new Date(),
+      },
+    });
+
+    res.json({
+      message: 'บันทึกผลการตรวจสอบสำเร็จ',
+      data: updatedDoc,
+    });
+  } catch (error) {
+    console.error('Review Document Error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการบันทึกผลการตรวจสอบ' });
+  }
+};

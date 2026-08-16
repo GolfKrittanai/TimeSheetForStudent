@@ -98,6 +98,7 @@ function Sidebar() {
   const adminMenuItems = useMemo(
     () => [
       { text: "Management data", icon: <DashboardIcon />, path: "/admin" },
+      { text: "ตรวจสอบเอกสาร", icon: <ScannerIcon />, path: "/admin/documents/review" },
       { text: "Export Report", icon: <ReportIcon />, path: "/report" },
       { text: "My account", icon: <ProfileIcon />, path: "/profile" },
     ],
@@ -107,6 +108,7 @@ function Sidebar() {
   const teacherMenuItems = useMemo(
     () => [
       { text: "Management data", icon: <DashboardIcon />, path: "/teacher" },
+      { text: "ตรวจสอบเอกสาร", icon: <ScannerIcon />, path: "/teacher/documents/review" },
       { text: "Export Report", icon: <ReportIcon />, path: "/report" },
       { text: "My account", icon: <ProfileIcon />, path: "/profile" },
     ],
