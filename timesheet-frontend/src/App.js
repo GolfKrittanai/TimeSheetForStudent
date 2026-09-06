@@ -21,6 +21,8 @@ import DocumentScanDashboard from "./pages/DocumentScanDashboard";
 import DocumentScanUpload from "./pages/DocumentScanUpload";
 import DocumentScanHistory from "./pages/DocumentScanHistory";
 import DocumentReviewAdmin from "./pages/Documentreviewadmin";
+// ➕ เพิ่ม Import หน้า DocumentSummary
+import DocumentSummary from "./pages/DocumentSummary";
 
 
 function App() {
@@ -96,6 +98,8 @@ function App() {
           <>
             <Route path="/student/scan" element={<DocumentScanDashboard />} />
             <Route path="/student/scan-upload" element={<DocumentScanUpload />} />
+            {/* ➕ เพิ่ม Route สำหรับหน้า DocumentSummary */}
+            <Route path="/student/scan-summary" element={<DocumentSummary />} />
             <Route path="/student/scan-history" element={<DocumentScanHistory />} />
             <Route path="/student" element={<StudentDashboard />} />
             <Route
@@ -110,12 +114,6 @@ function App() {
             <Route path="*" element={<Navigate to="/student" />} />
           </>
         )}
-
-        {/* Fallback routes (สำหรับกรณีที่ผู้ใช้ล็อกอินอยู่แต่พิมพ์ URL มั่ว) */}
-        {/*
-          เนื่องจากมีการจัดการ Fallback (*) ภายในแต่ละ Block ของ Role แล้ว
-          ส่วนนี้อาจจะไม่จำเป็นต้องใช้
-        */}
 
         {/* Fallback route สำหรับ non-logged-in users */}
         <Route path="*" element={<Navigate to="/" />} />

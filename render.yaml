@@ -11,7 +11,7 @@ services:
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
-        value: mysql://root:zfgYMJvWAvqlkEXUIVZGfPbRFRajzyqu@sakura.proxy.rlwy.net:32852/railway
+        value: mysql://root:zECzbdeQLrvbCEKZRvBHqcidPgrGkbZI@kodama.proxy.rlwy.net:41731/railway
       - key: JWT_SECRET
         value: your_jwt_secret_here
       - key: PORT
