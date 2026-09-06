@@ -5,13 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const { fromPath } = require("pdf2pic");
 
-// ปรับแต่ง cleanValue ไม่ให้ลบเครื่องหมายจุด (.) ออก เพื่อรักษาจุดทศนิยมของเกรดเฉลี่ยไว้
 function cleanValue(str) {
   if (!str) return '';
   return str
-    .replace(/\(Company Info\)/gi, '') // ตัดข้อความหัวข้อ section ออก
-    .replace(/[:_\-|"“”'’‘%]+/g, ' ')  // ลบเครื่องหมายพิเศษต่างๆ (เว้นจุด . ไว้)
-    .replace(/\s+/g, ' ')              // ยุบ space ซ้ำ
+    .replace(/\(Company Info\)/gi, '')
+    .replace(/[:_\-|"“”'’‘%]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -24,8 +23,6 @@ function parseExtractedText(text, docCategory) {
 
   if (categoryLower.includes("01")) {
     const nameMatch = cleanText.match(/(?:ชื่อ|นาย|นาง|นางสาว)\s*[:._\s]*([ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/);
-    
-    // ดักจับวันที่ทั้งรูปแบบภาษาไทย (เช่น 1 มิถุนายน 2566) และรูปแบบตัวเลข (เช่น 1/6/2566 หรือ 01/06/2023)
     const dateMatch = cleanText.match(/(?:วันที่|วันที่สมัคร|ลงวันที่)?\s*[:._\s]*([0-9]{1,2}\s+(?:มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม|[ก-๙.]+)\s+[0-9]{4})/i)
       || cleanText.match(/(?:วันที่|วันที่สมัคร|ลงวันที่)\s*[:._\s]*([0-9]{1,2}[\/.-][0-9]{1,2}[\/.-][0-9]{4})/i)
       || cleanText.match(/\b([0-9]{1,2}\s+[ก-๙.]+\s+[0-9]{4})\b/i);
@@ -45,16 +42,13 @@ function parseExtractedText(text, docCategory) {
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   } 
   else if (categoryLower.includes("02-2")) {
-    // 1. ดึงรหัสนักศึกษา
     const studentIdMatch = cleanText.match(/(?:รหัส\s*[\/:]*\s*ID|รหัสนักศึกษา|รหัส|ID)\s*[:._\s]*([0-9]{10})/i) 
       || cleanText.match(/\b(6[0-9]{9})\b/);
     if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
 
-    // 2. ดึงช่องทางติดต่อ (เบอร์โทรศัพท์ / โทรศัพท์ / มือถือ / โทร)
     const phoneMatch = cleanText.match(/(?:โทรศัพท์|โทร|มือถือ|ติดต่อ)\s*[:._\s]*([0-9\s-]{9,12})/i);
     if (phoneMatch) extracted.phone = cleanValue(phoneMatch[1]);
 
-    // 3. ดึงชื่อสถานประกอบการ
     let companyMatch = cleanText.match(/(?:สถานประกอบการ|ชื่อสถานประกอบการ)\s*[:._\s]*((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s*)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i)
       || cleanText.match(/(?:สถานประกอบการ|ชื่อสถานประกอบการ)\s*[:._\s]*((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s*)?.*?)(?=\s*(?:ต[ำํ]า?แหน่ง|ระยะเวลา|ประวัติ|3\.|4\.|ที่อยู่|$))/i);
     if (companyMatch) {
@@ -63,12 +57,10 @@ function parseExtractedText(text, docCategory) {
       if (rawCompany) extracted.companyName = rawCompany;
     }
 
-    // 4. ดึงตำแหน่งงาน
     const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*([a-zA-Z0-9\s-]+?)(?=\s*(?:สถานประกอบการ|ระยะเวลา|ประวัติ|3\.|4\.|ที่อยู่|$))/i)
       || cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:สถานประกอบการ|ระยะเวลา|ประวัติ|3\.|4\.|ที่อยู่|$))/i);
     if (positionMatch) extracted.position = cleanValue(positionMatch[1]);
 
-    // 5. ดึงวันที่ลงนาม
     const signedDateMatch = cleanText.match(/(?:วันที่|ลงวันที่)\s*[:._\s]*([0-9]{1,2}\s*[\/.-]\s*[0-9]{1,2}\s*[\/.-]\s*[0-9]{4})/i)
       || cleanText.match(/(?:วันที่|ลงวันที่)\s*[:._\s]*([0-9]{1,2}\s+[ก-๙]+\s+[0-9]{4})/i);
     if (signedDateMatch) {
@@ -76,7 +68,6 @@ function parseExtractedText(text, docCategory) {
     }
   }
   else if (categoryLower.includes("04")) {
-    // 1. ดึงชื่อสถานประกอบการ
     let companyMatch = cleanText.match(/(?:ชื่อสถานประกอบการ|สถานประกอบการ)\s*[:._\s]*((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s*)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i)
       || cleanText.match(/((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s+)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i);
 
@@ -95,19 +86,16 @@ function parseExtractedText(text, docCategory) {
       }
     }
 
-    // 2. ดึงตำแหน่งงาน
     const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:ระยะเวลา|ท[ีื]?[่]?อย[ู]?[่]?สถาน|แผนท[ีื]?[่]?|$))/i);
     if (positionMatch) {
       extracted.position = cleanValue(positionMatch[1]);
     }
 
-    // 3. ดึงระยะเวลา
     const periodMatch = cleanText.match(/ระยะเวลา\s*[:._\s]*(.*?)(?=\s*(?:ท[ีื]?[่]?อย[ู]?[่]?สถาน|ที่อยู่|แผนท[ีื]?[่]?|$))/i);
     if (periodMatch) {
       extracted.period = cleanValue(periodMatch[1]);
     }
 
-    // 4. ดึงที่อยู่สถานที่ตั้ง
     const addressMatch = cleanText.match(/(?:ท[ีื]?[่]?อย[ู]?[่]?สถานประกอบการ|ท[ีื]?[่]?อย[ู]?[่]?สถานท[ีื]?[่]?ต[ั]?[้]?ง|ท[ีื]?[่]?อย[ู]?[่]?)\s*[:._\s]*(.*?)(?=\s*(?:แผนท[ีื]?[่]?|ลงช[ื]?[่]?อ|น[ั]กศ[ึ]กษา|ว[ั]นท[ีื]?[่]?|\*|$))/i);
     if (addressMatch) {
       let formattedAddress = cleanValue(addressMatch[1]);
@@ -121,7 +109,6 @@ function parseExtractedText(text, docCategory) {
       extracted.address = formattedAddress;
     }
 
-    // 5. ดึงวันที่เริ่มงาน
     const flexibleDatePattern = /(\d{4})[\s-./]+(\d{1,2})[\s-./]+(\d{1,2})|(\d{1,2})[\s-./]+(\d{1,2})[\s-./]+(\d{4})/;
     const targetText = extracted.period || cleanText;
     const startDateMatch = targetText.match(flexibleDatePattern);
@@ -148,20 +135,15 @@ function parseExtractedText(text, docCategory) {
       }
     }
   }
-  // เงื่อนไขสำหรับเอกสารรายงานผลการศึกษา (BA Co-op 05 หรือ Transcript)
   else if (categoryLower.includes("05") || categoryLower.includes("รายงานผล") || categoryLower.includes("transcript")) {
-    
-    // 1. ดึงบรรทัดที่มีคำว่า "ชื่อ" หรือคำนำหน้า
     const lineMatch = text.split('\n').find(line => /(?:ชื่อ|นาย|นาง|นางสาว)/i.test(line));
 
     if (lineMatch) {
-      // ตัดส่วนหัวข้อและส่วนหลังคำว่า "รหัส" ออก
       let cleanLine = lineMatch
         .replace(/^(?:ชื่อ\s*[:.]?|นาย|นาง|นางสาว)/i, '')
         .replace(/(?:รหัส|วัน|เดือน|ปี|สาขา|หลักสูตร|สถาบัน).*/i, '')
         .trim();
 
-      // ลบตัวอักษรภาษาอังกฤษและตัวเลขขยะที่ OCR อ่านเพี้ยนออก (เก็บเฉพาะภาษาไทยและเว้นวรรค)
       cleanLine = cleanLine.replace(/[^ก-๙\s]/g, '').replace(/\s+/g, ' ').trim();
 
       if (cleanLine.length >= 3) {
@@ -169,7 +151,6 @@ function parseExtractedText(text, docCategory) {
       }
     }
 
-    // Fallback: ดักจับรูปแบบคำภาษาไทย 2 คำติดกัน (ชื่อ + นามสกุล) โดยไม่เอาอังกฤษ
     if (!extracted.fullName) {
       const fallbackMatch = text.match(/(?:ชื่อ\s*[:.]?|นาย|นาง|นางสาว)\s*([ก-๙]{2,}\s+[ก-๙]{2,})/i);
       if (fallbackMatch) {
@@ -177,14 +158,12 @@ function parseExtractedText(text, docCategory) {
       }
     }
 
-    // 2. ดึงรหัสนักศึกษา (ตัวเลข 10 หลัก)
     const studentIdMatch = cleanText.match(/(?:รหัส\s*[:.]?|รหัสนักศึกษา|ID)\s*[:._\s]*([0-9]{10})/i) 
       || cleanText.match(/\b(6[0-9]{9})\b/);
     if (studentIdMatch) {
       extracted.studentId = cleanValue(studentIdMatch[1]);
     }
 
-    // 3. ดึงเกรดเฉลี่ยสะสม / คะแนนเฉลี่ยสะสม
     const creditsMatch = cleanText.match(/(?:คะแนนเฉลี่ยสะสม|ผลการเรียนเฉลี่ยสะสม|เกรดเฉลี่ยสะสม|หน่วยกิตสะสม|GPA|GPAX)\s*[:._\s]*([0-9]+\.[0-9]{1,2})/i)
       || cleanText.match(/(?:สะสม|เฉลี่ย|รวม)\s*[:._\s=]*([0-9]+\.[0-9]{1,2})/i);
     
@@ -209,7 +188,8 @@ exports.scanAndSaveDocument = async (req, res) => {
       return res.status(400).json({ message: 'กรุณาอัปโหลดไฟล์' });
     }
 
-    const relativePath = `uploads/${req.file.filename}`.replace(/\\/g, '/');
+    // กำหนด Relative Path มาตรฐาน
+    let relativePath = `uploads/${req.file.filename}`.replace(/\\/g, '/');
     const ext = path.extname(req.file.originalname).toLowerCase();
     const absoluteFilePath = path.resolve(req.file.path);
 
@@ -218,38 +198,46 @@ exports.scanAndSaveDocument = async (req, res) => {
     let extractedData = {};
 
     if (ext === '.pdf') {
-  try {
-    // กำหนดค่าการแปลง PDF หน้าแรกเป็นรูปภาพ PNG
-    const options = {
-      savedir: path.join(__dirname, '../../uploads'),
-      filename: `${path.basename(req.file.filename, ext)}-page1`,
-      imageFormat: "png",
-      width: 1200,
-      height: 1600
-    };
+      try {
+        const uploadFolder = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadFolder)) {
+          fs.mkdirSync(uploadFolder, { recursive: true });
+        }
 
-    const convert = fromPath(absoluteFilePath, options);
-    const convertResult = await convert(1); // แปลงหน้า 1
+        const options = {
+          savedir: uploadFolder,
+          filename: `${path.basename(req.file.filename, ext)}-page1`,
+          imageFormat: "png",
+          width: 1200,
+          height: 1600
+        };
 
-    // นำไฟล์รูปภาพที่ได้จาก PDF ไปให้ Tesseract สแกนต่อ
-    const { data } = await Tesseract.recognize(convertResult.path, 'tha+eng');
-    text = data.text ? data.text.trim() : '';
+        const convert = fromPath(absoluteFilePath, options);
+        const convertResult = await convert(1);
 
-    if (text && text.length > 0) {
-      extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');
-      status = 'pending';
-    } else {
-      text = 'ไม่พบข้อความในไฟล์ PDF';
-      status = 'failed';
-    }
-    }catch (pdfError) {
-      console.error('PDF Conversion/OCR Error:', pdfError);
-      text = 'เกิดข้อผิดพลาดในการแปลงและสแกนไฟล์ PDF';
-      status = 'failed';
+        // ดึงเฉพาะชื่อไฟล์ PNG และเซ็ต relativePath ใหม่ให้ตรงกับ Express Static Route
+        if (convertResult && convertResult.path) {
+          const generatedFileName = path.basename(convertResult.path);
+          relativePath = `uploads/${generatedFileName}`.replace(/\\/g, '/');
+        }
+
+        const { data } = await Tesseract.recognize(convertResult.path, 'tha+eng');
+        text = data.text ? data.text.trim() : '';
+
+        if (text && text.length > 0) {
+          extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');
+          status = 'pending';
+        } else {
+          text = 'ไม่พบข้อความในไฟล์ PDF';
+          status = 'failed';
+        }
+      } catch (pdfError) {
+        console.error('PDF Conversion/OCR Error:', pdfError);
+        text = 'เกิดข้อผิดพลาดในการแปลงและสแกนไฟล์ PDF';
+        status = 'failed';
       }
     } 
     else if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
-      // โค้ดเดิมสำหรับรูปภาพ
       try {
         const { data } = await Tesseract.recognize(absoluteFilePath, 'tha+eng');
         text = data.text ? data.text.trim() : '';
@@ -326,9 +314,8 @@ exports.getUserDocumentHistory = async (req, res) => {
 
 exports.cancelDocument = async (req, res) => {
   try {
-    const { id } = req.params; // ID ของเอกสารในตารางประวัติ
+    const { id } = req.params;
     
-    // 1. ค้นหาข้อมูลเอกสารด้วย Prisma
     const document = await prisma.document_scan.findUnique({
       where: { id: parseInt(id) }
     });
@@ -337,15 +324,22 @@ exports.cancelDocument = async (req, res) => {
       return res.status(404).json({ message: "ไม่พบเอกสารที่ต้องการยกเลิก" });
     }
 
-    // 2. ลบไฟล์ออกจากโฟลเดอร์ uploads (ถ้ามีไฟล์)
     if (document.fileUrl) {
-      const filePath = path.join(__dirname, '../../', document.fileUrl);
+      // ลบไฟล์รูปภาพ/PNG ที่บันทึกไว้ใน DB
+      const filePath = path.join(__dirname, '../', document.fileUrl);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
+
+      // หากเป็น PNG ที่สร้างจาก PDF ให้ลองหาไฟล์ PDF ตระกูลเดียวกันแล้วลบออกด้วย
+      if (document.fileUrl.endsWith('-page1.png')) {
+        const originalPdfPath = filePath.replace('-page1.png', '');
+        if (fs.existsSync(originalPdfPath)) {
+          fs.unlinkSync(originalPdfPath);
+        }
+      }
     }
 
-    // 3. ลบรายการเอกสารออกจากฐานข้อมูล
     await prisma.document_scan.delete({
       where: { id: parseInt(id) }
     });
@@ -357,11 +351,8 @@ exports.cancelDocument = async (req, res) => {
   }
 };
 
-// ✅ ดึงเอกสารของนักศึกษาทุกคน สำหรับหน้า admin/อาจารย์ตรวจสอบ
-// รองรับ query: ?status=pending|passed|failed&search=ชื่อหรือรหัสนักศึกษา&docCategory=...
 exports.getAllDocumentsForReview = async (req, res) => {
   try {
-    // อนุญาตเฉพาะ admin และ teacher เท่านั้น
     if (!req.user || !['admin', 'teacher'].includes(req.user.role)) {
       return res.status(403).json({ message: 'ไม่มีสิทธิ์เข้าถึงข้อมูลนี้' });
     }
@@ -397,8 +388,6 @@ exports.getAllDocumentsForReview = async (req, res) => {
       },
     });
 
-    // ปรับรูปแบบข้อมูลให้ใช้งานง่ายฝั่ง frontend (แปลง path ไฟล์ให้เป็น URL เต็ม)
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     const formatted = documents.map((doc) => ({
       id: doc.id,
       userId: doc.userId,
@@ -407,7 +396,7 @@ exports.getAllDocumentsForReview = async (req, res) => {
       docCategory: doc.docCategory,
       status: doc.status,
       remark: doc.remark,
-      fileUrl: doc.fileUrl ? `${baseUrl}/${doc.fileUrl}` : null,
+      fileUrl: doc.fileUrl, // คืนค่า Relative Path เพื่อให้ Frontend จัดการต่อกับ API_BASE_URL เองได้อย่างยืดหยุ่น
       createdAt: doc.createdAt,
       reviewedAt: doc.reviewedAt,
     }));
@@ -419,10 +408,8 @@ exports.getAllDocumentsForReview = async (req, res) => {
   }
 };
 
-// ✅ บันทึกผลการตรวจสอบเอกสาร (ผ่าน/ไม่ผ่าน) พร้อมหมายเหตุ
 exports.reviewDocument = async (req, res) => {
   try {
-    // อนุญาตเฉพาะ admin และ teacher เท่านั้น
     if (!req.user || !['admin', 'teacher'].includes(req.user.role)) {
       return res.status(403).json({ message: 'ไม่มีสิทธิ์ดำเนินการนี้' });
     }

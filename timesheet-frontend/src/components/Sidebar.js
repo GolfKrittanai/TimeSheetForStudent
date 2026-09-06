@@ -1,5 +1,5 @@
 // src/components/Sidebar.js
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Drawer,
   Box,
@@ -11,363 +11,233 @@ import {
   ListItemText,
   Divider,
   Avatar,
-  Tooltip,
   AppBar,
   Toolbar,
   IconButton,
   useTheme,
   useMediaQuery,
+  Collapse,
 } from "@mui/material";
 import {
-  Dashboard as DashboardIcon,
-  ListAlt as TimesheetIcon,
-  History as HistoryIcon,
-  Assessment as ReportIcon,
   AccountCircle as ProfileIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
-  DocumentScanner as ScannerIcon,
+  ExpandLess,
+  ExpandMore,
+  GridView as GridViewIcon,
+  DocumentScannerOutlined as CoopScanIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getUserProfile } from "../services/userService";
 
-const drawerWidth = 240;
-const BRAND = "#00423b";
-const BRAND_HOVER = "#024f46";
-const ACTIVE = "#FFC107";
-
-// helper: คืน src ให้ถูกเสมอ (รองรับ Supabase URL และพาธเก่า /uploads/...)
-const getAvatarSrc = (obj) => {
-  const raw = obj?.profileImage;
-  if (!raw) return undefined;
-  if (/^https?:\/\//i.test(raw)) return raw; // URL เต็ม (Supabase/อื่น)
-  const API = process.env.REACT_APP_API || "";
-  const BASE = API.replace(/\/api$/, "");
-  return `${BASE}${raw}`; // ต่อ host ให้พาธเก่า
-};
+const drawerWidth = 260;
+const BRAND_BG = "#0f3833";
+const BRAND_ACTIVE = "#10b981";
+const ACTIVE_SUB_BG = "rgba(255, 255, 255, 0.08)";
 
 function Sidebar() {
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scanMenuOpen, setScanMenuOpen] = useState(true);
+
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
-  // ดึงโปรไฟล์เหมือนหน้า Profile (ให้ Sidebar ใช้เอง)
-  const [sdProfile, setSdProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-
-  useEffect(() => {
-    if (!token) return;
-    if (!sdProfile) {
-      setLoadingProfile(true);
-      getUserProfile(token)
-        .then(({ data }) => setSdProfile(data))
-        .catch((e) => console.warn("Sidebar: fetch /profile failed:", e?.message || e))
-        .finally(() => setLoadingProfile(false));
-    }
-  }, [token, sdProfile]);
-
-  // ฟังสัญญาณเปลี่ยนรูปโปรไฟล์จากหน้า Profile → อัปเดตทันที
-  useEffect(() => {
-    const handler = (e) => {
-      const url = e?.detail ?? "";
-      setSdProfile((prev) => ({ ...(prev || {}), profileImage: url }));
-    };
-    window.addEventListener("profile-image-updated", handler);
-    return () => window.removeEventListener("profile-image-updated", handler);
-  }, []);
-
-  // รวมข้อมูลแสดงผล (ให้ sdProfile มาก่อน แล้วค่อยตกมาใช้ user จาก context)
-  const display = useMemo(() => {
-    const role = sdProfile?.role ?? user?.role ?? "student";
-    const avatarSrc = getAvatarSrc(sdProfile) || getAvatarSrc(user);
-    return {
-      fullName: sdProfile?.fullName ?? user?.fullName ?? "User",
-      studentId: sdProfile?.studentId ?? user?.studentId ?? "-",
-      role,
-      avatarSrc, // แสดงรูปทุกบทบาท (student / teacher / admin)
-    };
-  }, [sdProfile, user]);
-
-  const adminMenuItems = useMemo(
-    () => [
-      { text: "Management data", icon: <DashboardIcon />, path: "/admin" },
-      { text: "ตรวจสอบเอกสาร", icon: <ScannerIcon />, path: "/admin/documents/review" },
-      { text: "Export Report", icon: <ReportIcon />, path: "/report" },
-      { text: "My account", icon: <ProfileIcon />, path: "/profile" },
-    ],
-    []
-  );
-
-  const teacherMenuItems = useMemo(
-    () => [
-      { text: "Management data", icon: <DashboardIcon />, path: "/teacher" },
-      { text: "ตรวจสอบเอกสาร", icon: <ScannerIcon />, path: "/teacher/documents/review" },
-      { text: "Export Report", icon: <ReportIcon />, path: "/report" },
-      { text: "My account", icon: <ProfileIcon />, path: "/profile" },
-    ],
-    []
-  );
-
-  const studentMenuItems = useMemo(
-    () => [
-      { text: "Timesheet", icon: <TimesheetIcon />, path: "/student" },
-      { text: "Timesheet History", icon: <HistoryIcon />, path: "/student/timesheet-history" },
-      { text: "My account", icon: <ProfileIcon />, path: "/profile" },
-    ],
-    []
-  );
-
-  const scanStudentMenuItems = useMemo(
-    () => [
-      { 
-        text: "ระบบสแกนเอกสาร", 
-        icon: <ScannerIcon />, 
-        path: "/student/scan" 
-      },
-      { 
-        text: "เข้าสู่ระบบ Timesheet", 
-        icon: <TimesheetIcon />, 
-        path: "/student" 
-      },
-      { 
-        text: "ประวัติการตรวจสอบ", 
-        icon: <HistoryIcon />, 
-        path: "/student/scan-history" 
-      },
-    ],
-    []
-  );
-
-  const isScanFlow = location.pathname.startsWith("/student/scan") || 
-                     location.pathname.startsWith("/student/inspection-history");
-
-  // const currentMenuItems =
-  //   display.role === "admin"
-  //     ? adminMenuItems
-  //     : display.role === "teacher"
-  //       ? teacherMenuItems
-  //       : studentMenuItems;
-
-  const currentMenuItems =
-    display.role === "admin"
-      ? adminMenuItems
-      : display.role === "teacher"
-        ? teacherMenuItems
-        : isScanFlow
-          ? scanStudentMenuItems
-          : studentMenuItems;     
-
   const handleLogout = () => {
-    setSdProfile(null); // เคลียร์ cache เล็กน้อยฝั่ง Sidebar
     logout();
     navigate("/");
   };
 
-  const MenuList = (
-    <>
-      <List sx={{ pt: 1, pb: 1 }}>
-        {currentMenuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate(item.path);
-                  if (isMobile) closeMobile();
-                }}
-                sx={{
-                  "&:hover": { bgcolor: BRAND_HOVER },
-                  ...(isActive && { bgcolor: BRAND }),
-                }}
-              >
-                <ListItemIcon sx={{ color: isActive ? ACTIVE : "#fff" }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  sx={{ "& .MuiTypography-root": { color: isActive ? ACTIVE : "#fff" } }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+  const renderSidebarContent = (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: BRAND_BG }}>
+      {/* โลโก้ COOP SCAN */}
+      <Box sx={{ p: 3, display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: 2,
+            bgcolor: BRAND_ACTIVE,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+          }}
+        >
+          <CoopScanIcon sx={{ fontSize: 28 }} />
+        </Box>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: BRAND_ACTIVE, lineHeight: 1.1, letterSpacing: 0.5 }}>
+            COOP
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
+            SCAN
+          </Typography>
+        </Box>
+      </Box>
 
-      <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)" }} />
+      <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)", mx: 2, mb: 2 }} />
 
-      <List sx={{ mt: "auto", mb: 1 }}>
+      {/* เมนูหลัก */}
+      <List component="nav" sx={{ px: 1, flexGrow: 1 }}>
         <ListItem disablePadding>
-          <ListItemButton onClick={handleLogout} sx={{ "&:hover": { bgcolor: BRAND_HOVER } }}>
-            <ListItemIcon sx={{ color: "#fff" }}>
-              <LogoutIcon />
+          <ListItemButton
+            onClick={() => setScanMenuOpen(!scanMenuOpen)}
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              color: "#fff",
+              "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+            }}
+          >
+            <ListItemIcon sx={{ color: "#fff", minWidth: 36 }}>
+              <GridViewIcon />
             </ListItemIcon>
-            <ListItemText primary="Logout" sx={{ "& .MuiTypography-root": { color: "#fff" } }} />
+            <ListItemText primary="ระบบสแกนเอกสาร" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem" }} />
+            {scanMenuOpen ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>
         </ListItem>
+
+        <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding sx={{ pl: 2 }}>
+            <ListItemButton
+              selected={location.pathname === "/student/scan"}
+              onClick={() => {
+                navigate("/student/scan");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: 1.5,
+                mb: 0.5,
+                bgcolor: location.pathname === "/student/scan" ? ACTIVE_SUB_BG : "transparent",
+                borderLeft: location.pathname === "/student/scan" ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                "&:hover": { bgcolor: ACTIVE_SUB_BG },
+              }}
+            >
+              <ListItemText
+                primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
+                primaryTypographyProps={{
+                  fontSize: "0.82rem",
+                  color: location.pathname === "/student/scan" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                }}
+              />
+            </ListItemButton>
+
+            <ListItemButton
+              onClick={() => {
+                navigate("/student/scan-upload");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: 1.5,
+                mb: 0.5,
+                "&:hover": { bgcolor: ACTIVE_SUB_BG },
+              }}
+            >
+              <ListItemText
+                primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
+                primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
+              />
+            </ListItemButton>
+
+            <ListItemButton
+              sx={{
+                borderRadius: 1.5,
+                mb: 0.5,
+                "&:hover": { bgcolor: ACTIVE_SUB_BG },
+              }}
+            >
+              <ListItemText
+                primary="ขั้นตอนที่ 3 หนังสือส่งตัวและแพลตฟอร์มการประเมิน"
+                primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
+              />
+            </ListItemButton>
+          </List>
+        </Collapse>
       </List>
-    </>
+
+      <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)", mx: 2 }} />
+
+      {/* ด้านล่างสุด: Profile & Logout */}
+      <Box sx={{ p: 2 }}>
+        <ListItemButton
+          onClick={() => {
+            navigate("/profile");
+            if (isMobile) closeMobile();
+          }}
+          sx={{
+            borderRadius: 2,
+            mb: 1,
+            color: "#fff",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 36, color: "#fff" }}>
+            <Avatar sx={{ width: 24, height: 24, bgcolor: "rgba(255,255,255,0.2)" }}>
+              <ProfileIcon sx={{ fontSize: 18 }} />
+            </Avatar>
+          </ListItemIcon>
+          <ListItemText primary={user?.fullName || "My account"} primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 500 }} />
+        </ListItemButton>
+
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            color: "#ef4444",
+            "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 36, color: "#ef4444" }}>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 500 }} />
+        </ListItemButton>
+      </Box>
+    </Box>
   );
 
-  // ========== มือถือ: TopBar + Drawer ==========
   if (isMobile) {
     return (
       <>
-        <AppBar position="fixed" elevation={3} sx={{ bgcolor: BRAND }}>
-          <Toolbar sx={{ minHeight: 64, px: 1 }}>
-            <IconButton
-              aria-label="open menu"
-              onClick={toggleMobile}
-              edge="start"
-              sx={{ color: "#fff", mr: 1, "&:hover": { bgcolor: BRAND_HOVER } }}
-            >
+        <AppBar position="fixed" elevation={0} sx={{ bgcolor: BRAND_BG }}>
+          <Toolbar sx={{ justifyContent: "space-between" }}>
+            <IconButton onClick={toggleMobile} sx={{ color: "#fff" }}>
               <MenuIcon />
             </IconButton>
-            <Box sx={{ flex: 1 }} />
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
-              <Tooltip title={display.fullName || "User"}>
-                <Typography variant="subtitle2" noWrap sx={{ fontWeight: 500, maxWidth: "60vw" }}>
-                  {display.fullName || "User"}
-                </Typography>
-              </Tooltip>
-              <Avatar
-                alt={display.fullName || "User"}
-                src={display.avatarSrc}
-                sx={{ width: 28, height: 28, bgcolor: "#fff", color: BRAND }}
-              >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {display.fullName?.charAt(0)?.toUpperCase() || "U"}
-                </Typography>
-              </Avatar>
-            </Box>
+            <Typography variant="h6" sx={{ color: BRAND_ACTIVE, fontWeight: 700 }}>
+              COOP SCAN
+            </Typography>
           </Toolbar>
         </AppBar>
-
-        <Toolbar sx={{ minHeight: 64 }} />
-
-        <Drawer
-          anchor="left"
-          variant="temporary"
-          open={mobileOpen}
-          onClose={closeMobile}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: Math.min(300, typeof window !== "undefined" ? window.innerWidth * 0.85 : 300),
-              bgcolor: BRAND,
-              color: "#fff",
-            },
-          }}
-        >
-          <Box sx={{ p: 2, pt: 2.5, textAlign: "center" }}>
-            <Avatar
-              alt={display.fullName || "User"}
-              src={display.avatarSrc}
-              sx={{
-                width: 56,
-                height: 56,
-                bgcolor: "#fff",
-                color: BRAND,
-                m: "0 auto",
-                mb: 1,
-                border: "2px solid rgba(255,255,255,0.7)",
-              }}
-              onError={(e) => {
-                console.warn("Sidebar avatar load failed:", display.avatarSrc);
-                e.currentTarget.src = ""; // fallback เป็นอักษร
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {display.fullName?.charAt(0)?.toUpperCase() || "U"}
-              </Typography>
-            </Avatar>
-
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {display.fullName}
-            </Typography>
-
-            <Typography variant="caption" sx={{ opacity: 0.85, display: "block" }}>
-              ID : {display.studentId || "-"}
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.85 }}>
-              {display.role?.charAt(0).toUpperCase() + display.role?.slice(1)}
-            </Typography>
-          </Box>
-
-          <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)" }} />
-
-          <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            {MenuList}
-          </Box>
+        <Toolbar />
+        <Drawer anchor="left" open={mobileOpen} onClose={closeMobile} sx={{ "& .MuiDrawer-paper": { width: drawerWidth } }}>
+          {renderSidebarContent}
         </Drawer>
       </>
     );
   }
 
-  // ========== เดสก์ท็อป: Sidebar ถาวร ==========
   return (
-    <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+    <Box component="nav" sx={{ width: drawerWidth, flexShrink: 0 }}>
       <Drawer
         variant="permanent"
         open
         sx={{
-          display: { xs: "none", sm: "block" },
           "& .MuiDrawer-paper": {
-            boxSizing: "border-box",
             width: drawerWidth,
-            bgcolor: BRAND,
-            boxShadow: "0 6px 20px rgba(0,74,153,0.3)",
+            boxSizing: "border-box",
+            borderRight: "none",
           },
         }}
       >
-        <Box sx={{ p: 2, textAlign: "center", pt: 4, pb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: "500", color: "#fff", mb: 1 }}>
-            TIMESHEET SYSTEM
-          </Typography>
-          <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)", mb: 2 }} />
-
-          <Tooltip title={display.fullName}>
-            <Avatar
-              alt={display.fullName || "User"}
-              src={display.avatarSrc}
-              sx={{ width: 128, height: 128, bgcolor: "#fff", color: BRAND, m: "0 auto", mb: 1 }}
-            >
-              <Typography variant="h2" sx={{ fontWeight: "500" }}>
-                {display.fullName?.charAt(0)?.toUpperCase() || "U"}
-              </Typography>
-            </Avatar>
-          </Tooltip>
-
-          <Typography variant="h6" sx={{ fontWeight: "500", color: "#fff" }}>
-            {display.fullName}
-          </Typography>
-
-          <Typography
-            variant="caption"
-            sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", display: "block" }}
-          >
-            ID : {display.studentId || "-"}
-          </Typography>
-
-          <Typography
-            variant="caption"
-            sx={{ color: "#fff", opacity: 0.8, fontSize: "0.8rem", mb: 1 }}
-          >
-            {display.role?.charAt(0).toUpperCase() + display.role?.slice(1)}
-          </Typography>
-        </Box>
-
-        <Divider sx={{ bgcolor: "rgba(255,255,255,0.5)" }} />
-        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          {MenuList}
-        </Box>
+        {renderSidebarContent}
       </Drawer>
     </Box>
   );

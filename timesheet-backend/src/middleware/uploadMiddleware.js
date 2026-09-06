@@ -2,8 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// กำหนดโฟลเดอร์ uploads ให้อยู่ระดับรากของโปรเจกต์
-const uploadDir = path.join(__dirname, '../../uploads');
+// ตรวจสอบและสร้างโฟลเดอร์ uploads หากยังไม่มี
+const uploadDir = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -13,15 +13,30 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `doc-${uniqueSuffix}${ext}`);
-  },
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  }
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/x-pdf'];
-  if (allowedTypes.includes(file.mimetype)) {
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'application/pdf',
+    'application/x-pdf',
+    'application/acrobat',
+    'applications/vnd.pdf',
+    'text/pdf',
+    'application/octet-stream' // สำหรับบางเครื่องที่ส่งค่านี้เมื่อเป็นไฟล์ PDF/รูปภาพ
+  ];
+
+  // ยินยอมถ้า MIME Type ตรง หรือ นามสกุลไฟล์ตรง
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
     cb(null, true);
   } else {
     cb(new Error('รองรับเฉพาะไฟล์รูปภาพ (JPG, PNG) และ PDF เท่านั้น'), false);
@@ -31,7 +46,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // ไม่เกิน 10MB
+  limits: {
+    fileSize: 10 * 1024 * 1024 // จำกัดขนาดไม่เกิน 10MB
+  }
 });
 
 module.exports = upload;
