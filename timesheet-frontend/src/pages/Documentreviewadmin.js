@@ -1,13 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
   Paper,
-  MenuItem,
-  Select,
-  FormControl,
   TextField,
-  InputAdornment,
   Button,
   Grid,
   CircularProgress,
@@ -18,20 +14,21 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogActions,
   IconButton,
+  Avatar,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import {
-  Search as SearchIcon,
   Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  AccessTime as AccessTimeIcon,
-  Visibility as VisibilityIcon,
+  Groups as GroupsIcon,
+  Description as DescriptionIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   InsertDriveFile as InsertDriveFileIcon,
 } from "@mui/icons-material";
 import Sidebar from "../components/Sidebar";
@@ -40,26 +37,23 @@ import {
   reviewDocument,
 } from "../services/documentScanService";
 
-// แปลงสถานะจาก backend (pending/passed/failed) เป็นข้อความภาษาไทย
-const mapStatusToLabel = (status) => {
-  switch (status) {
-    case "passed":
-      return "ผ่าน";
-    case "failed":
-      return "ไม่ผ่าน";
-    case "pending":
-    default:
-      return "รอตรวจสอบ";
-  }
+const PAGE_SIZE = 10;
+const BRAND = "#00423b";
+
+// สถานะฝั่ง backend (pending/passed/failed) -> ป้ายที่แสดงในตาราง
+const STATUS_MAP = {
+  passed: { label: "ผ่าน", bg: "#e8f8ef", color: "#1e8e5a" },
+  failed: { label: "ต้องแก้ไข", bg: "#fff3e0", color: "#e08a1f" },
+  pending: { label: "รอตรวจสอบ", bg: "#eef0ff", color: "#5b5fe0" },
 };
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return "...";
-  return new Date(dateStr).toLocaleDateString("th-TH", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return {
+    date: d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }),
+    time: d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.",
+  };
 };
 
 function DocumentReviewAdmin() {
@@ -69,13 +63,15 @@ function DocumentReviewAdmin() {
   const [documents, setDocuments] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
 
-  // ตัวกรอง
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [searchInput, setSearchInput] = useState("");
   const [searchText, setSearchText] = useState("");
 
-  // Modal ตรวจสอบเอกสาร
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(1);
+
   const [openReviewModal, setOpenReviewModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [readOnly, setReadOnly] = useState(false);
   const [remark, setRemark] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -83,7 +79,7 @@ function DocumentReviewAdmin() {
     try {
       setPageLoading(true);
       const data = await getAllDocumentsForReview({
-        status: statusFilter,
+        status: "all",
         search: searchText,
       });
       setDocuments(Array.isArray(data) ? data : []);
@@ -93,19 +89,59 @@ function DocumentReviewAdmin() {
     } finally {
       setPageLoading(false);
     }
-  }, [statusFilter, searchText]);
+  }, [searchText]);
 
   useEffect(() => {
-    // หน่วงเวลาเล็กน้อยตอนพิมพ์ค้นหา เพื่อลดการยิง request ถี่เกินไป
-    const timer = setTimeout(() => {
-      loadDocuments();
-    }, 300);
-    return () => clearTimeout(timer);
+    loadDocuments();
   }, [loadDocuments]);
 
-  const handleOpenReviewModal = (doc) => {
+  const handleSearch = () => {
+    setPage(1);
+    setSearchText(searchInput.trim());
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchText("");
+    setPage(1);
+  };
+
+  // สถิติด้านบน: จำนวนนักศึกษาไม่ซ้ำ และจำนวนเอกสารทั้งหมดที่พบ
+  const studentCount = useMemo(() => {
+    const ids = new Set(documents.map((d) => d.studentCode || d.userId));
+    return ids.size;
+  }, [documents]);
+
+  const totalDocs = documents.length;
+
+  const totalPages = Math.max(1, Math.ceil(totalDocs / PAGE_SIZE));
+  const pagedDocuments = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return documents.slice(start, start + PAGE_SIZE);
+  }, [documents, page]);
+
+  const allCurrentPageSelected =
+    pagedDocuments.length > 0 && pagedDocuments.every((d) => selected.includes(d.id));
+
+  const toggleSelectAll = () => {
+    const pageIds = pagedDocuments.map((d) => d.id);
+    if (allCurrentPageSelected) {
+      setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      setSelected((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleOpenModal = (doc) => {
     setSelectedDoc(doc);
     setRemark(doc.remark || "");
+    setReadOnly(doc.status === "passed");
     setOpenReviewModal(true);
   };
 
@@ -119,12 +155,10 @@ function DocumentReviewAdmin() {
 
   const handleReview = async (decision) => {
     if (!selectedDoc) return;
-
     if (decision === "failed" && !remark.trim()) {
-      alert("กรุณาระบุเหตุผลที่ไม่ผ่าน เพื่อแจ้งให้นักศึกษาทราบ");
+      alert("กรุณาระบุเหตุผลที่ต้องแก้ไข เพื่อแจ้งให้นักศึกษาทราบ");
       return;
     }
-
     setIsSubmitting(true);
     try {
       await reviewDocument(selectedDoc.id, decision, remark.trim());
@@ -138,41 +172,44 @@ function DocumentReviewAdmin() {
     }
   };
 
-  const renderStatusChip = (status) => {
-    const label = mapStatusToLabel(status);
-    switch (label) {
-      case "ผ่าน":
-        return (
-          <Chip
-            icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#2e7d32 !important" }} />}
-            label={label}
-            size="small"
-            sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 600 }}
-          />
-        );
-      case "ไม่ผ่าน":
-        return (
-          <Chip
-            icon={<CancelIcon sx={{ fontSize: 16, color: "#d32f2f !important" }} />}
-            label={label}
-            size="small"
-            sx={{ bgcolor: "#ffebee", color: "#d32f2f", fontWeight: 600 }}
-          />
-        );
-      default:
-        return (
-          <Chip
-            icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#ed6c02 !important" }} />}
-            label={label}
-            size="small"
-            sx={{ bgcolor: "#fff3e0", color: "#ed6c02", fontWeight: 600 }}
-          />
-        );
-    }
-  };
-
   const isImageFile = (url = "") => /\.(jpg|jpeg|png)$/i.test(url);
   const isPdfFile = (url = "") => /\.pdf$/i.test(url);
+
+  const StatCard = ({ icon, label, value }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        border: "1px solid #e2e8f0",
+        display: "flex",
+        alignItems: "center",
+        gap: 2.5,
+        height: "100%",
+      }}
+    >
+      <Box
+        sx={{
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          bgcolor: "#eaf6f1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: BRAND,
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography sx={{ color: "#64748b", fontSize: "0.95rem" }}>{label}</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.8rem", color: "#1e293b" }}>
+          {value}
+        </Typography>
+      </Box>
+    </Paper>
+  );
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f8fafc", minHeight: "100vh" }}>
@@ -180,80 +217,106 @@ function DocumentReviewAdmin() {
 
       <Box
         component="main"
-        sx={{
-          flexGrow: 1,
-          p: isSmallScreen ? 2 : 4,
-          fontFamily: '"Kanit", sans-serif',
-        }}
+        sx={{ flexGrow: 1, p: isSmallScreen ? 2 : 4, fontFamily: '"Kanit", sans-serif' }}
       >
-        <Typography variant="h5" sx={{ fontWeight: 700, color: "#00423b", mb: 3 }}>
-          ตรวจสอบเอกสารนักศึกษา
+        <Typography variant="h5" sx={{ fontWeight: 700, color: BRAND, mb: 3 }}>
+          ตรวจสอบเอกสาร
         </Typography>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 3,
-            border: "1px solid #007a5e",
-            bgcolor: "#fff",
-          }}
-        >
-          {/* แถบตัวกรอง */}
-          <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={4} md={3}>
+        {/* Stat cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6}>
+            <StatCard
+              icon={<GroupsIcon sx={{ fontSize: 28 }} />}
+              label="จำนวนนักศึกษา"
+              value={studentCount}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <StatCard
+              icon={<DescriptionIcon sx={{ fontSize: 28 }} />}
+              label="เอกสารทั้งหมด"
+              value={totalDocs}
+            />
+          </Grid>
+        </Grid>
+
+        <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b", mb: 2 }}>
+          เอกสาร รายชื่อนักศึกษา
+        </Typography>
+
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
+          {/* แถบค้นหา */}
+          <Grid container spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+            <Grid item xs={12} sm={6} md={5}>
               <TextField
                 fullWidth
                 size="small"
-                placeholder="ค้นหาชื่อ หรือ รหัสนักศึกษา"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#94a3b8", fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                  sx: { bgcolor: "#fff", borderRadius: 1.5 },
-                }}
+                placeholder="ค้นหา"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                sx={{ bgcolor: "#fff", "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
               />
             </Grid>
-            <Grid item xs={12} sm={4} md={3}>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  sx={{ bgcolor: "#fff", borderRadius: 1.5, fontSize: "0.9rem" }}
-                >
-                  <MenuItem value="all">ทุกสถานะ</MenuItem>
-                  <MenuItem value="pending">รอตรวจสอบ</MenuItem>
-                  <MenuItem value="passed">ผ่าน</MenuItem>
-                  <MenuItem value="failed">ไม่ผ่าน</MenuItem>
-                </Select>
-              </FormControl>
+            <Grid item>
+              <Button
+                onClick={handleSearch}
+                sx={{
+                  bgcolor: BRAND,
+                  color: "#fff",
+                  px: 3,
+                  borderRadius: 1.5,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&:hover": { bgcolor: "#002b26" },
+                }}
+              >
+                ค้นหา
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                onClick={handleClearSearch}
+                sx={{
+                  border: "1px solid #cbd5e1",
+                  color: "#475569",
+                  px: 3,
+                  borderRadius: 1.5,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                ล้าง
+              </Button>
             </Grid>
           </Grid>
+          <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mb: 2 }}>
+            ค้นหา : รหัสประจำตัว, ชื่อ-นามสกุล
+          </Typography>
 
           <TableContainer>
-            <Table sx={{ minWidth: 750 }}>
+            <Table sx={{ minWidth: 900 }}>
               <TableHead>
-                <TableRow sx={{ bgcolor: "#f8fafc" }}>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#64748b" }}>
-                    ลำดับ
+                <TableRow sx={{ bgcolor: "#eef2ff" }}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={allCurrentPageSelected}
+                      onChange={toggleSelectAll}
+                    />
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#64748b" }}>
-                    นักศึกษา
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#64748b" }}>
-                    เอกสาร
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#64748b" }}>
-                    วันที่ส่ง
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#64748b" }}>
+                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>ชื่อ-นามสกุล</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>รหัสนักศึกษา</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>ประเภทเอกสาร</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>วันที่ส่ง</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
                     สถานะ
                   </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#64748b" }}>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
+                    AI OCR
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
                     ดำเนินการ
                   </TableCell>
                 </TableRow>
@@ -261,76 +324,152 @@ function DocumentReviewAdmin() {
               <TableBody>
                 {pageLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                      <CircularProgress size={28} sx={{ color: "#007a5e" }} />
+                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                      <CircularProgress size={26} sx={{ color: BRAND }} />
                     </TableCell>
                   </TableRow>
-                ) : documents.length === 0 ? (
+                ) : pagedDocuments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: "#94a3b8" }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 5, color: "#94a3b8" }}>
                       ไม่พบรายการเอกสาร
                     </TableCell>
                   </TableRow>
                 ) : (
-                  documents.map((row, index) => (
-                    <TableRow key={row.id} hover>
-                      <TableCell align="center" sx={{ color: "#475569" }}>
-                        {index + 1}
-                      </TableCell>
-                      <TableCell sx={{ color: "#334155" }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  pagedDocuments.map((row, idx) => {
+                    const statusInfo = STATUS_MAP[row.status] || STATUS_MAP.pending;
+                    const dt = formatDate(row.createdAt);
+                    const isPassed = row.status === "passed";
+                    return (
+                      <TableRow key={row.id} hover>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            checked={selected.includes(row.id)}
+                            onChange={() => toggleSelectOne(row.id)}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ color: "#334155", fontWeight: 500 }}>
                           {row.studentName || "-"}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        </TableCell>
+                        <TableCell sx={{ color: "#334155" }}>
                           {row.studentCode || row.userId}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 500, color: "#334155" }}>
-                        {row.docCategory}
-                      </TableCell>
-                      <TableCell align="center" sx={{ color: "#64748b" }}>
-                        {formatDate(row.createdAt)}
-                      </TableCell>
-                      <TableCell align="center">
-                        {renderStatusChip(row.status)}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Button
-                          size="small"
-                          startIcon={<VisibilityIcon sx={{ fontSize: 18 }} />}
-                          onClick={() => handleOpenReviewModal(row)}
-                          sx={{
-                            bgcolor: "#00423b",
-                            color: "#ffffff",
-                            borderRadius: 2,
-                            px: 2.5,
-                            py: 0.5,
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                            textTransform: "none",
-                            "&:hover": { bgcolor: "#002b26" },
-                          }}
-                        >
-                          ตรวจสอบ
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <InsertDriveFileIcon sx={{ fontSize: 18, color: "#a855f7" }} />
+                            <Typography variant="body2" sx={{ color: "#334155" }}>
+                              {row.docCategory}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ color: "#64748b" }}>
+                          <Typography variant="body2">{dt.date}</Typography>
+                          <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                            {dt.time}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={statusInfo.label}
+                            size="small"
+                            sx={{
+                              bgcolor: statusInfo.bg,
+                              color: statusInfo.color,
+                              fontWeight: 600,
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="center" sx={{ color: "#334155", fontWeight: 600 }}>
+                          {row.ocrConfidence != null ? `${row.ocrConfidence} %` : "-"}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            onClick={() => handleOpenModal(row)}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 600,
+                              borderRadius: 2,
+                              px: 2,
+                              ...(isPassed
+                                ? { color: "#1e8e5a" }
+                                : {
+                                    border: `1px solid ${statusInfo.color}`,
+                                    color: statusInfo.color,
+                                  }),
+                            }}
+                          >
+                            {isPassed ? "ดูรายละเอียด" : "ตรวจสอบ"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
           </TableContainer>
+
+          {/* Pagination */}
+          {totalDocs > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mt: 2,
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "#64748b" }}>
+                {pagedDocuments.length} / {totalDocs} รายการ
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <Button
+                    key={p}
+                    size="small"
+                    onClick={() => setPage(p)}
+                    sx={{
+                      minWidth: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      fontWeight: 700,
+                      ...(p === page
+                        ? { bgcolor: BRAND, color: "#fff", "&:hover": { bgcolor: BRAND } }
+                        : { color: "#475569" }),
+                    }}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <IconButton
+                  size="small"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
         </Paper>
 
-        {/* Modal ตรวจสอบเอกสาร */}
+        {/* Modal ตรวจสอบ/ดูรายละเอียดเอกสาร */}
         <Dialog
           open={openReviewModal}
           onClose={handleCloseModal}
           maxWidth="md"
           fullWidth
-          PaperProps={{
-            sx: { borderRadius: 4, p: 2, fontFamily: '"Kanit", sans-serif' },
-          }}
+          PaperProps={{ sx: { borderRadius: 4, p: 2, fontFamily: '"Kanit", sans-serif' } }}
         >
           <Box sx={{ display: "flex", justifyContent: "flex-end", pr: 1, pt: 1 }}>
             <IconButton onClick={handleCloseModal} disabled={isSubmitting}>
@@ -340,16 +479,14 @@ function DocumentReviewAdmin() {
           <DialogContent sx={{ pt: 0 }}>
             {selectedDoc && (
               <>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: "#00423b", mb: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: BRAND, mb: 0.5 }}>
                   {selectedDoc.docCategory}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
                   {selectedDoc.studentName || "-"}{" "}
-                  {selectedDoc.studentCode ? `(${selectedDoc.studentCode})` : ""} · ส่งเมื่อ{" "}
-                  {formatDate(selectedDoc.createdAt)}
+                  {selectedDoc.studentCode ? `(${selectedDoc.studentCode})` : ""}
                 </Typography>
 
-                {/* พื้นที่แสดงตัวอย่างไฟล์ */}
                 <Box
                   sx={{
                     border: "1px solid #e2e8f0",
@@ -379,21 +516,14 @@ function DocumentReviewAdmin() {
                         sx={{ width: "100%", height: 420, border: "none" }}
                       />
                     ) : (
-                      <Box sx={{ textAlign: "center", py: 6 }}>
-                        <InsertDriveFileIcon sx={{ fontSize: 48, color: "#94a3b8", mb: 1 }} />
-                        <Typography variant="body2" sx={{ color: "#64748b", mb: 1 }}>
-                          ไม่สามารถแสดงตัวอย่างไฟล์นี้ได้
-                        </Typography>
-                        <Button
-                          href={selectedDoc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          size="small"
-                          sx={{ textTransform: "none", color: "#007a5e" }}
-                        >
-                          เปิดไฟล์ในแท็บใหม่
-                        </Button>
-                      </Box>
+                      <Button
+                        href={selectedDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ textTransform: "none", color: BRAND }}
+                      >
+                        เปิดไฟล์ในแท็บใหม่
+                      </Button>
                     )
                   ) : (
                     <Typography variant="body2" sx={{ color: "#94a3b8" }}>
@@ -402,60 +532,64 @@ function DocumentReviewAdmin() {
                   )}
                 </Box>
 
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={2}
-                  label="หมายเหตุ (จำเป็นเมื่อไม่ผ่าน)"
-                  value={remark}
-                  onChange={(e) => setRemark(e.target.value)}
-                  disabled={isSubmitting}
-                  sx={{ mb: 3, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                />
+                {readOnly ? (
+                  selectedDoc.remark && (
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      หมายเหตุ: {selectedDoc.remark}
+                    </Typography>
+                  )
+                ) : (
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    label="หมายเหตุ (จำเป็นเมื่อต้องแก้ไข)"
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                    disabled={isSubmitting}
+                    sx={{ mb: 1, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                  />
+                )}
               </>
             )}
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button
-              onClick={() => handleReview("failed")}
-              disabled={isSubmitting}
-              startIcon={
-                isSubmitting ? <CircularProgress size={18} color="inherit" /> : <CancelIcon />
-              }
-              sx={{
-                bgcolor: "#d32f2f",
-                color: "#fff",
-                px: 3,
-                py: 1,
-                borderRadius: 2,
-                fontWeight: 600,
-                textTransform: "none",
-                "&:hover": { bgcolor: "#9a0007" },
-              }}
-            >
-              ไม่ผ่าน
-            </Button>
-            <Button
-              onClick={() => handleReview("passed")}
-              disabled={isSubmitting}
-              startIcon={
-                isSubmitting ? <CircularProgress size={18} color="inherit" /> : <CheckCircleIcon />
-              }
-              sx={{
-                bgcolor: "#007a5e",
-                color: "#fff",
-                px: 3,
-                py: 1,
-                borderRadius: 2,
-                fontWeight: 600,
-                textTransform: "none",
-                "&:hover": { bgcolor: "#005a45" },
-              }}
-            >
-              ผ่าน
-            </Button>
-          </DialogActions>
+          {!readOnly && (
+            <DialogActions sx={{ px: 3, pb: 3 }}>
+              <Button
+                onClick={() => handleReview("failed")}
+                disabled={isSubmitting}
+                sx={{
+                  bgcolor: "#e08a1f",
+                  color: "#fff",
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:hover": { bgcolor: "#b96f14" },
+                }}
+              >
+                ต้องแก้ไข
+              </Button>
+              <Button
+                onClick={() => handleReview("passed")}
+                disabled={isSubmitting}
+                sx={{
+                  bgcolor: "#1e8e5a",
+                  color: "#fff",
+                  px: 3,
+                  py: 1,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:hover": { bgcolor: "#166b44" },
+                }}
+              >
+                ผ่าน
+              </Button>
+            </DialogActions>
+          )}
         </Dialog>
       </Box>
     </Box>
