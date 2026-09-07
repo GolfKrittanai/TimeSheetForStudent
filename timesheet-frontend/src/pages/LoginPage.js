@@ -111,16 +111,16 @@ export default function LoginPage() {
           <Typography
             sx={{
               fontSize: { xs: 38, sm: 44 },
-              letterSpacing: 4,
+              letterSpacing: 2,
               fontWeight: 800,
               color: "#0b7a6b",
               lineHeight: 1.15,
             }}
           >
-            TIMESHEET
+            COOP SCAN
           </Typography>
           <Typography sx={{ color: "#4f5b62", mt: 0.5, mb: 2 }}>
-            ของนักศึกษา BIS
+            ระบบสแกนเอกสารสหกิจศึกษา
           </Typography>
 
           {/* Form */}

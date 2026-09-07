@@ -17,22 +17,25 @@ import {
   useTheme,
   useMediaQuery,
   Collapse,
+  Badge,
+  Chip
 } from "@mui/material";
 import {
-  AccountCircle as ProfileIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
   ExpandLess,
   ExpandMore,
   GridView as GridViewIcon,
-  DocumentScannerOutlined as CoopScanIcon,
+  Description as DescriptionIcon,
+  CropFree as ScanLogoIcon,
+  PersonOutline as PersonOutlineIcon
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const drawerWidth = 260;
-const BRAND_BG = "#0f3833";
-const BRAND_ACTIVE = "#10b981";
+const BRAND_BG = "#0b2b26"; // สีเขียวเข้มพื้นหลังตามภาพ
+const BRAND_ACTIVE = "#10b981"; // สีเขียวนีออนหลัก
 const ACTIVE_SUB_BG = "rgba(255, 255, 255, 0.08)";
 
 function Sidebar() {
@@ -53,151 +56,267 @@ function Sidebar() {
     navigate("/");
   };
 
+  const isAdmin = user?.role === "admin";
+
   const renderSidebarContent = (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: BRAND_BG }}>
-      {/* โลโก้ COOP SCAN */}
-      <Box sx={{ p: 3, display: "flex", alignItems: "center", gap: 1.5 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: BRAND_BG, color: "#fff", p: 2 }}>
+      
+      {/* 🟢 ส่วนที่ 1: Header (COOP SCAN) */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, my: 1, px: 1 }}>
         <Box
           sx={{
-            width: 42,
-            height: 42,
-            borderRadius: 2,
-            bgcolor: BRAND_ACTIVE,
+            width: 44,
+            height: 44,
+            borderRadius: "12px",
+            border: `1.5px solid ${BRAND_ACTIVE}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#fff",
-            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+            bgcolor: "rgba(16, 185, 129, 0.08)",
           }}
         >
-          <CoopScanIcon sx={{ fontSize: 28 }} />
+          <ScanLogoIcon sx={{ color: BRAND_ACTIVE, fontSize: 26 }} />
         </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: BRAND_ACTIVE, lineHeight: 1.1, letterSpacing: 0.5 }}>
-            COOP
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
-            SCAN
-          </Typography>
-        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 900, fontSize: "1.2rem", letterSpacing: 0.5 }}>
+          <span style={{ color: BRAND_ACTIVE }}>COOP </span>
+          <span style={{ color: "#fff" }}>SCAN</span>
+        </Typography>
       </Box>
 
-      <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)", mx: 2, mb: 2 }} />
-
-      {/* เมนูหลัก */}
-      <List component="nav" sx={{ px: 1, flexGrow: 1 }}>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => setScanMenuOpen(!scanMenuOpen)}
+      {/* 🟢 ส่วนที่ 2: Card Profile ของ Admin (ตรงตามรูปภาพฝั่งซ้าย) */}
+      {isAdmin ? (
+        <Box
+          sx={{
+            mt: 2,
+            mb: 2,
+            p: 2.5,
+            bgcolor: "rgba(255, 255, 255, 0.03)",
+            borderRadius: "16px",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {/* Avatar พร้อมวงกลมไฟเขียวนีออนสด */}
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            variant="dot"
             sx={{
-              borderRadius: 2,
-              mb: 0.5,
-              color: "#fff",
+              "& .MuiBadge-badge": {
+                backgroundColor: BRAND_ACTIVE,
+                color: BRAND_ACTIVE,
+                boxShadow: `0 0 0 2px ${BRAND_BG}`,
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                right: 6,
+                bottom: 6
+              },
+            }}
+          >
+            <Avatar
+              src={user?.profileImage || ""}
+              alt={user?.fullName || "Admin"}
+              sx={{
+                width: 72,
+                height: 72,
+                bgcolor: "transparent",
+                border: `2px solid ${BRAND_ACTIVE}`,
+                fontSize: "1.8rem",
+                fontWeight: 800,
+                color: "#fff",
+                boxShadow: "0 0 15px rgba(16, 185, 129, 0.3)",
+              }}
+            >
+              {user?.fullName ? user.fullName.charAt(0).toUpperCase() : "A"}
+            </Avatar>
+          </Badge>
+
+          {/* ชื่อ Admin */}
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem", color: "#fff" }}>
+            {user?.fullName || "adminPond"}
+          </Typography>
+
+          {/* Badge สถานะ Admin */}
+          <Chip
+            label="Admin"
+            size="small"
+            sx={{
+              mt: 0.8,
+              bgcolor: "rgba(16, 185, 129, 0.15)",
+              color: BRAND_ACTIVE,
+              border: `1px solid rgba(16, 185, 129, 0.4)`,
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              height: 24,
+              px: 1,
+              borderRadius: "12px",
+            }}
+          />
+        </Box>
+      ) : null}
+
+      <Divider sx={{ bgcolor: "rgba(255,255,255,0.08)", my: 1 }} />
+
+      {/* 🟢 ส่วนที่ 3: เมนูหลัก */}
+      <List component="nav" sx={{ flexGrow: 1, px: 0, mt: 1 }}>
+        {isAdmin ? (
+          /* === เมนูสำหรับ ADMIN === */
+          <ListItemButton
+            selected={location.pathname === "/admin/document-review"}
+            onClick={() => {
+              navigate("/admin/document-review");
+              if (isMobile) closeMobile();
+            }}
+            sx={{
+              borderRadius: "10px",
+              mb: 1,
+              py: 1.2,
+              bgcolor: location.pathname === "/admin/document-review" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+              color: location.pathname === "/admin/document-review" ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
               "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
             }}
           >
-            <ListItemIcon sx={{ color: "#fff", minWidth: 36 }}>
-              <GridViewIcon />
+            <ListItemIcon sx={{ color: "inherit", minWidth: 40 }}>
+              <DescriptionIcon />
             </ListItemIcon>
-            <ListItemText primary="ระบบสแกนเอกสาร" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem" }} />
-            {scanMenuOpen ? <ExpandLess /> : <ExpandMore />}
+            <ListItemText
+              primary="Document Co-op"
+              primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+            />
           </ListItemButton>
-        </ListItem>
-
-        <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding sx={{ pl: 2 }}>
-            <ListItemButton
-              selected={location.pathname === "/student/scan"}
-              onClick={() => {
-                navigate("/student/scan");
-                if (isMobile) closeMobile();
-              }}
-              sx={{
-                borderRadius: 1.5,
-                mb: 0.5,
-                bgcolor: location.pathname === "/student/scan" ? ACTIVE_SUB_BG : "transparent",
-                borderLeft: location.pathname === "/student/scan" ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                "&:hover": { bgcolor: ACTIVE_SUB_BG },
-              }}
-            >
-              <ListItemText
-                primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
-                primaryTypographyProps={{
-                  fontSize: "0.82rem",
-                  color: location.pathname === "/student/scan" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+        ) : (
+          /* === เมนูสำหรับ STUDENT === */
+          <>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => setScanMenuOpen(!scanMenuOpen)}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  color: "#fff",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
                 }}
-              />
-            </ListItemButton>
+              >
+                <ListItemIcon sx={{ color: "#fff", minWidth: 36 }}>
+                  <GridViewIcon />
+                </ListItemIcon>
+                <ListItemText primary="ระบบสแกนเอกสาร" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem" }} />
+                {scanMenuOpen ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+            </ListItem>
 
-            <ListItemButton
-              onClick={() => {
-                navigate("/student/scan-upload");
-                if (isMobile) closeMobile();
-              }}
-              sx={{
-                borderRadius: 1.5,
-                mb: 0.5,
-                "&:hover": { bgcolor: ACTIVE_SUB_BG },
-              }}
-            >
-              <ListItemText
-                primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
-                primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
-              />
-            </ListItemButton>
+            <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding sx={{ pl: 2 }}>
+                <ListItemButton
+                  selected={location.pathname === "/student/scan"}
+                  onClick={() => {
+                    navigate("/student/scan");
+                    if (isMobile) closeMobile();
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    mb: 0.5,
+                    bgcolor: location.pathname === "/student/scan" ? ACTIVE_SUB_BG : "transparent",
+                    borderLeft: location.pathname === "/student/scan" ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                  }}
+                >
+                  <ListItemText
+                    primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
+                    primaryTypographyProps={{
+                      fontSize: "0.82rem",
+                      color: location.pathname === "/student/scan" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                    }}
+                  />
+                </ListItemButton>
 
-            <ListItemButton
-              sx={{
-                borderRadius: 1.5,
-                mb: 0.5,
-                "&:hover": { bgcolor: ACTIVE_SUB_BG },
-              }}
-            >
-              <ListItemText
-                primary="ขั้นตอนที่ 3 หนังสือส่งตัวและแพลตฟอร์มการประเมิน"
-                primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
-              />
-            </ListItemButton>
-          </List>
-        </Collapse>
+                <ListItemButton
+                  selected={location.pathname === "/student/step2-upload"}
+                  onClick={() => {
+                    navigate("/student/step2-upload");
+                    if (isMobile) closeMobile();
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    mb: 0.5,
+                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                  }}
+                >
+                  <ListItemText
+                    primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
+                    primaryTypographyProps={{
+                      fontSize: "0.82rem",
+                      color: location.pathname === "/student/step2-upload" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                    }}
+                  />
+                </ListItemButton>
+
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/student/step3");
+                    if (isMobile) closeMobile();
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    mb: 0.5,
+                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                  }}
+                >
+                  <ListItemText
+                    primary="ขั้นตอนที่ 3 หนังสือส่งตัวและแพลตฟอร์มการประเมิน"
+                    primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
+                  />
+                </ListItemButton>
+              </List>
+            </Collapse>
+          </>
+        )}
       </List>
 
-      <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)", mx: 2 }} />
+      <Divider sx={{ bgcolor: "rgba(255,255,255,0.08)", my: 1 }} />
 
-      {/* ด้านล่างสุด: Profile & Logout */}
-      <Box sx={{ p: 2 }}>
+      {/* 🟢 ส่วนที่ 4: ด้านล่างสุด (My Account & Logout) */}
+      <Box sx={{ pt: 1 }}>
         <ListItemButton
           onClick={() => {
             navigate("/profile");
             if (isMobile) closeMobile();
           }}
           sx={{
-            borderRadius: 2,
-            mb: 1,
-            color: "#fff",
-            "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+            borderRadius: "10px",
+            mb: 0.5,
+            color: "rgba(255, 255, 255, 0.85)",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.05)", color: "#fff" },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 36, color: "#fff" }}>
-            <Avatar sx={{ width: 24, height: 24, bgcolor: "rgba(255,255,255,0.2)" }}>
-              <ProfileIcon sx={{ fontSize: 18 }} />
-            </Avatar>
+          <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <PersonOutlineIcon />
           </ListItemIcon>
-          <ListItemText primary={user?.fullName || "My account"} primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 500 }} />
+          <ListItemText
+            primary="My account"
+            primaryTypographyProps={{ fontSize: "0.95rem", fontWeight: 600 }}
+          />
         </ListItemButton>
 
         <ListItemButton
           onClick={handleLogout}
           sx={{
-            borderRadius: 2,
-            color: "#ef4444",
-            "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+            borderRadius: "10px",
+            color: "#f87171",
+            "&:hover": { bgcolor: "rgba(248, 113, 113, 0.1)" },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 36, color: "#ef4444" }}>
-            <LogoutIcon fontSize="small" />
+          <ListItemIcon sx={{ minWidth: 40, color: "#f87171" }}>
+            <LogoutIcon />
           </ListItemIcon>
-          <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 500 }} />
+          <ListItemText
+            primary="LOGOUT"
+            primaryTypographyProps={{ fontSize: "0.95rem", fontWeight: 800, letterSpacing: 0.5 }}
+          />
         </ListItemButton>
       </Box>
     </Box>
@@ -212,12 +331,17 @@ function Sidebar() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" sx={{ color: BRAND_ACTIVE, fontWeight: 700 }}>
-              COOP SCAN
+              {isAdmin ? "ADMIN SYSTEM" : "COOP SCAN"}
             </Typography>
           </Toolbar>
         </AppBar>
         <Toolbar />
-        <Drawer anchor="left" open={mobileOpen} onClose={closeMobile} sx={{ "& .MuiDrawer-paper": { width: drawerWidth } }}>
+        <Drawer
+          anchor="left"
+          open={mobileOpen}
+          onClose={closeMobile}
+          sx={{ "& .MuiDrawer-paper": { width: drawerWidth, bgcolor: BRAND_BG, borderRight: "none" } }}
+        >
           {renderSidebarContent}
         </Drawer>
       </>
@@ -234,6 +358,7 @@ function Sidebar() {
             width: drawerWidth,
             boxSizing: "border-box",
             borderRight: "none",
+            bgcolor: BRAND_BG,
           },
         }}
       >
