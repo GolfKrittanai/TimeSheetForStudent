@@ -17,12 +17,14 @@ import TimesheetHistoryPage from "./pages/TimesheetHistoryPage";
 // 💡 เพิ่ม import สำหรับหน้าดู Timesheet ของนักศึกษาโดย Admin/Teacher
 import StudentTimesheetView from "./pages/StudentTimesheetView"; 
 // เพิ่ม หน้าสแกนเอกสาร
-import DocumentScanDashboard from "./pages/DocumentScanDashboard";
-import DocumentScanUpload from "./pages/DocumentScanUpload";
-import DocumentScanHistory from "./pages/DocumentScanHistory";
+import DocumentScanDashboard from "./pages/Step1_student/DocumentScanDashboard";
+import DocumentScanUpload from "./pages/Step1_student/DocumentScanUpload";
+import DocumentScanHistory from "./pages/Step1_student/DocumentScanHistory";
 import DocumentReviewAdmin from "./pages/Documentreviewadmin";
 // ➕ เพิ่ม Import หน้า DocumentSummary
-import DocumentSummary from "./pages/DocumentSummary";
+import DocumentSummary from "./pages/Step1_student/DocumentSummary";
+
+import DocumentScanDashboard2 from "./pages/Step2_student/DocumentScanDashboard2";
 
 
 function App() {
@@ -101,6 +103,7 @@ function App() {
             {/* ➕ เพิ่ม Route สำหรับหน้า DocumentSummary */}
             <Route path="/student/scan-summary" element={<DocumentSummary />} />
             <Route path="/student/scan-history" element={<DocumentScanHistory />} />
+            <Route path="/student/step2-upload" element={<DocumentScanDashboard2 />} />
             <Route path="/student" element={<StudentDashboard />} />
             <Route
               path="/student/timesheet-history"

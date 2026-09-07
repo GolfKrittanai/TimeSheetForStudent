@@ -16,35 +16,35 @@ const documentRoutes = require('./routes/documentRoutes');
 const app = express();
 
 /* ------------------------------- CORS SETUP ------------------------------- */
-// อ่านโดเมนที่อนุญาตจาก env (คั่นด้วย comma)
 const allowList = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-// ฟังก์ชันตรวจ origin
 const corsOptions = {
   origin: (origin, callback) => {
-    // อนุญาต no-origin เช่น curl/postman หรือ health checks
+    // อนุญาต no-origin เช่น <img src="...">, curl, postman
     if (!origin) return callback(null, true);
-    return callback(null, allowList.includes(origin));
+    
+    // หากอนุญาตทั้งหมดใน dev หรือระบุ origin ตรงใน allowList
+    if (allowList.length === 0 || allowList.includes(origin) || allowList.includes('*')) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true,                           // ถ้าต้องการส่งคุกกี้/Authorization header
-  // methods: ['GET','HEAD','PUT','PATCH','POST','DELETE'],
-  // allowedHeaders: ['Content-Type','Authorization'],
-  // exposedHeaders: [], // ถ้าต้องการ expose header ให้ FE
+  credentials: true,
 };
 
-// ต้องวาง cors ก่อน routes เสมอ
+// วาง CORS สำหรับ API General
 app.use(cors(corsOptions));
 
 /* ------------------------------ BODY PARSERS ------------------------------ */
 app.use(express.json());
-// ถ้าใช้ express.json() แล้ว ไม่จำเป็นต้องใช้ body-parser ซ้ำ
-// const bodyParser = require('body-parser');
-// app.use(bodyParser.json());
-// ✅ 2. เพิ่ม Static Path ให้หน้าบ้านเรียกดูรูปภาพที่อัปโหลดได้
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+/* ---------------------------- STATIC FILES ------------------------------- */
+// ✅ เปิดให้เข้าถึงโฟลเดอร์ uploads ได้โดยไม่ติด CORS
+app.use('/uploads', cors(), express.static(path.join(__dirname, './uploads')));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
