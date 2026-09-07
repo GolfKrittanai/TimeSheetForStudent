@@ -5,6 +5,49 @@ const path = require('path');
 const fs = require('fs');
 const pdfPoppler = require('pdf-poppler');
 const sharp = require('sharp'); // นำเข้า sharp สำหรับทำ Image Pre-processing
+const { createClient } = require('@supabase/supabase-js');
+
+// ตั้งค่า Supabase Client จาก .env
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+const bucketName = process.env.SUPABASE_BUCKET || 'profile';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// =============================================================
+// ฟังก์ชัน Helper สำหรับ Upload ไฟล์เข้า Supabase Storage
+// =============================================================
+async function uploadToSupabase(filePath, originalFilename, mimeType) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const ext = path.extname(originalFilename);
+    const uniqueFileName = `documents/${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(uniqueFileName, fileBuffer, {
+        contentType: mimeType || 'image/png',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Supabase Upload Error:', error);
+      throw error;
+    }
+
+    // ดึง Public URL ของไฟล์ที่อัปโหลด
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(uniqueFileName);
+
+    return {
+      publicUrl: publicUrlData.publicUrl,
+      storagePath: uniqueFileName
+    };
+  } catch (err) {
+    console.error('Error in uploadToSupabase:', err);
+    throw err;
+  }
+}
 
 // =============================================================
 // ฟังก์ชัน Preprocessing รูปภาพ
@@ -48,9 +91,7 @@ function parseExtractedText(text, docCategory) {
   const categoryLower = docCategory ? docCategory.toLowerCase() : '';
   const extracted = {};
 
-  // -------------------------------------------------------------
   // 1. BA Co-op 01 (เอกสารติดต่อ/ขออนุญาต)
-  // -------------------------------------------------------------
   if (categoryLower.includes("01")) {
     const nameMatch = cleanText.match(/(?:เรื่อง|เรียน|ของ|นักศึกษา|ชื่อ)\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i) ||
                       cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i);
@@ -60,67 +101,58 @@ function parseExtractedText(text, docCategory) {
     if (nameMatch) extracted.fullName = cleanValue(nameMatch[1]);
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-
-  // -------------------------------------------------------------
   // 2. BA Co-op 02-1 (ยินยอมจากผู้ปกครอง)
-  // -------------------------------------------------------------
   else if (categoryLower.includes("02-1")) {
-  const parentMatch = cleanText.match(/ข้าพเจ้า\s+([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:พักอยู่|บ้านเลขที่|เกี่ยวข้องเป็น|ผู้ปกครอง|ของ|$))/i) ||
-                      cleanText.match(/ผู้ปกครอง\s*(?:ของ)?\s*([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา|สังกัด|ระดับ|$))/i);
-  
-  const studentMatch = cleanText.match(/(?:ผู้ปกครอง\s*ของ|นักศึกษา|นาย|นาง|นางสาว)\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|เข้าฝึก|สังกัด|เรียน|คณบดี|สาขา|$))/i) ||
-                       cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา))/i);
-  
-  const companyMatch = cleanText.match(/(?:ณ|สถานประกอบการ|บริษัท)\s+([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน|เฮ้าส์|เฮาส์)(?:\s+จำกัด|\s+จํากัด)?)/i) ||
-                       cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i);  const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
-
-  if (parentMatch) extracted.parentName = cleanValue(parentMatch[1]);
-  if (studentMatch) extracted.fullName = cleanValue(studentMatch[1]);
-  
-  if (companyMatch) {
-    let rawComp = cleanValue(companyMatch[1] || companyMatch[0]);
-    // ปรับแก้ไข: ตรวจสอบและซ่อมคำว่าบริษัทให้เหลือเพียง 1 คำ
-    rawComp = rawComp.replace(/^(บริษัท\s*)+/i, 'บริษัท ').trim();
+    const parentMatch = cleanText.match(/ข้าพเจ้า\s+([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:พักอยู่|บ้านเลขที่|เกี่ยวข้องเป็น|ผู้ปกครอง|ของ|$))/i) ||
+                        cleanText.match(/ผู้ปกครอง\s*(?:ของ)?\s*([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา|สังกัด|ระดับ|$))/i);
     
-    if (!/จำกัด|จํากัด/.test(rawComp) && /จำกัด|จํากัด/.test(cleanText)) {
-      rawComp += " จำกัด";
+    const studentMatch = cleanText.match(/(?:ผู้ปกครอง\s*ของ|นักศึกษา|นาย|นาง|นางสาว)\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|เข้าฝึก|สังกัด|เรียน|คณบดี|สาขา|$))/i) ||
+                         cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา))/i);
+    
+    const companyMatch = cleanText.match(/(?:ณ|สถานประกอบการ|บริษัท)\s+([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน|เฮ้าส์|เฮาส์)(?:\s+จำกัด|\s+จํากัด)?)/i) ||
+                         cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i);  
+    const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
+
+    if (parentMatch) extracted.parentName = cleanValue(parentMatch[1]);
+    if (studentMatch) extracted.fullName = cleanValue(studentMatch[1]);
+    
+    if (companyMatch) {
+      let rawComp = cleanValue(companyMatch[1] || companyMatch[0]);
+      rawComp = rawComp.replace(/^(บริษัท\s*)+/i, 'บริษัท ').trim();
+      
+      if (!/จำกัด|จํากัด/.test(rawComp) && /จำกัด|จํากัด/.test(cleanText)) {
+        rawComp += " จำกัด";
+      }
+      extracted.companyName = rawComp;
     }
-    extracted.companyName = rawComp;
-  }
 
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-
-  // -------------------------------------------------------------
   // 3. BA Co-op 02-2 (ใบสมัครงานสหกิจ)
-  // -------------------------------------------------------------
   else if (categoryLower.includes("02-2")) {
-  const nameMatch = cleanText.match(/(?:ชื่อ\s*-\s*สกุล|ชื่อ\s*\/\s*Name|ชื่อ)\s*[:\.]*\s*((?:นาย|นาง|นางสาว)?\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|สาขาวิชา|GPA|1\.|2\.|$))/i);
-  const studentIdMatch = cleanText.match(/(?:รหัส|รหัสนักศึกษา|ID)\s*[:\.]*\s*([0-9]{10})/i) || cleanText.match(/\b(6[0-9]{9})\b/);
-  const phoneMatch = cleanText.match(/(?:โทรศัพท์|โทร|มือถือ|ติดต่อ)\s*[:\.]*\s*([0-9\s-]{9,12})/i);
-  
-  const companyMatch = cleanText.match(/(?:สถานประกอบการ|ชื่อสถานประกอบการ)\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|เฮ้าส์|เฮาส์)?)(?=\s*(?:BN|B|ระยะเวลา|ตำแหน่ง|ประวัติ|3\.|$))/i) ||
-                       cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?\s*(?:จำกัด|จํากัด|เฮ้าส์|เฮาส์)?)/i);
-  
-  // ปรับแก้ไข: เพิ่มข้อความหยุดดักจับเมื่อเจอ "สถานประกอบการ", "บริษัท", "ระยะเวลา", "ประวัติ"
-  const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:สถานประกอบการ|บริษัท|ระยะเวลา|ท[ีื]?[่]?อย[ู]?[่]?สถาน|แผนท[ีื]?[่]|ประวัติ|$))/i);  const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
+    const nameMatch = cleanText.match(/(?:ชื่อ\s*-\s*สกุล|ชื่อ\s*\/\s*Name|ชื่อ)\s*[:\.]*\s*((?:นาย|นาง|นางสาว)?\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|สาขาวิชา|GPA|1\.|2\.|$))/i);
+    const studentIdMatch = cleanText.match(/(?:รหัส|รหัสนักศึกษา|ID)\s*[:\.]*\s*([0-9]{10})/i) || cleanText.match(/\b(6[0-9]{9})\b/);
+    const phoneMatch = cleanText.match(/(?:โทรศัพท์|โทร|มือถือ|ติดต่อ)\s*[:\.]*\s*([0-9\s-]{9,12})/i);
+    
+    const companyMatch = cleanText.match(/(?:สถานประกอบการ|ชื่อสถานประกอบการ)\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|เฮ้าส์|เฮาส์)?)(?=\s*(?:BN|B|ระยะเวลา|ตำแหน่ง|ประวัติ|3\.|$))/i) ||
+                         cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?\s*(?:จำกัด|จํากัด|เฮ้าส์|เฮาส์)?)/i);
+    
+    const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:สถานประกอบการ|บริษัท|ระยะเวลา|ท[ีื]?[่]?อย[ู]?[่]?สถาน|แผนท[ีื]?[่]|ประวัติ|$))/i);  
+    const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
 
-  if (nameMatch) extracted.fullName = cleanValue(nameMatch[1]);
-  if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
-  if (phoneMatch) extracted.phone = cleanValue(phoneMatch[1]);
-  
-  if (companyMatch) {
-    let comp = cleanValue(companyMatch[1] || companyMatch[0]);
-    extracted.companyName = comp.replace(/\s+(BN|B)$/i, '').trim();
-  }
-  
+    if (nameMatch) extracted.fullName = cleanValue(nameMatch[1]);
+    if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
+    if (phoneMatch) extracted.phone = cleanValue(phoneMatch[1]);
+    
+    if (companyMatch) {
+      let comp = cleanValue(companyMatch[1] || companyMatch[0]);
+      extracted.companyName = comp.replace(/\s+(BN|B)$/i, '').trim();
+    }
+    
     if (positionMatch) extracted.position = cleanValue(positionMatch[1]);
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-
-  // -------------------------------------------------------------
   // 4. BA Co-op 04 (รายละเอียดที่พัก)
-  // -------------------------------------------------------------
   else if (categoryLower.includes("04")) {
     let companyMatch = cleanText.match(/(?:ชื่อสถานประกอบการ|สถานประกอบการ)\s*[:._\s]*((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s*)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i)
       || cleanText.match(/((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s+)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i);
@@ -158,7 +190,6 @@ function parseExtractedText(text, docCategory) {
         .replace(/(^|\s)(?:อ|อำเภอ|เขต)(?=\s+[ก-๙])/g, '$1อ.')
         .replace(/(^|\s)(?:จ|จังหวัด)(?=\s+[ก-๙])/g, '$1จ.')
         .replace(/\s+/g, ' ')
-        // ปรับแก้ไข: ลบสัญลักษณ์พิเศษ ขยะ หรือ .@ ที่อยู่ท้ายสตริงออก
         .replace(/[\s\.\@\@\_\-]+$/, '')
         .trim();
 
@@ -191,10 +222,7 @@ function parseExtractedText(text, docCategory) {
       }
     }
   }
-
-  // -------------------------------------------------------------
   // 5. BA Co-op 05 (ผลการศึกษา / Transcript)
-  // -------------------------------------------------------------
   else if (categoryLower.includes("05") || categoryLower.includes("ผลการศึกษา") || categoryLower.includes("transcript")) {
     const studentNameMatch = cleanText.match(/ชื่อ\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i) ||
                              cleanText.match(/ชื่อ\s*-\s*นามสกุล\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i);
@@ -231,12 +259,14 @@ exports.scanAndSaveDocument = async (req, res) => {
       return res.status(400).json({ message: 'กรุณาอัปโหลดไฟล์' });
     }
 
-    let relativePath = `uploads/${req.file.filename}`.replace(/\\/g, '/');
     const ext = path.extname(req.file.originalname).toLowerCase();
     const absoluteFilePath = path.resolve(req.file.path);
 
     let text = '';
     let extractedData = {};
+    let fileToUploadPath = absoluteFilePath; // ไฟล์ที่จะส่งขึ้น Supabase
+    let uploadMimeType = req.file.mimetype;
+    let originalName = req.file.originalname;
 
     if (ext === '.pdf') {
       try {
@@ -260,8 +290,10 @@ exports.scanAndSaveDocument = async (req, res) => {
         const convertedImagePath = path.join(uploadFolder, generatedFileName);
 
         if (fs.existsSync(convertedImagePath)) {
-          relativePath = `uploads/${generatedFileName}`.replace(/\\/g, '/');
-          
+          fileToUploadPath = convertedImagePath; // เปลี่ยนไฟล์ที่จะอัปโหลดเป็นภาพที่แปลงจาก PDF
+          uploadMimeType = 'image/png';
+          originalName = `${path.basename(req.file.originalname, ext)}.png`;
+
           const processedImagePath = await preprocessImage(convertedImagePath);
           const { data } = await Tesseract.recognize(processedImagePath, 'tha+eng');
           text = data.text ? data.text.trim() : '';
@@ -304,12 +336,23 @@ exports.scanAndSaveDocument = async (req, res) => {
       text = 'รูปแบบไฟล์ไม่รองรับการสแกน';
     }
 
-    // บันทึก extractedData (JSON) ลงใน Prisma DB
+    // --- อัปโหลดไฟล์ขึ้น Supabase Storage ---
+    const { publicUrl } = await uploadToSupabase(fileToUploadPath, originalName, uploadMimeType);
+
+    // ลบไฟล์ชั่วคราวบน Server ทิ้ง
+    if (fs.existsSync(absoluteFilePath)) {
+      fs.unlinkSync(absoluteFilePath);
+    }
+    if (fileToUploadPath !== absoluteFilePath && fs.existsSync(fileToUploadPath)) {
+      fs.unlinkSync(fileToUploadPath);
+    }
+
+    // บันทึก Public URL จาก Supabase ลงใน Prisma DB
     const newDoc = await prisma.document_scan.create({
       data: {
         userId: userId,
         docCategory: docCategory || 'BA Co-op 01',
-        fileUrl: relativePath,
+        fileUrl: publicUrl, // เก็บเป็น HTTPS URL ของ Supabase แบบเต็ม
         extractedText: text,
         extractedData: extractedData,
         status: 'pending',
@@ -359,7 +402,20 @@ exports.cancelDocument = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
     }
 
-    if (doc.fileUrl) {
+    // ลบไฟล์จาก Supabase Bucket หากเป็น URL ของ Supabase
+    if (doc.fileUrl && doc.fileUrl.includes(supabaseUrl)) {
+      try {
+        const urlParts = doc.fileUrl.split(`${bucketName}/`);
+        if (urlParts.length > 1) {
+          const filePathInBucket = urlParts[1];
+          await supabase.storage.from(bucketName).remove([filePathInBucket]);
+        }
+      } catch (delError) {
+        console.error('Failed to delete file from Supabase:', delError);
+      }
+    } 
+    // Fallback สำหรับลบไฟล์ Local แบบเดิม (กรณีเป็นข้อมูลเก่า)
+    else if (doc.fileUrl && !doc.fileUrl.startsWith('http')) {
       const filePath = path.join(__dirname, '..', doc.fileUrl);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
