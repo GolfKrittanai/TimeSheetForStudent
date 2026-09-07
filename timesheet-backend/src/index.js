@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 // Routes
 const profileRoutes = require('./routes/profileRoutes');
@@ -43,8 +44,19 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
-// ✅ เปิดให้เข้าถึงโฟลเดอร์ uploads ได้โดยไม่ติด CORS
-app.use('/uploads', cors(), express.static(path.join(__dirname, './uploads')));
+// ✅ เปิดให้เข้าถึงโฟลเดอร์ uploads ที่อยู่ Root ของ Backend ได้ผ่าน HTTP/HTTPS
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ✅ เพิ่ม Cross-Origin-Resource-Policy ให้เบราว์เซอร์ยอมรับการโหลดรูปข้าม Domain
+app.use('/uploads', (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(uploadDir));
+
+// app.use('/uploads', cors(), express.static(path.join(__dirname, '../uploads')));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
