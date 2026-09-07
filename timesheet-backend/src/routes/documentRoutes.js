@@ -5,7 +5,8 @@ const upload = require('../middleware/uploadMiddleware');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 // Route อัปโหลดและสแกนเอกสาร (POST)
-router.post('/upload-scan', authenticateToken, upload.single('file'), documentController.scanAndSaveDocument);
+// สลับตำแหน่ง upload.single('file') ขึ้นก่อน
+router.post('/upload-scan', upload.single('file'), authenticateToken, documentController.scanAndSaveDocument);
 
 // Route ดึงประวัติการสแกนเอกสาร (GET)
 router.get('/history/:userId', authenticateToken, documentController.getUserDocumentHistory);

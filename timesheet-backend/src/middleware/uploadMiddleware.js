@@ -2,8 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// ตรวจสอบและสร้างโฟลเดอร์ uploads หากยังไม่มี
-const uploadDir = path.resolve(__dirname, '../uploads');
+// ✅ ตรวจสอบและสร้างโฟลเดอร์ uploads นอก src (Root Directory)
+const uploadDir = path.resolve(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -32,10 +32,9 @@ const fileFilter = (req, file, cb) => {
     'application/acrobat',
     'applications/vnd.pdf',
     'text/pdf',
-    'application/octet-stream' // สำหรับบางเครื่องที่ส่งค่านี้เมื่อเป็นไฟล์ PDF/รูปภาพ
+    'application/octet-stream'
   ];
 
-  // ยินยอมถ้า MIME Type ตรง หรือ นามสกุลไฟล์ตรง
   if (allowedMimeTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
     cb(null, true);
   } else {

@@ -52,7 +52,7 @@ model document_scan {
   id            Int        @id @default(autoincrement())
   userId        Int
   docCategory   String     @db.VarChar(100) // ประเภทเอกสาร เช่น ใบสมัครสหกิจนักศึกษา, ใบรับรองแพทย์
-  fileUrl       String     @db.VarChar(255) // Path หรือ URL ของไฟล์ภาพที่อัปโหลด
+  fileUrl       String     @db.Text          // Path หรือ URL ของไฟล์ภาพที่อัปโหลด
   extractedText String?    @db.Text         // ข้อความที่สแกนอ่านได้จากภาพ (OCR)
   extractedData Json?                       // 👈 เพิ่มฟิลด์นี้สำหรับเก็บข้อมูล JSON ที่ parse ได้
   status        doc_status @default(pending) // สถานะการตรวจสอบ

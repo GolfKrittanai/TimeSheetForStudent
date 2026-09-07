@@ -4,47 +4,36 @@ const Tesseract = require('tesseract.js');
 const path = require('path');
 const fs = require('fs');
 const pdfPoppler = require('pdf-poppler');
-const sharp = require('sharp'); // นำเข้า sharp สำหรับทำ Image Pre-processing
-const { createClient } = require('@supabase/supabase-js');
-
-// ตั้งค่า Supabase Client จาก .env
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-const bucketName = process.env.SUPABASE_BUCKET || 'profile';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const sharp = require('sharp');
 
 // =============================================================
-// ฟังก์ชัน Helper สำหรับ Upload ไฟล์เข้า Supabase Storage
+// ฟังก์ชัน Helper สำหรับบันทึกไฟล์ลง Local Storage (เครื่อง Server)
 // =============================================================
-async function uploadToSupabase(filePath, originalFilename, mimeType) {
+async function uploadToLocalStorage(filePath, originalFilename) {
   try {
-    const fileBuffer = fs.readFileSync(filePath);
-    const ext = path.extname(originalFilename);
-    const uniqueFileName = `documents/${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
-
-    const { data, error } = await supabase.storage
-      .from(bucketName)
-      .upload(uniqueFileName, fileBuffer, {
-        contentType: mimeType || 'image/png',
-        upsert: true,
-      });
-
-    if (error) {
-      console.error('Supabase Upload Error:', error);
-      throw error;
+    // ✅ 1. ชี้ไปที่โฟลเดอร์ uploads ระดับ Root Directory (นอก src)
+    const uploadFolder = path.resolve(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadFolder)) {
+      fs.mkdirSync(uploadFolder, { recursive: true });
     }
 
-    // ดึง Public URL ของไฟล์ที่อัปโหลด
-    const { data: publicUrlData } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(uniqueFileName);
+    // 2. ตั้งชื่อไฟล์ใหม่เพื่อป้องกันชื่อซ้ำ
+    const ext = path.extname(originalFilename);
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+    const destinationPath = path.join(uploadFolder, fileName);
+
+    // 3. ก๊อปปี้ไฟล์มาไว้ที่โฟลเดอร์ uploads
+    fs.copyFileSync(filePath, destinationPath);
+
+    // 4. ส่งคืน Relative Path สำหรับนำไปเก็บบันทึกลง Prisma DB
+    const relativeUrl = `/uploads/${fileName}`;
 
     return {
-      publicUrl: publicUrlData.publicUrl,
-      storagePath: uniqueFileName
+      publicUrl: relativeUrl,
+      storagePath: relativeUrl
     };
   } catch (err) {
-    console.error('Error in uploadToSupabase:', err);
+    console.error('Error in uploadToLocalStorage:', err);
     throw err;
   }
 }
@@ -57,19 +46,18 @@ async function preprocessImage(inputPath) {
     const outputPath = inputPath.replace(/\.(png|jpg|jpeg|webp|bmp)$/i, '_processed.png');
 
     await sharp(inputPath)
-      .grayscale()                  // แปลงเป็นภาพขาวดำ
-      .normalize()                  // ปรับ Contrast สมดุลแสง
-      .sharpen()                    // เพิ่มความคมชัดของตัวอักษร
+      .grayscale()
+      .normalize()
+      .sharpen()
       .toFile(outputPath);
 
     return outputPath;
   } catch (error) {
     console.error('Image Preprocessing Error (Fallback to original):', error);
-    return inputPath; // หากประมวลผลล้มเหลว ให้ใช้ไฟล์เดิมแทน
+    return inputPath;
   }
 }
 
-// ฟังก์ชันทำความสะอาดข้อความขยะที่ติดมาจาก OCR
 function cleanValue(str) {
   if (!str) return '';
   return str
@@ -91,24 +79,19 @@ function parseExtractedText(text, docCategory) {
   const categoryLower = docCategory ? docCategory.toLowerCase() : '';
   const extracted = {};
 
-  // 1. BA Co-op 01 (เอกสารติดต่อ/ขออนุญาต)
   if (categoryLower.includes("01")) {
     const nameMatch = cleanText.match(/(?:เรื่อง|เรียน|ของ|นักศึกษา|ชื่อ)\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i) ||
                       cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i);
-    
     const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
 
     if (nameMatch) extracted.fullName = cleanValue(nameMatch[1]);
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-  // 2. BA Co-op 02-1 (ยินยอมจากผู้ปกครอง)
   else if (categoryLower.includes("02-1")) {
     const parentMatch = cleanText.match(/ข้าพเจ้า\s+([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:พักอยู่|บ้านเลขที่|เกี่ยวข้องเป็น|ผู้ปกครอง|ของ|$))/i) ||
                         cleanText.match(/ผู้ปกครอง\s*(?:ของ)?\s*([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา|สังกัด|ระดับ|$))/i);
-    
     const studentMatch = cleanText.match(/(?:ผู้ปกครอง\s*ของ|นักศึกษา|นาย|นาง|นางสาว)\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|เข้าฝึก|สังกัด|เรียน|คณบดี|สาขา|$))/i) ||
                          cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา))/i);
-    
     const companyMatch = cleanText.match(/(?:ณ|สถานประกอบการ|บริษัท)\s+([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน|เฮ้าส์|เฮาส์)(?:\s+จำกัด|\s+จํากัด)?)/i) ||
                          cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i);  
     const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
@@ -119,7 +102,6 @@ function parseExtractedText(text, docCategory) {
     if (companyMatch) {
       let rawComp = cleanValue(companyMatch[1] || companyMatch[0]);
       rawComp = rawComp.replace(/^(บริษัท\s*)+/i, 'บริษัท ').trim();
-      
       if (!/จำกัด|จํากัด/.test(rawComp) && /จำกัด|จํากัด/.test(cleanText)) {
         rawComp += " จำกัด";
       }
@@ -128,31 +110,25 @@ function parseExtractedText(text, docCategory) {
 
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-  // 3. BA Co-op 02-2 (ใบสมัครงานสหกิจ)
   else if (categoryLower.includes("02-2")) {
     const nameMatch = cleanText.match(/(?:ชื่อ\s*-\s*สกุล|ชื่อ\s*\/\s*Name|ชื่อ)\s*[:\.]*\s*((?:นาย|นาง|นางสาว)?\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|สาขาวิชา|GPA|1\.|2\.|$))/i);
     const studentIdMatch = cleanText.match(/(?:รหัส|รหัสนักศึกษา|ID)\s*[:\.]*\s*([0-9]{10})/i) || cleanText.match(/\b(6[0-9]{9})\b/);
     const phoneMatch = cleanText.match(/(?:โทรศัพท์|โทร|มือถือ|ติดต่อ)\s*[:\.]*\s*([0-9\s-]{9,12})/i);
-    
     const companyMatch = cleanText.match(/(?:สถานประกอบการ|ชื่อสถานประกอบการ)\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|เฮ้าส์|เฮาส์)?)(?=\s*(?:BN|B|ระยะเวลา|ตำแหน่ง|ประวัติ|3\.|$))/i) ||
                          cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?\s*(?:จำกัด|จํากัด|เฮ้าส์|เฮาส์)?)/i);
-    
     const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:สถานประกอบการ|บริษัท|ระยะเวลา|ท[ีื]?[่]?อย[ู]?[่]?สถาน|แผนท[ีื]?[่]|ประวัติ|$))/i);  
     const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
 
     if (nameMatch) extracted.fullName = cleanValue(nameMatch[1]);
     if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
     if (phoneMatch) extracted.phone = cleanValue(phoneMatch[1]);
-    
     if (companyMatch) {
       let comp = cleanValue(companyMatch[1] || companyMatch[0]);
       extracted.companyName = comp.replace(/\s+(BN|B)$/i, '').trim();
     }
-    
     if (positionMatch) extracted.position = cleanValue(positionMatch[1]);
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
-  // 4. BA Co-op 04 (รายละเอียดที่พัก)
   else if (categoryLower.includes("04")) {
     let companyMatch = cleanText.match(/(?:ชื่อสถานประกอบการ|สถานประกอบการ)\s*[:._\s]*((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s*)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i)
       || cleanText.match(/((?:บร[ิื]?ษ[ัิ]?[ทธ]?\s+)?[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|บจ\.))/i);
@@ -163,24 +139,15 @@ function parseExtractedText(text, docCategory) {
 
     if (companyMatch) {
       let rawCompany = cleanValue(companyMatch[1] || companyMatch[0]);
-      rawCompany = rawCompany
-        .replace(/^(?:ชื่อสถานประกอบการ|สถานประกอบการ)\s*[:._\s]*/i, '')
-        .trim();
-
-      if (rawCompany) {
-        extracted.companyName = rawCompany;
-      }
+      rawCompany = rawCompany.replace(/^(?:ชื่อสถานประกอบการ|สถานประกอบการ)\s*[:._\s]*/i, '').trim();
+      if (rawCompany) extracted.companyName = rawCompany;
     }
 
     const positionMatch = cleanText.match(/(?:ต[ำํ]า?แหน่งงาน(?:ท[ีื]?[่]?สมัคร)?|ต[ำํ]า?แหน่ง)\s*[:._\s]*(.*?)(?=\s*(?:ระยะเวลา|ท[ีื]?[่]?อย[ู]?[่]?สถาน|แผนท[ีื]?[่]?|$))/i);
-    if (positionMatch) {
-      extracted.position = cleanValue(positionMatch[1]);
-    }
+    if (positionMatch) extracted.position = cleanValue(positionMatch[1]);
 
     const periodMatch = cleanText.match(/ระยะเวลา\s*[:._\s]*(.*?)(?=\s*(?:ท[ีื]?[่]?อย[ู]?[่]?สถาน|ที่อยู่|แผนท[ีื]?[่]?|$))/i);
-    if (periodMatch) {
-      extracted.period = cleanValue(periodMatch[1]);
-    }
+    if (periodMatch) extracted.period = cleanValue(periodMatch[1]);
 
     const addressMatch = cleanText.match(/(?:ท[ีื]?[่]?อย[ู]?[่]?สถานประกอบการ|ท[ีื]?[่]?อย[ู]?[่]?สถานท[ีื]?[่]?ต[ั]?[้]?ง|ท[ีื]?[่]?อย[ู]?[่]?)\s*[:._\s]*(.*?)(?=\s*(?:แผนท[ีื]?[่]?|ลงช[ื]?[่]?อ|น[ั]กศ[ึ]กษา|ว[ั]นท[ีื]?[่]?|\*|$))/i);
     if (addressMatch) {
@@ -192,7 +159,6 @@ function parseExtractedText(text, docCategory) {
         .replace(/\s+/g, ' ')
         .replace(/[\s\.\@\@\_\-]+$/, '')
         .trim();
-
       extracted.address = formattedAddress;
     }
 
@@ -202,7 +168,6 @@ function parseExtractedText(text, docCategory) {
 
     if (startDateMatch) {
       let day, month, year;
-
       if (startDateMatch[1]) { 
         year = parseInt(startDateMatch[1], 10);
         month = parseInt(startDateMatch[2], 10);
@@ -217,16 +182,13 @@ function parseExtractedText(text, docCategory) {
         const buddhistYear = year < 2500 ? year + 543 : year;
         const formattedDay = String(day).padStart(2, '0');
         const formattedMonth = String(month).padStart(2, '0');
-
         extracted.startDate = `${formattedDay}/${formattedMonth}/${buddhistYear}`;
       }
     }
   }
-  // 5. BA Co-op 05 (ผลการศึกษา / Transcript)
   else if (categoryLower.includes("05") || categoryLower.includes("ผลการศึกษา") || categoryLower.includes("transcript")) {
     const studentNameMatch = cleanText.match(/ชื่อ\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i) ||
                              cleanText.match(/ชื่อ\s*-\s*นามสกุล\s*[:\.]*\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i);
-    
     const studentIdMatch = cleanText.match(/(?:รหัส\s*[:\.]*|รหัสนักศึกษา\s*[:\.]*)\s*([0-9]{10})/i) || cleanText.match(/\b(6[0-9]{9})\b/);
     const gpaMatch = cleanText.match(/(?:GPA|GPAX|เกรดเฉลี่ยสะสม|เกรดเฉลี่ย)\s*[:\.]*\s*([0-4]\.[0-9]{2})/i) ||
                       cleanText.match(/\b([0-4]\.[0-9]{2})\b/);
@@ -264,13 +226,13 @@ exports.scanAndSaveDocument = async (req, res) => {
 
     let text = '';
     let extractedData = {};
-    let fileToUploadPath = absoluteFilePath; // ไฟล์ที่จะส่งขึ้น Supabase
-    let uploadMimeType = req.file.mimetype;
+    let fileToUploadPath = absoluteFilePath;
     let originalName = req.file.originalname;
 
     if (ext === '.pdf') {
       try {
-        const uploadFolder = path.join(__dirname, '../uploads');
+        // ✅ ชี้โฟลเดอร์สำหรับแปลงไฟล์ PDF ไปยัง uploads นอก src
+        const uploadFolder = path.resolve(__dirname, '../../uploads');
         if (!fs.existsSync(uploadFolder)) {
           fs.mkdirSync(uploadFolder, { recursive: true });
         }
@@ -290,8 +252,7 @@ exports.scanAndSaveDocument = async (req, res) => {
         const convertedImagePath = path.join(uploadFolder, generatedFileName);
 
         if (fs.existsSync(convertedImagePath)) {
-          fileToUploadPath = convertedImagePath; // เปลี่ยนไฟล์ที่จะอัปโหลดเป็นภาพที่แปลงจาก PDF
-          uploadMimeType = 'image/png';
+          fileToUploadPath = convertedImagePath;
           originalName = `${path.basename(req.file.originalname, ext)}.png`;
 
           const processedImagePath = await preprocessImage(convertedImagePath);
@@ -336,23 +297,19 @@ exports.scanAndSaveDocument = async (req, res) => {
       text = 'รูปแบบไฟล์ไม่รองรับการสแกน';
     }
 
-    // --- อัปโหลดไฟล์ขึ้น Supabase Storage ---
-    const { publicUrl } = await uploadToSupabase(fileToUploadPath, originalName, uploadMimeType);
+    // --- บันทึกไฟล์ลง Local Storage ---
+    const { publicUrl } = await uploadToLocalStorage(fileToUploadPath, originalName);
 
-    // ลบไฟล์ชั่วคราวบน Server ทิ้ง
+    // ลบเฉพาะไฟล์ Temp ต้นฉบับจาก Multer
     if (fs.existsSync(absoluteFilePath)) {
       fs.unlinkSync(absoluteFilePath);
     }
-    if (fileToUploadPath !== absoluteFilePath && fs.existsSync(fileToUploadPath)) {
-      fs.unlinkSync(fileToUploadPath);
-    }
 
-    // บันทึก Public URL จาก Supabase ลงใน Prisma DB
     const newDoc = await prisma.document_scan.create({
       data: {
         userId: userId,
         docCategory: docCategory || 'BA Co-op 01',
-        fileUrl: publicUrl, // เก็บเป็น HTTPS URL ของ Supabase แบบเต็ม
+        fileUrl: publicUrl,
         extractedText: text,
         extractedData: extractedData,
         status: 'pending',
@@ -402,21 +359,10 @@ exports.cancelDocument = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
     }
 
-    // ลบไฟล์จาก Supabase Bucket หากเป็น URL ของ Supabase
-    if (doc.fileUrl && doc.fileUrl.includes(supabaseUrl)) {
-      try {
-        const urlParts = doc.fileUrl.split(`${bucketName}/`);
-        if (urlParts.length > 1) {
-          const filePathInBucket = urlParts[1];
-          await supabase.storage.from(bucketName).remove([filePathInBucket]);
-        }
-      } catch (delError) {
-        console.error('Failed to delete file from Supabase:', delError);
-      }
-    } 
-    // Fallback สำหรับลบไฟล์ Local แบบเดิม (กรณีเป็นข้อมูลเก่า)
-    else if (doc.fileUrl && !doc.fileUrl.startsWith('http')) {
-      const filePath = path.join(__dirname, '..', doc.fileUrl);
+    // ✅ ปรับการลบไฟล์ให้อ้างอิง Root Directory
+    if (doc.fileUrl) {
+      const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
+      const filePath = path.resolve(__dirname, '../../uploads', cleanPath);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
