@@ -84,17 +84,23 @@ function AdminDocumentManagement() {
   const [feedbackNote, setFeedbackNote] = useState("เอกสารสมบูรณ์");
   const [actionLoading, setActionLoading] = useState(false);
 
-  // ฟังก์ชันจัด URL ให้ชี้ไปยัง Path ไฟล์จริงบน Server
+  // 🟢 ฟังก์ชันจัด URL ให้ชี้ไปยัง Path ไฟล์จริงบน Server
   const formatFileUrl = (url) => {
     if (!url) return null;
-    const str = String(url).trim();
-    if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("blob:") || str.startsWith("data:")) {
-      return str;
+    let clean = String(url).trim();
+    if (clean.startsWith("http://") || clean.startsWith("https://") || clean.startsWith("blob:") || clean.startsWith("data:")) {
+      return clean;
     }
-    const cleanPath = str.replace(/\\/g, "/").replace(/^\/?(uploads\/)+/i, "");
+    clean = clean.replace(/\\/g, "/").replace(/^\/+/, "");
+    if (!clean.startsWith("uploads/")) {
+      clean = `uploads/${clean}`;
+    }
+
     const RAW_API = process.env.REACT_APP_API || process.env.REACT_APP_API_URL || "http://localhost:5000";
-    const BASE_URL = RAW_API.replace(/\/api\/?.*$/, "");
-    return `${BASE_URL}/uploads/${cleanPath}`;
+    const BASE_HOST = RAW_API.replace(/\/api\/?.*$/, "").replace(/\/+$/, "");
+    const fullUrl = `${BASE_HOST}/${clean}`;
+    console.log("🔗 Image Full URL:", fullUrl);
+    return fullUrl;
   };
 
   // ดึงข้อมูลนักศึกษาทั้งหมด
@@ -264,8 +270,39 @@ function AdminDocumentManagement() {
     setReviewLoading(true);
 
     try {
-      const res = await getUserDocumentHistory(student.id);
-      const rawHistory = Array.isArray(res) ? res : res?.data || res?.documents || [];
+      console.log("🔍 กำลังตรวจสอบนักศึกษา:", student);
+
+      let rawHistory = [];
+      try {
+        const res = await getUserDocumentHistory(student.id);
+        rawHistory = Array.isArray(res) ? res : res?.data || res?.documents || [];
+      } catch (e) {
+        console.warn("ดึงด้วย student.id ไม่สำเร็จ:", e);
+      }
+
+      if (!rawHistory || rawHistory.length === 0) {
+        console.log("⚠️ ไม่พบเอกสารผ่าน student.id กำลังค้นหาสำรองผ่าน getAllDocumentsForReview...");
+        try {
+          const { getAllDocumentsForReview } = await import("../../services/documentScanService");
+          const allDocsRes = await getAllDocumentsForReview();
+          const allDocs = Array.isArray(allDocsRes) ? allDocsRes : allDocsRes?.data || [];
+          
+          console.log("📦 รายการเอกสารทั้งหมดในระบบ:", allDocs);
+
+          rawHistory = allDocs.filter((doc) => {
+            const ext = typeof doc.extractedData === "string" ? JSON.parse(doc.extractedData || "{}") : (doc.extractedData || {});
+            const matchesUserId = doc.userId === student.id;
+            const matchesStudentId = ext.studentId && student.studentId && ext.studentId.trim() === student.studentId.trim();
+            const matchesName = ext.fullName && student.name && student.name.includes(ext.fullName);
+
+            return matchesUserId || matchesStudentId || matchesName;
+          });
+        } catch (fallbackErr) {
+          console.error("Fallback error:", fallbackErr);
+        }
+      }
+
+      console.log("📄 รายการเอกสารที่แมปเจอกับนักศึกษาคนนี้:", rawHistory);
 
       const docsMap = {};
       STANDARD_DOC_CATEGORIES.forEach((cat) => {
@@ -277,6 +314,8 @@ function AdminDocumentManagement() {
         if (matchedList.length > 0) {
           matchedList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latest = matchedList[0];
+          console.log(`✅ พบเอกสารหมวด [${cat.key}]:`, latest);
+
           docsMap[cat.key] = {
             ...latest,
             fileFullUrl: formatFileUrl(latest.fileUrl),
@@ -288,7 +327,7 @@ function AdminDocumentManagement() {
 
       setStudentDocsMap(docsMap);
     } catch (err) {
-      console.error("Failed to load document review data:", err);
+      console.error("❌ เกิดข้อผิดพลาดในการโหลดเอกสาร:", err);
       setStudentDocsMap({});
     } finally {
       setReviewLoading(false);
@@ -325,7 +364,6 @@ function AdminDocumentManagement() {
         confirmButtonColor: actionStatus === "passed" ? "#10b981" : "#00796b",
       });
 
-      // อัปเดตข้อมูลและโหลดซ้ำ
       handleCloseReview();
       fetchData();
     } catch (err) {
@@ -788,20 +826,22 @@ function AdminDocumentManagement() {
             }}
           >
             <Grid container spacing={3}>
-              {/* ฝั่งซ้าย: พรีวิวเอกสารจริง */}
+              {/* 🟢 ฝั่งซ้าย: พรีวิวเอกสารจริง พร้อมกล่อง Fallback กรณีรูปบน Render ไม่แสดงผล */}
               <Grid item xs={12} md={7}>
                 <Paper
                   variant="outlined"
                   sx={{
                     height: { xs: 450, md: 580 },
-                    bgcolor: "#ffffff",
+                    bgcolor: "#f8fafc",
                     borderColor: "#e2e8f0",
                     borderRadius: 2,
                     p: 1.5,
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
                     overflow: "hidden",
+                    position: "relative",
                   }}
                 >
                   {reviewLoading ? (
@@ -812,7 +852,7 @@ function AdminDocumentManagement() {
                       </Typography>
                     </Box>
                   ) : currentActiveDoc && currentActiveDoc.fileFullUrl ? (
-                    currentActiveDoc.fileFullUrl.toLowerCase().endsWith(".pdf") ? (
+                    currentActiveDoc.fileFullUrl.toLowerCase().includes(".pdf") ? (
                       <iframe
                         src={currentActiveDoc.fileFullUrl}
                         title="Document Preview"
@@ -821,16 +861,62 @@ function AdminDocumentManagement() {
                         style={{ border: "none", borderRadius: "4px" }}
                       />
                     ) : (
-                      <Box
-                        component="img"
-                        src={currentActiveDoc.fileFullUrl}
-                        alt="เอกสาร"
-                        sx={{
-                          maxWidth: "100%",
-                          maxHeight: "100%",
-                          objectFit: "contain",
-                        }}
-                      />
+                      <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                        <Box
+                          component="img"
+                          src={currentActiveDoc.fileFullUrl}
+                          alt="เอกสาร"
+                          onError={(e) => {
+                            console.error("❌ โหลดรูปภาพไม่สำเร็จจาก URL:", e.target.src);
+                            e.target.style.display = "none";
+                            const fallbackBox = document.getElementById(`fallback-${selectedDocKey}`);
+                            if (fallbackBox) fallbackBox.style.display = "flex";
+                          }}
+                          sx={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            objectFit: "contain",
+                            display: "block",
+                            margin: "auto",
+                          }}
+                        />
+
+                        {/* กล่องแสดงแทนกรณีรูปภาพ 404 หรือไม่สามารถโหลดได้ */}
+                        <Box
+                          id={`fallback-${selectedDocKey}`}
+                          sx={{
+                            display: "none",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textAlign: "center",
+                            p: 3,
+                          }}
+                        >
+                          <DocIcon sx={{ fontSize: 64, mb: 1, color: "#cbd5e1" }} />
+                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#334155", mb: 0.5 }}>
+                            ไม่สามารถแสดงตัวอย่างรูปภาพได้
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "#64748b", mb: 2, maxWidth: 350 }}>
+                            ไฟล์อาจถูกลบอัตโนมัติจากการรีสตาร์ตของ Render หรือเส้นทาง Static File ยังไม่ได้เปิดใช้งาน
+                          </Typography>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => window.open(currentActiveDoc.fileFullUrl, "_blank")}
+                            sx={{
+                              borderRadius: "16px",
+                              borderColor: "#1b6957",
+                              color: "#1b6957",
+                              fontWeight: 600,
+                              textTransform: "none",
+                              "&:hover": { borderColor: "#134e4a", bgcolor: "#f0fdf4" },
+                            }}
+                          >
+                            เปิดลิงก์ไฟล์โดยตรง
+                          </Button>
+                        </Box>
+                      </Box>
                     )
                   ) : (
                     <Box sx={{ textAlign: "center", color: "#94a3b8", p: 3 }}>
@@ -846,7 +932,7 @@ function AdminDocumentManagement() {
                 </Paper>
               </Grid>
 
-              {/* ฝั่งขวา: รายละเอียดผู้ส่ง & เมนูเลือกเอกสาร */}
+              {/* 🟢 ฝั่งขวา: รายละเอียดผู้ส่ง & เมนูเลือกเอกสาร */}
               <Grid item xs={12} md={5} sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <Box>
                   {/* ข้อมูลผู้ส่ง */}
@@ -952,6 +1038,7 @@ function AdminDocumentManagement() {
                             </Typography>
                           </Box>
 
+                          {/* ตรวจสอบว่ามีไฟล์จริงหรือไม่ */}
                           {hasUploaded ? (
                             <CheckCircleIcon sx={{ fontSize: 20, color: "#10b981" }} />
                           ) : (

@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 // Routes
 const profileRoutes = require('./routes/profileRoutes');
@@ -43,8 +44,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
-// ✅ เปิดให้เข้าถึงโฟลเดอร์ uploads ได้โดยไม่ติด CORS
-app.use('/uploads', cors(), express.static(path.join(__dirname, './uploads')));
+// 🟢 แก้ไข: ชี้ถอยหลัง 1 ชั้น (../uploads) ให้ตรงกับโฟลเดอร์ที่ multer บันทึกไฟล์จริง
+const uploadsPath = path.join(__dirname, '../uploads');
+
+// ตรวจสอบและสร้างโฟลเดอร์อัตโนมัติหากยังไม่มี (ป้องกัน Error บน Render)
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+
+app.use('/uploads', cors(), express.static(uploadsPath));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
