@@ -1,3 +1,4 @@
+// src/App.js
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
@@ -25,6 +26,9 @@ import DocumentReviewAdmin from "./pages/Documentreviewadmin";
 import DocumentSummary from "./pages/Step1_student/DocumentSummary";
 
 import DocumentScanDashboard2 from "./pages/Step2_student/DocumentScanDashboard2";
+
+// 👈 1. เพิ่ม import หน้าจัดการเอกสารที่เพิ่งสร้าง
+import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
 
 
 function App() {
@@ -69,6 +73,13 @@ function App() {
               path="/admin/documents/review" 
               element={<DocumentReviewAdmin />} 
             />
+
+            {/* 👈 2. เพิ่ม Route สำหรับหน้าจัดการเอกสารนักศึกษาตรงนี้ */}
+            <Route 
+              path="/admin/document-management" 
+              element={<AdminDocumentManagement />} 
+            />
+
             <Route path="*" element={<Navigate to="/admin" />} />
           </>
         )}

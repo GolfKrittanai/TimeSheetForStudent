@@ -28,7 +28,8 @@ import {
   GridView as GridViewIcon,
   Description as DescriptionIcon,
   CropFree as ScanLogoIcon,
-  PersonOutline as PersonOutlineIcon
+  PersonOutline as PersonOutlineIcon,
+  FolderSharedOutlined as FolderSharedIcon // 👈 เพิ่มไอคอนสำหรับจัดการเอกสาร
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -83,7 +84,7 @@ function Sidebar() {
         </Typography>
       </Box>
 
-      {/* 🟢 ส่วนที่ 2: Card Profile ของ Admin (ตรงตามรูปภาพฝั่งซ้าย) */}
+      {/* 🟢 ส่วนที่ 2: Card Profile ของ Admin */}
       {isAdmin ? (
         <Box
           sx={{
@@ -99,7 +100,6 @@ function Sidebar() {
             alignItems: "center",
           }}
         >
-          {/* Avatar พร้อมวงกลมไฟเขียวนีออนสด */}
           <Badge
             overlap="circular"
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
@@ -135,12 +135,10 @@ function Sidebar() {
             </Avatar>
           </Badge>
 
-          {/* ชื่อ Admin */}
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem", color: "#fff" }}>
             {user?.fullName || "adminPond"}
           </Typography>
 
-          {/* Badge สถานะ Admin */}
           <Chip
             label="Admin"
             size="small"
@@ -165,29 +163,56 @@ function Sidebar() {
       <List component="nav" sx={{ flexGrow: 1, px: 0, mt: 1 }}>
         {isAdmin ? (
           /* === เมนูสำหรับ ADMIN === */
-          <ListItemButton
-            selected={location.pathname === "/admin/document-review"}
-            onClick={() => {
-              navigate("/admin/document-review");
-              if (isMobile) closeMobile();
-            }}
-            sx={{
-              borderRadius: "10px",
-              mb: 1,
-              py: 1.2,
-              bgcolor: location.pathname === "/admin/document-review" ? "rgba(16, 185, 129, 0.15)" : "transparent",
-              color: location.pathname === "/admin/document-review" ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
-            }}
-          >
-            <ListItemIcon sx={{ color: "inherit", minWidth: 40 }}>
-              <DescriptionIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary="Document Co-op"
-              primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
-            />
-          </ListItemButton>
+          <>
+            <ListItemButton
+              selected={location.pathname === "/admin/document-review"}
+              onClick={() => {
+                navigate("/admin/document-review");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: "10px",
+                mb: 1,
+                py: 1.2,
+                bgcolor: location.pathname === "/admin/document-review" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: location.pathname === "/admin/document-review" ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+              }}
+            >
+              <ListItemIcon sx={{ color: "inherit", minWidth: 40 }}>
+                <DescriptionIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Document Co-op"
+                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+              />
+            </ListItemButton>
+
+            {/* 👈 เพิ่มเมนูนี้: เมนูไปหน้าจัดการเอกสารนักศึกษา */}
+            <ListItemButton
+              selected={location.pathname === "/admin/document-management"}
+              onClick={() => {
+                navigate("/admin/document-management");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: "10px",
+                mb: 1,
+                py: 1.2,
+                bgcolor: location.pathname === "/admin/document-management" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: location.pathname === "/admin/document-management" ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+              }}
+            >
+              <ListItemIcon sx={{ color: "inherit", minWidth: 40 }}>
+                <FolderSharedIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="จัดการเอกสาร"
+                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+              />
+            </ListItemButton>
+          </>
         ) : (
           /* === เมนูสำหรับ STUDENT === */
           <>
