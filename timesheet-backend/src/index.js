@@ -44,19 +44,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
-// ✅ เปิดให้เข้าถึงโฟลเดอร์ uploads ที่อยู่ Root ของ Backend ได้ผ่าน HTTP/HTTPS
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// 🟢 แก้ไข: ชี้ถอยหลัง 1 ชั้น (../uploads) ให้ตรงกับโฟลเดอร์ที่ multer บันทึกไฟล์จริง
+const uploadsPath = path.join(__dirname, '../uploads');
+
+// ตรวจสอบและสร้างโฟลเดอร์อัตโนมัติหากยังไม่มี (ป้องกัน Error บน Render)
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-// ✅ เพิ่ม Cross-Origin-Resource-Policy ให้เบราว์เซอร์ยอมรับการโหลดรูปข้าม Domain
-app.use('/uploads', (req, res, next) => {
-  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  next();
-}, express.static(uploadDir));
-
-// app.use('/uploads', cors(), express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', cors(), express.static(uploadsPath));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
