@@ -5,19 +5,21 @@ const API_URL = process.env.REACT_APP_API
   ? `${process.env.REACT_APP_API}/documents` 
   : 'http://localhost:5000/api/documents';
 
-// ฟังก์ชันดึง Token จาก LocalStorage (ถ้ามีระบบ Auth)
+// ฟังก์ชันดึง Token จาก LocalStorage
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // 1. ส่งไฟล์ไปสแกนและบันทึก
-export const uploadAndScanDocument = async (file, docCategory, userId = 1) => {
+export const uploadAndScanDocument = async (file, docCategory, userId) => {
   try {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('docCategory', docCategory);
-    formData.append('userId', userId);
+    if (userId) {
+      formData.append('userId', userId);
+    }
 
     const response = await axios.post(`${API_URL}/upload-scan`, formData, {
       headers: {
@@ -34,7 +36,7 @@ export const uploadAndScanDocument = async (file, docCategory, userId = 1) => {
 };
 
 // 2. ดึงประวัติการสแกนเอกสาร
-export const getUserDocumentHistory = async (userId = 1) => {
+export const getUserDocumentHistory = async (userId) => {
   try {
     const response = await axios.get(`${API_URL}/history/${userId}`, {
       headers: getAuthHeaders(),
@@ -46,7 +48,7 @@ export const getUserDocumentHistory = async (userId = 1) => {
   }
 };
 
-// เพิ่มเข้าไปใน documentScanService.js
+// 3. ยกเลิกเอกสารของนักศึกษา
 export const cancelUserDocument = async (documentId) => {
   try {
     const response = await axios.delete(`${API_URL}/cancel/${documentId}`, {
@@ -59,8 +61,7 @@ export const cancelUserDocument = async (documentId) => {
   }
 };
 
-// 4. ดึงเอกสารทั้งหมดของนักศึกษาทุกคน (สำหรับ admin/อาจารย์ตรวจสอบ)
-// รองรับการกรองด้วย status ("pending" | "passed" | "failed") และคำค้นหา (ชื่อ/รหัสนักศึกษา)
+// 4. ดึงเอกสารทั้งหมดสำหรับ Admin/อาจารย์
 export const getAllDocumentsForReview = async (params = {}) => {
   try {
     const { status, search, docCategory } = params;
@@ -79,7 +80,7 @@ export const getAllDocumentsForReview = async (params = {}) => {
   }
 };
 
-// 5. อนุมัติ / ไม่อนุมัติเอกสาร พร้อมหมายเหตุ (สำหรับ admin/อาจารย์)
+// 5. อนุมัติ / ไม่อนุมัติเอกสาร พร้อมหมายเหตุ
 export const reviewDocument = async (documentId, status, remark = '') => {
   try {
     const response = await axios.put(
