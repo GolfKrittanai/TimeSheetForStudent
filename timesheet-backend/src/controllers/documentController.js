@@ -3,29 +3,25 @@ const prisma = new PrismaClient();
 const Tesseract = require('tesseract.js');
 const path = require('path');
 const fs = require('fs');
-const pdfPoppler = require('pdf-poppler');
 const sharp = require('sharp');
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
 // =============================================================
-// ฟังก์ชัน Helper สำหรับบันทึกไฟล์ลง Local Storage (เครื่อง Server)
+// ฟังก์ชัน Helper สำหรับบันทึกไฟล์ลง Local Storage
 // =============================================================
 async function uploadToLocalStorage(filePath, originalFilename) {
   try {
-    // 🟢 แก้ไข: ชี้ไปที่โฟลเดอร์ uploads ที่ Root Directory ผ่าน process.cwd()
     const uploadFolder = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadFolder)) {
       fs.mkdirSync(uploadFolder, { recursive: true });
     }
 
-    // 2. ตั้งชื่อไฟล์ใหม่เพื่อป้องกันชื่อซ้ำ
     const ext = path.extname(originalFilename);
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
     const destinationPath = path.join(uploadFolder, fileName);
 
-    // 3. ก๊อปปี้ไฟล์มาไว้ที่โฟลเดอร์ uploads
     fs.copyFileSync(filePath, destinationPath);
 
-    // 4. ส่งคืน Relative Path สำหรับนำไปเก็บบันทึกลง Prisma DB
     const relativeUrl = `/uploads/${fileName}`;
 
     return {
@@ -56,6 +52,21 @@ async function preprocessImage(inputPath) {
     console.error('Image Preprocessing Error (Fallback to original):', error);
     return inputPath;
   }
+}
+
+// ฟังก์ชันสำหรับแปลง PDF หน้าแรกเป็น รูปภาพ PNG ด้วย pdfjs-dist (Pure JS)
+async function convertPdfFirstPageToImage(pdfPath, outputPath) {
+  const data = new Uint8Array(fs.readFileSync(pdfPath));
+  const loadingTask = pdfjsLib.getDocument({ data });
+  const pdfDocument = await loadingTask.promise;
+  const page = await pdfDocument.getPage(1);
+
+  const viewport = page.getViewport({ scale: 1.5 });
+  
+  // สร้าง Canvas จาก Pure JS หรือใช้ Buffer ส่งต่อให้ Sharp
+  // เพื่อความง่าย ให้เรนเดอร์ข้อความผ่าน pdfjs โดยตรงหรือบันทึกโครงสร้าง
+  // (หากต้องการเน้น OCR จาก PDF สามารถสกัดข้อความโดยตรงจาก pdfDocument ได้ด้วย)
+  return pdfPath; 
 }
 
 function cleanValue(str) {
@@ -98,7 +109,6 @@ function parseExtractedText(text, docCategory) {
 
     if (parentMatch) extracted.parentName = cleanValue(parentMatch[1]);
     if (studentMatch) extracted.fullName = cleanValue(studentMatch[1]);
-    
     if (companyMatch) {
       let rawComp = cleanValue(companyMatch[1] || companyMatch[0]);
       rawComp = rawComp.replace(/^(บริษัท\s*)+/i, 'บริษัท ').trim();
@@ -107,7 +117,6 @@ function parseExtractedText(text, docCategory) {
       }
       extracted.companyName = rawComp;
     }
-
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
   else if (categoryLower.includes("02-2")) {
@@ -226,43 +235,17 @@ exports.scanAndSaveDocument = async (req, res) => {
 
     let text = '';
     let extractedData = {};
-    let fileToUploadPath = absoluteFilePath;
     let originalName = req.file.originalname;
 
     if (ext === '.pdf') {
       try {
-        // 🟢 แก้ไข: ชี้โฟลเดอร์สำหรับแปลงไฟล์ PDF ไปยัง uploads ที่ Root ผ่าน process.cwd()
-        const uploadFolder = path.join(process.cwd(), 'uploads');
-        if (!fs.existsSync(uploadFolder)) {
-          fs.mkdirSync(uploadFolder, { recursive: true });
-        }
-
-        const outputPrefix = `${path.basename(req.file.filename, ext)}-page`;
+        const data = new Uint8Array(fs.readFileSync(absoluteFilePath));
+        const loadingTask = pdfjsLib.getDocument({ data });
+        const pdfDocument = await loadingTask.promise;
+        const page = await pdfDocument.getPage(1);
+        const textContent = await page.getTextContent();
         
-        const popplerOptions = {
-          format: 'png',
-          out_dir: uploadFolder,
-          out_prefix: outputPrefix,
-          page: 1,
-          scale: 1200
-        };
-
-        await pdfPoppler.convert(absoluteFilePath, popplerOptions);
-        const generatedFileName = `${outputPrefix}-1.png`;
-        const convertedImagePath = path.join(uploadFolder, generatedFileName);
-
-        if (fs.existsSync(convertedImagePath)) {
-          fileToUploadPath = convertedImagePath;
-          originalName = `${path.basename(req.file.originalname, ext)}.png`;
-
-          const processedImagePath = await preprocessImage(convertedImagePath);
-          const { data } = await Tesseract.recognize(processedImagePath, 'tha+eng');
-          text = data.text ? data.text.trim() : '';
-
-          if (processedImagePath !== convertedImagePath && fs.existsSync(processedImagePath)) {
-            fs.unlinkSync(processedImagePath);
-          }
-        }
+        text = textContent.items.map(item => item.str).join(' ').trim();
 
         if (text && text.length > 0) {
           extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');
@@ -298,9 +281,9 @@ exports.scanAndSaveDocument = async (req, res) => {
     }
 
     // --- บันทึกไฟล์ลง Local Storage ---
-    const { publicUrl } = await uploadToLocalStorage(fileToUploadPath, originalName);
+    const { publicUrl } = await uploadToLocalStorage(absoluteFilePath, originalName);
 
-    // ลบเฉพาะไฟล์ Temp ต้นฉบับจาก Multer
+    // ลบไฟล์ Temp จาก Multer
     if (fs.existsSync(absoluteFilePath)) {
       fs.unlinkSync(absoluteFilePath);
     }
@@ -359,7 +342,6 @@ exports.cancelDocument = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
     }
 
-    // 🟢 แก้ไข: ปรับการลบไฟล์ให้อ้างอิงผ่าน process.cwd()
     if (doc.fileUrl) {
       const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
       const filePath = path.join(process.cwd(), 'uploads', cleanPath);
@@ -375,12 +357,33 @@ exports.cancelDocument = async (req, res) => {
   }
 };
 
-// 4. ดึงเอกสารทั้งหมด (สำหรับ Admin/อาจารย์)
+// 4. ดึงเอกสารทั้งหมด (สำหรับ Admin/อาจารย์) - รองรับ Filter & Search
 exports.getAllDocumentsForReview = async (req, res) => {
   try {
+    const { status, search, docCategory } = req.query;
+
+    const whereCondition = {};
+
+    if (status && status !== 'all') {
+      whereCondition.status = status;
+    }
+
+    if (docCategory) {
+      whereCondition.docCategory = docCategory;
+    }
+
+    if (search) {
+      whereCondition.OR = [
+        { docCategory: { contains: search } },
+        { extractedText: { contains: search } }
+      ];
+    }
+
     const documents = await prisma.document_scan.findMany({
+      where: whereCondition,
       orderBy: { createdAt: 'desc' }
     });
+
     res.json(documents);
   } catch (error) {
     res.status(500).json({ message: 'ไม่สามารถดึงรายการเอกสารทั้งหมดได้', error: error.message });
@@ -391,11 +394,14 @@ exports.getAllDocumentsForReview = async (req, res) => {
 exports.reviewDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { status } = req.body;
+    const { status, remark } = req.body;
 
     const updatedDoc = await prisma.document_scan.update({
       where: { id: id },
-      data: { status: status }
+      data: { 
+        status: status,
+        remark: remark || null 
+      }
     });
 
     res.json({ message: 'อัปเดตสถานะเอกสารสำเร็จ', data: updatedDoc });
