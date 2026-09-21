@@ -39,29 +39,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
-<<<<<<< Updated upstream
-// 🟢 แก้ไข: ชี้ถอยหลัง 1 ชั้น (../uploads) ให้ตรงกับโฟลเดอร์ที่ multer บันทึกไฟล์จริง
-const uploadsPath = path.join(__dirname, '../uploads');
-
-// ตรวจสอบและสร้างโฟลเดอร์อัตโนมัติหากยังไม่มี (ป้องกัน Error บน Render)
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-}
-
-app.use('/uploads', cors(), express.static(uploadsPath));
-=======
-// 🟢 แก้ไข: ใช้ process.cwd() ชี้ไปยังโฟลเดอร์ uploads ที่ Root ของโปรเจกต์อย่างแม่นยำ
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 🟢 แก้ไข: อนุญาตให้เรียกดูรูปภาพข้าม Origin ได้อย่างสมบูรณ์
 app.use('/uploads', cors(), (req, res, next) => {
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 }, express.static(uploadDir));
->>>>>>> Stashed changes
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
