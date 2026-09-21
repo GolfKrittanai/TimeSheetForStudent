@@ -11,8 +11,8 @@ const sharp = require('sharp');
 // =============================================================
 async function uploadToLocalStorage(filePath, originalFilename) {
   try {
-    // ✅ 1. ชี้ไปที่โฟลเดอร์ uploads ระดับ Root Directory (นอก src)
-    const uploadFolder = path.resolve(__dirname, '../../uploads');
+    // 🟢 แก้ไข: ชี้ไปที่โฟลเดอร์ uploads ที่ Root Directory ผ่าน process.cwd()
+    const uploadFolder = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadFolder)) {
       fs.mkdirSync(uploadFolder, { recursive: true });
     }
@@ -231,8 +231,8 @@ exports.scanAndSaveDocument = async (req, res) => {
 
     if (ext === '.pdf') {
       try {
-        // ✅ ชี้โฟลเดอร์สำหรับแปลงไฟล์ PDF ไปยัง uploads นอก src
-        const uploadFolder = path.resolve(__dirname, '../../uploads');
+        // 🟢 แก้ไข: ชี้โฟลเดอร์สำหรับแปลงไฟล์ PDF ไปยัง uploads ที่ Root ผ่าน process.cwd()
+        const uploadFolder = path.join(process.cwd(), 'uploads');
         if (!fs.existsSync(uploadFolder)) {
           fs.mkdirSync(uploadFolder, { recursive: true });
         }
@@ -359,10 +359,10 @@ exports.cancelDocument = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
     }
 
-    // ✅ ปรับการลบไฟล์ให้อ้างอิง Root Directory
+    // 🟢 แก้ไข: ปรับการลบไฟล์ให้อ้างอิงผ่าน process.cwd()
     if (doc.fileUrl) {
       const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
-      const filePath = path.resolve(__dirname, '../../uploads', cleanPath);
+      const filePath = path.join(process.cwd(), 'uploads', cleanPath);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }

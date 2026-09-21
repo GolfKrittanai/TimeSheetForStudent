@@ -334,14 +334,14 @@ export default function RegisterPage() {
           sx={{
             fontSize: { xs: 38, sm: 44 },
             fontWeight: 800,
-            letterSpacing: 4,
+            letterSpacing: 3,
             color: "#0b7a6b",
           }}
         >
-          TIMESHEET
+          COOP SCAN
         </Typography>
         <Typography sx={{ color: "#4f5b62", mt: 0.5 }}>
-          สำหรับนักศึกษา BIS
+          ระบบสแกนเอกสารสหกิจศึกษา
         </Typography>
       </Box>
 

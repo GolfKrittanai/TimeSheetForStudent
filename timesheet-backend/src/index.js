@@ -24,26 +24,22 @@ const allowList = (process.env.CORS_ORIGIN || '')
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // อนุญาต no-origin เช่น <img src="...">, curl, postman
     if (!origin) return callback(null, true);
-    
-    // หากอนุญาตทั้งหมดใน dev หรือระบุ origin ตรงใน allowList
     if (allowList.length === 0 || allowList.includes(origin) || allowList.includes('*')) {
       return callback(null, true);
     }
-    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 };
 
-// วาง CORS สำหรับ API General
 app.use(cors(corsOptions));
 
 /* ------------------------------ BODY PARSERS ------------------------------ */
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
+<<<<<<< Updated upstream
 // 🟢 แก้ไข: ชี้ถอยหลัง 1 ชั้น (../uploads) ให้ตรงกับโฟลเดอร์ที่ multer บันทึกไฟล์จริง
 const uploadsPath = path.join(__dirname, '../uploads');
 
@@ -53,6 +49,19 @@ if (!fs.existsSync(uploadsPath)) {
 }
 
 app.use('/uploads', cors(), express.static(uploadsPath));
+=======
+// 🟢 แก้ไข: ใช้ process.cwd() ชี้ไปยังโฟลเดอร์ uploads ที่ Root ของโปรเจกต์อย่างแม่นยำ
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// 🟢 แก้ไข: อนุญาตให้เรียกดูรูปภาพข้าม Origin ได้อย่างสมบูรณ์
+app.use('/uploads', cors(), (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(uploadDir));
+>>>>>>> Stashed changes
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
