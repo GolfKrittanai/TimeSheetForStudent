@@ -47,6 +47,7 @@ const MASTER_DOCS = [
   { id: 5, name: "BA Co-op 05 ผลการศึกษาฉบับ (ชั่วคราว)" },
 ];
 
+// ✅ Dynamic URL: อ่านค่า API จาก Environment Variable อัตโนมัติ
 const RAW_API = process.env.REACT_APP_API || process.env.REACT_APP_API_URL || "http://localhost:5000";
 const SERVER_BASE_URL = RAW_API.replace(/\/api\/?$/, "");
 
@@ -57,12 +58,10 @@ const STEPS = [
   { num: 4, title: "สำเร็จ", sub: "ผ่านการตรวจสอบ" },
 ];
 
-// โทนสีเขียวเดียวกับ Sidebar
 const BRAND_DARK = "#0b2b26";
 const BRAND_CARD = "#081f1c";
 const BRAND_GREEN = "#10b981";
 
-// Custom DetailRow สไตล์ Dark Theme เข้ากับ Sidebar
 const DetailRow = ({ icon: Icon, value, label }) => (
   <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2 }}>
     <Icon sx={{ color: BRAND_GREEN, fontSize: 24, mt: 0.2 }} />
@@ -192,6 +191,7 @@ function DocumentSummary() {
     setActiveStep((prev) => prev + 1);
   };
 
+  // ✅ ฟังก์ชันคำนวณ Full URL แบบสมบูรณ์แบบ รองรับทุก Domain[cite: 28]
   const getFileFullUrl = (doc) => {
     if (!doc) return null;
     const rawPath = doc.fileUrl || doc.filePath || doc.file_path || doc.documentUrl || doc.url || doc.path;
@@ -199,12 +199,16 @@ function DocumentSummary() {
 
     let cleanPath = String(rawPath).trim();
 
+    // 1. ถ้าเป็น HTTP/HTTPS อยู่แล้วให้ส่งคืนทันที
     if (/^https?:\/\//i.test(cleanPath) || cleanPath.startsWith("data:")) {
       return cleanPath;
     }
 
-    cleanPath = cleanPath.replace(/\\/g, "/").replace(/^\/?(uploads\/)+/i, "");
-    
+    // 2. แปลง backslash และตัด uploads/ นำหน้าออก
+    cleanPath = cleanPath.replace(/\\/g, "/");
+    cleanPath = cleanPath.replace(/^\/?(uploads\/)+/i, "");
+
+    // 3. รวม Dynamic Domain กับ Path ไฟล์
     return `${SERVER_BASE_URL}/uploads/${cleanPath}`;
   };
 
@@ -607,7 +611,7 @@ function DocumentSummary() {
           </Button>
         </Box>
 
-        {/* 🟢 Modal ดูรายละเอียดเอกสาร (ดีไซน์ใหม่ โทนสีเดียวกับ Sidebar) */}
+        {/* Modal ดูรายละเอียดเอกสาร */}
         <Dialog
           open={openModal}
           onClose={() => setOpenModal(false)}
@@ -618,13 +622,12 @@ function DocumentSummary() {
               borderRadius: 4,
               overflow: "hidden",
               maxWidth: 780,
-              bgcolor: BRAND_DARK, // ใช้สีเดียวกับ Sidebar
+              bgcolor: BRAND_DARK,
               border: "1px solid rgba(16, 185, 129, 0.2)",
               boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
             },
           }}
         >
-          {/* Header Modal */}
           <Box
             sx={{
               p: 2,
@@ -647,7 +650,6 @@ function DocumentSummary() {
             </IconButton>
           </Box>
 
-          {/* Modal Content */}
           <DialogContent sx={{ p: 3, bgcolor: BRAND_DARK }}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
@@ -740,7 +742,7 @@ function DocumentSummary() {
           </DialogContent>
         </Dialog>
 
-        {/* 🟢 Modal ยืนยันการส่งเอกสาร (โทนสีเดียวกับ Sidebar) */}
+        {/* Modal ยืนยันการส่งเอกสาร */}
         <Dialog
           open={openConfirmModal}
           onClose={() => setOpenConfirmModal(false)}

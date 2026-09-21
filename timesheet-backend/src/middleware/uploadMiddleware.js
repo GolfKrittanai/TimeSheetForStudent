@@ -2,8 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// ✅ ตรวจสอบและสร้างโฟลเดอร์ uploads นอก src (Root Directory)
-const uploadDir = path.resolve(__dirname, '../../uploads');
+// 🟢 แก้ไข: ใช้ process.cwd() ชี้โฟลเดอร์ uploads ที่ Root
+const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

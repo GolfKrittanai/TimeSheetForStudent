@@ -24,35 +24,30 @@ const allowList = (process.env.CORS_ORIGIN || '')
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // อนุญาต no-origin เช่น <img src="...">, curl, postman
     if (!origin) return callback(null, true);
-    
-    // หากอนุญาตทั้งหมดใน dev หรือระบุ origin ตรงใน allowList
     if (allowList.length === 0 || allowList.includes(origin) || allowList.includes('*')) {
       return callback(null, true);
     }
-    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 };
 
-// วาง CORS สำหรับ API General
 app.use(cors(corsOptions));
 
 /* ------------------------------ BODY PARSERS ------------------------------ */
 app.use(express.json());
 
 /* ---------------------------- STATIC FILES ------------------------------- */
-// 🟢 แก้ไข: ชี้ถอยหลัง 1 ชั้น (../uploads) ให้ตรงกับโฟลเดอร์ที่ multer บันทึกไฟล์จริง
-const uploadsPath = path.join(__dirname, '../uploads');
-
-// ตรวจสอบและสร้างโฟลเดอร์อัตโนมัติหากยังไม่มี (ป้องกัน Error บน Render)
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-app.use('/uploads', cors(), express.static(uploadsPath));
+app.use('/uploads', cors(), (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(uploadDir));
 
 /* --------------------------------- ROUTES -------------------------------- */
 app.use('/api/reports', reportRoutes);
