@@ -4,7 +4,27 @@ const Tesseract = require('tesseract.js');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+
+// =============================================================
+// หลอก Node.js module cache เพื่อปิด Warning เรื่อง canvas ของ pdfjs-dist
+// =============================================================
+const Module = require('module');
+const originalRequire = Module.prototype.require;
+Module.prototype.require = function (element) {
+  if (element === 'canvas') {
+    return {}; // คืนค่า object ว่างเปล่าเมื่อ pdfjs ถามหา canvas
+  }
+  return originalRequire.apply(this, arguments);
+};
+
+// นำเข้า pdfjs-dist หลังจาก mock canvas แล้ว
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+
+// ตั้งค่าระงับ Verbose Logs และปิด Worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = false;
+if (pdfjsLib.VerbosityLevel) {
+  pdfjsLib.verbosity = pdfjsLib.VerbosityLevel.ERRORS;
+}
 
 // =============================================================
 // ฟังก์ชัน Helper สำหรับบันทึกไฟล์ลง Local Storage
@@ -52,21 +72,6 @@ async function preprocessImage(inputPath) {
     console.error('Image Preprocessing Error (Fallback to original):', error);
     return inputPath;
   }
-}
-
-// ฟังก์ชันสำหรับแปลง PDF หน้าแรกเป็น รูปภาพ PNG ด้วย pdfjs-dist (Pure JS)
-async function convertPdfFirstPageToImage(pdfPath, outputPath) {
-  const data = new Uint8Array(fs.readFileSync(pdfPath));
-  const loadingTask = pdfjsLib.getDocument({ data });
-  const pdfDocument = await loadingTask.promise;
-  const page = await pdfDocument.getPage(1);
-
-  const viewport = page.getViewport({ scale: 1.5 });
-  
-  // สร้าง Canvas จาก Pure JS หรือใช้ Buffer ส่งต่อให้ Sharp
-  // เพื่อความง่าย ให้เรนเดอร์ข้อความผ่าน pdfjs โดยตรงหรือบันทึกโครงสร้าง
-  // (หากต้องการเน้น OCR จาก PDF สามารถสกัดข้อความโดยตรงจาก pdfDocument ได้ด้วย)
-  return pdfPath; 
 }
 
 function cleanValue(str) {
@@ -242,10 +247,16 @@ exports.scanAndSaveDocument = async (req, res) => {
         const data = new Uint8Array(fs.readFileSync(absoluteFilePath));
         const loadingTask = pdfjsLib.getDocument({ data });
         const pdfDocument = await loadingTask.promise;
-        const page = await pdfDocument.getPage(1);
-        const textContent = await page.getTextContent();
-        
-        text = textContent.items.map(item => item.str).join(' ').trim();
+
+        let fullText = [];
+        for (let i = 1; i <= pdfDocument.numPages; i++) {
+          const page = await pdfDocument.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText.push(pageText);
+        }
+
+        text = fullText.join(' ').trim();
 
         if (text && text.length > 0) {
           extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');

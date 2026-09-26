@@ -168,7 +168,7 @@ function DocumentSummary() {
 
   const handleBack = () => {
     if (activeStep === 2) {
-      navigate("/student/scan-upload");
+      navigate("/student/scan");
     } else {
       setActiveStep((prev) => prev - 1);
     }
@@ -283,7 +283,7 @@ function DocumentSummary() {
   const renderStep2Content = () => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Typography variant="h6" sx={{ fontWeight: 700, color: "#00423b", mb: 1.5, fontSize: "1.05rem" }}>
-        ประวัติการตรวจสอบ
+        ตรวจสอบเอกสาร
       </Typography>
       <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e2e8f0", flexGrow: 1, overflowY: "auto" }}>
         <Table size="small" stickyHeader>
