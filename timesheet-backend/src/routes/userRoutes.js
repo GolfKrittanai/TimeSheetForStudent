@@ -33,9 +33,11 @@ router.get(
           internPosition: true,
           email: true,
           phone: true,
+          // ✅ ดึงรายการเอกสารสแกนตาม Relation ใน schema.prisma
+          documentScans: true,
           _count: {
             select: {
-              timesheet: true, // 🔴 แก้ไข: จาก 'timesheets' เป็น 'timesheet' เพื่อแก้ PrismaClientValidationError
+              timesheet: true, // แก้ไข: จาก 'timesheets' เป็น 'timesheet' เพื่อแก้ PrismaClientValidationError
             },
           },
         },
