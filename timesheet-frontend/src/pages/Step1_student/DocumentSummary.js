@@ -34,6 +34,8 @@ import {
   SchoolOutlined as GradeIcon,
   Cancel as CancelIcon,
   PriorityHigh as PriorityHighIcon,
+  NotificationsNoneOutlined as NotificationsIcon,
+  Check as CheckIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
@@ -47,7 +49,6 @@ const MASTER_DOCS = [
   { id: 5, name: "BA Co-op 05 ผลการศึกษาฉบับ (ชั่วคราว)" },
 ];
 
-// ✅ Dynamic URL: อ่านค่า API จาก Environment Variable อัตโนมัติ
 const RAW_API = process.env.REACT_APP_API || process.env.REACT_APP_API_URL || "http://localhost:5000";
 const SERVER_BASE_URL = RAW_API.replace(/\/api\/?$/, "");
 
@@ -176,13 +177,13 @@ function DocumentSummary() {
 
   const handleNext = () => {
     if (activeStep === 2) {
-      setOpenConfirmModal(true);
+      setActiveStep((prev) => prev + 1);
     } else if (activeStep === 3) {
       if (isAllPassed) {
         setOpenConfirmModal(true);
       }
     } else if (activeStep === 4) {
-      navigate("/student/dashboard");
+      navigate("/student/step2-upload");
     }
   };
 
@@ -191,24 +192,17 @@ function DocumentSummary() {
     setActiveStep((prev) => prev + 1);
   };
 
-  // ✅ ฟังก์ชันคำนวณ Full URL แบบสมบูรณ์แบบ รองรับทุก Domain[cite: 28]
   const getFileFullUrl = (doc) => {
     if (!doc) return null;
     const rawPath = doc.fileUrl || doc.filePath || doc.file_path || doc.documentUrl || doc.url || doc.path;
     if (!rawPath) return null;
 
     let cleanPath = String(rawPath).trim();
-
-    // 1. ถ้าเป็น HTTP/HTTPS อยู่แล้วให้ส่งคืนทันที
     if (/^https?:\/\//i.test(cleanPath) || cleanPath.startsWith("data:")) {
       return cleanPath;
     }
-
-    // 2. แปลง backslash และตัด uploads/ นำหน้าออก
     cleanPath = cleanPath.replace(/\\/g, "/");
     cleanPath = cleanPath.replace(/^\/?(uploads\/)+/i, "");
-
-    // 3. รวม Dynamic Domain กับ Path ไฟล์
     return `${SERVER_BASE_URL}/uploads/${cleanPath}`;
   };
 
@@ -445,28 +439,90 @@ function DocumentSummary() {
   );
 
   const renderStep4Content = () => (
-    <Box sx={{ textAlign: "center", py: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-      <Box
-        sx={{
-          width: 70,
-          height: 70,
-          borderRadius: "50%",
-          bgcolor: "#dcfce7",
-          color: "#166534",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          mb: 1.5,
-        }}
-      >
-        <CheckCircleIcon sx={{ fontSize: 50 }} />
-      </Box>
-      <Typography variant="h5" sx={{ fontWeight: 800, color: "#00423b", mb: 1 }}>
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        alignItems: "center", 
+        justifyContent: "center", 
+        height: "100%", 
+        py: 1 
+      }}
+    >
+      <Typography variant="h5" sx={{ fontWeight: 800, color: "#00423b", mb: 0.5, textAlign: "center" }}>
         ดำเนินการเสร็จสิ้น
       </Typography>
-      <Typography variant="body2" sx={{ color: "#64748b" }}>
-        ระบบตรวจสอบเรียบร้อยแล้ว ท่านสามารถตรวจสอบสถานะและผลการตรวจสอบได้ในภายหลัง
+      <Typography variant="body2" sx={{ color: "#64748b", mb: 2, textAlign: "center" }}>
+        ระบบตรวจสอบเสร็จเรียบร้อย
       </Typography>
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          borderRadius: 4,
+          border: "1px solid #e2e8f0",
+          bgcolor: "#ffffff",
+          textAlign: "center",
+          maxWidth: 520,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)",
+          mb: 2,
+        }}
+      >
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            bgcolor: "#f0fdf4",
+            border: "2px solid #22c55e",
+            color: "#22c55e",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 1.5,
+          }}
+        >
+          <CheckIcon sx={{ fontSize: 40 }} />
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: "#1e293b", mb: 1 }}>
+          อัปโหลดเอกสารสำเร็จ
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#64748b", lineHeight: 1.6 }}>
+          เอกสารของท่านถูกส่งเข้าสู่ระบบตรวจสอบเรียบร้อยแล้ว <br />
+          ท่านสามารถตรวจสอบสถานะและผลการตรวจสอบได้ในภายหลัง
+        </Typography>
+      </Paper>
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 1.5,
+          px: 2.5,
+          borderRadius: 3,
+          bgcolor: "#fffbeb",
+          border: "1px solid #fef3c7",
+          maxWidth: 520,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
+        <NotificationsIcon sx={{ color: "#d97706", fontSize: 24 }} />
+        <Box sx={{ textAlign: "left" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#92400e", fontSize: "0.85rem" }}>
+            ประกาศ
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#b45309", fontSize: "0.75rem" }}>
+            กรุณาตรวจสอบเนื้อหาเอกสารและไฟล์ให้ถูกต้อง
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 
@@ -498,45 +554,52 @@ function DocumentSummary() {
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: { xs: 0, md: 3 } }}>
-            {STEPS.map((step, idx) => {
-              const isCurrent = step.num === activeStep;
-              const isPassed = step.num < activeStep;
+          {STEPS.map((step, idx) => {
+            const isCurrent = step.num === activeStep;
+            const isPassed = step.num < activeStep;
 
-              return (
-                <React.Fragment key={step.num}>
-                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        bgcolor: isCurrent ? "#facc15" : isPassed ? "#007a5e" : "#cbd5e1",
-                        color: isCurrent ? "#000" : "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                        mb: 0.5,
-                      }}
-                    >
-                      {step.num}
-                    </Box>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.8rem" }}>
-                      {step.title}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.7rem" }}>
-                      {step.sub}
-                    </Typography>
+            return (
+              <React.Fragment key={step.num}>
+                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      bgcolor: isCurrent || isPassed ? "#007a5e" : "#cbd5e1",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      mb: 0.5,
+                    }}
+                  >
+                    {step.num}
                   </Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.8rem" }}>
+                    {step.title}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.7rem" }}>
+                    {step.sub}
+                  </Typography>
+                </Box>
 
-                  {idx < STEPS.length - 1 && (
-                    <Box sx={{ flexGrow: 1, height: 2, bgcolor: isPassed ? "#007a5e" : "#cbd5e1", mx: 2 }} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </Box>
+                {idx < STEPS.length - 1 && (
+                  <Box 
+                    sx={{ 
+                      flexGrow: 1, 
+                      height: 2, 
+                      bgcolor: step.num <= activeStep ? "#007a5e" : "#cbd5e1", 
+                      mx: 2 
+                    }} 
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </Box>
         </Paper>
 
         <Paper
@@ -550,7 +613,7 @@ function DocumentSummary() {
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           {loading ? (
@@ -572,17 +635,18 @@ function DocumentSummary() {
             onClick={handleBack}
             startIcon={<ArrowBackIosNewIcon />}
             sx={{ 
-              borderColor: "#00423b", 
-              color: "#00423b", 
+              borderColor: "#cbd5e1", 
+              color: "#334155", 
               fontWeight: 700, 
-              borderWidth: 2,
+              borderRadius: 2,
+              px: 2.5,
               "&:hover": {
-                borderColor: "#002b26",
-                bgcolor: "#f0fdf4",
+                borderColor: "#94a3b8",
+                bgcolor: "#f8fafc",
               }
             }}
           >
-            ย้อนกลับ
+            {activeStep === 4 ? "กลับหน้าแรก" : "ย้อนกลับ"}
           </Button>
 
           <Button
@@ -596,22 +660,17 @@ function DocumentSummary() {
               fontWeight: 700, 
               px: 3, 
               py: 1,
+              borderRadius: 2,
               cursor: isNextDisabled ? "not-allowed" : "pointer",
               "&:hover": {
                 bgcolor: isNextDisabled ? "#94a3b8" : "#002b26",
               },
-              "&.Mui-disabled": {
-                bgcolor: "#94a3b8",
-                color: "#ffffff",
-                opacity: 0.8,
-              },
             }}
           >
-            {activeStep === 3 ? "ยืนยันสถานะ" : activeStep === 4 ? "กลับหน้าแรก" : "ส่งเอกสาร"}
+            {activeStep === 3 ? "ยืนยันสถานะ" : activeStep === 4 ? "ขั้นตอนถัดไป" : "ส่งเอกสาร"}
           </Button>
         </Box>
 
-        {/* Modal ดูรายละเอียดเอกสาร */}
         <Dialog
           open={openModal}
           onClose={() => setOpenModal(false)}
@@ -690,26 +749,11 @@ function DocumentSummary() {
                         console.error("Failed to load image at:", fullUrl);
                         setImageError(true);
                       }}
-                      onMouseMove={(e) => {
-                        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-                        const x = ((e.clientX - left) / width) * 100;
-                        const y = ((e.clientY - top) / height) * 100;
-                        e.currentTarget.style.transformOrigin = `${x}% ${y}%`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transformOrigin = "center center";
-                      }}
                       sx={{
                         maxWidth: "100%",
                         maxHeight: "100%",
                         objectFit: "contain",
                         borderRadius: 2,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        cursor: "zoom-in",
-                        transition: "transform 0.2s ease-out",
-                        "&:hover": {
-                          transform: "scale(2.2)",
-                        },
                       }}
                     />
                   )}
@@ -742,7 +786,6 @@ function DocumentSummary() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal ยืนยันการส่งเอกสาร */}
         <Dialog
           open={openConfirmModal}
           onClose={() => setOpenConfirmModal(false)}
@@ -779,13 +822,11 @@ function DocumentSummary() {
             </Box>
 
             <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", mb: 1 }}>
-              {activeStep === 2 ? "ยืนยันการส่งเอกสาร" : "ยืนยันสถานะข้อมูล"}
+              ยืนยันสถานะข้อมูล
             </Typography>
 
             <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 3, px: 1, lineHeight: 1.4 }}>
-              {activeStep === 2
-                ? "กรุณาตรวจสอบข้อมูลและเอกสารก่อนยืนยันการส่ง"
-                : "กรุณาตรวจสอบข้อมูลและเอกสารให้ถูกต้องก่อนยืนยัน เมื่อส่งแล้วจะไม่สามารถแก้ไขข้อมูลได้"}
+              กรุณาตรวจสอบข้อมูลและเอกสารให้ถูกต้องก่อนยืนยัน เมื่อส่งแล้วจะไม่สามารถแก้ไขข้อมูลได้
             </Typography>
 
             <Box sx={{ display: "flex", gap: 1.5, width: "100%" }}>
@@ -805,7 +846,7 @@ function DocumentSummary() {
                   },
                 }}
               >
-                แก้ไขต่อ
+                ย้อนกลับ
               </Button>
 
               <Button

@@ -29,13 +29,13 @@ import {
   Description as DescriptionIcon,
   CropFree as ScanLogoIcon,
   PersonOutline as PersonOutlineIcon,
-  FolderSharedOutlined as FolderSharedIcon // 👈 เพิ่มไอคอนสำหรับจัดการเอกสาร
+  FolderSharedOutlined as FolderSharedIcon
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const drawerWidth = 260;
-const BRAND_BG = "#0b2b26"; // สีเขียวเข้มพื้นหลังตามภาพ
+const BRAND_BG = "#0b2b26"; // สีเขียวเข้มพื้นหลัง
 const BRAND_ACTIVE = "#10b981"; // สีเขียวนีออนหลัก
 const ACTIVE_SUB_BG = "rgba(255, 255, 255, 0.08)";
 
@@ -58,6 +58,19 @@ function Sidebar() {
   };
 
   const isAdmin = user?.role === "admin";
+
+  // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 1 หรือไม่ (ครอบคลุมทุกหน้าย่อย)
+  const isStep1Active = [
+    "/student/scan",
+    "/student/scan-upload",
+    "/student/scan-summary",
+    "/student/scan-history"
+  ].includes(location.pathname);
+
+  // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 2 หรือไม่
+  const isStep2Active = [
+    "/student/step2-upload"
+  ].includes(location.pathname);
 
   const renderSidebarContent = (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: BRAND_BG, color: "#fff", p: 2 }}>
@@ -188,7 +201,6 @@ function Sidebar() {
               />
             </ListItemButton>
 
-            {/* 👈 เพิ่มเมนูนี้: เมนูไปหน้าจัดการเอกสารนักศึกษา */}
             <ListItemButton
               selected={location.pathname === "/admin/document-management"}
               onClick={() => {
@@ -236,8 +248,9 @@ function Sidebar() {
 
             <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ pl: 2 }}>
+                {/* ขั้นตอนที่ 1 */}
                 <ListItemButton
-                  selected={location.pathname === "/student/scan"}
+                  selected={isStep1Active}
                   onClick={() => {
                     navigate("/student/scan");
                     if (isMobile) closeMobile();
@@ -245,8 +258,8 @@ function Sidebar() {
                   sx={{
                     borderRadius: 1.5,
                     mb: 0.5,
-                    bgcolor: location.pathname === "/student/scan" ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: location.pathname === "/student/scan" ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                    bgcolor: isStep1Active ? ACTIVE_SUB_BG : "transparent",
+                    borderLeft: isStep1Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
                     "&:hover": { bgcolor: ACTIVE_SUB_BG },
                   }}
                 >
@@ -254,13 +267,15 @@ function Sidebar() {
                     primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
                     primaryTypographyProps={{
                       fontSize: "0.82rem",
-                      color: location.pathname === "/student/scan" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                      color: isStep1Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                      fontWeight: isStep1Active ? 700 : 400
                     }}
                   />
                 </ListItemButton>
 
+                {/* ขั้นตอนที่ 2 */}
                 <ListItemButton
-                  selected={location.pathname === "/student/step2-upload"}
+                  selected={isStep2Active}
                   onClick={() => {
                     navigate("/student/step2-upload");
                     if (isMobile) closeMobile();
@@ -268,6 +283,8 @@ function Sidebar() {
                   sx={{
                     borderRadius: 1.5,
                     mb: 0.5,
+                    bgcolor: isStep2Active ? ACTIVE_SUB_BG : "transparent",
+                    borderLeft: isStep2Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
                     "&:hover": { bgcolor: ACTIVE_SUB_BG },
                   }}
                 >
@@ -275,11 +292,13 @@ function Sidebar() {
                     primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
                     primaryTypographyProps={{
                       fontSize: "0.82rem",
-                      color: location.pathname === "/student/step2-upload" ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                      color: isStep2Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                      fontWeight: isStep2Active ? 700 : 400
                     }}
                   />
                 </ListItemButton>
 
+                {/* ขั้นตอนที่ 3 */}
                 <ListItemButton
                   onClick={() => {
                     navigate("/student/step3");
