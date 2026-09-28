@@ -69,7 +69,7 @@ function Sidebar() {
 
   // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 2 หรือไม่
   const isStep2Active = [
-    "/student/step2-upload"
+    "/student/step2-dashboard"
   ].includes(location.pathname);
 
   const renderSidebarContent = (
@@ -277,7 +277,7 @@ function Sidebar() {
                 <ListItemButton
                   selected={isStep2Active}
                   onClick={() => {
-                    navigate("/student/step2-upload");
+                    navigate("/student/step2-dashboard");
                     if (isMobile) closeMobile();
                   }}
                   sx={{

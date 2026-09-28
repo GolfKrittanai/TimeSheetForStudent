@@ -26,6 +26,8 @@ import DocumentReviewAdmin from "./pages/Documentreviewadmin";
 import DocumentSummary from "./pages/Step1_student/DocumentSummary";
 
 import DocumentScanDashboard2 from "./pages/Step2_student/DocumentScanDashboard2";
+import DocumentScanUpload2 from "./pages/Step2_student/DocumentScanUpload2";
+import DocumentSummary2 from "./pages/Step2_student/DocumentSummary2";
 
 // 👈 1. เพิ่ม import หน้าจัดการเอกสารที่เพิ่งสร้าง
 import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
@@ -114,7 +116,9 @@ function App() {
             {/* ➕ เพิ่ม Route สำหรับหน้า DocumentSummary */}
             <Route path="/student/scan-summary" element={<DocumentSummary />} />
             <Route path="/student/scan-history" element={<DocumentScanHistory />} />
-            <Route path="/student/step2-upload" element={<DocumentScanDashboard2 />} />
+            <Route path="/student/step2-dashboard" element={<DocumentScanDashboard2 />} />
+            <Route path="/student/step2-upload" element={<DocumentScanUpload2 />} />
+            <Route path="/student/step2-summary" element={<DocumentSummary2 />} />
             <Route path="/student" element={<StudentDashboard />} />
             <Route
               path="/student/timesheet-history"

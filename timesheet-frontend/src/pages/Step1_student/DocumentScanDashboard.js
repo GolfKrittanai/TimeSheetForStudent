@@ -164,17 +164,12 @@ function DocumentScanDashboard() {
   }, [documents]);
 
   const steps = useMemo(() => {
-    const passedCount = documents.filter((doc) => doc.status === "ผ่าน").length;
-    const hasUploadedAny = documents.some((doc) => doc.status !== "ยังไม่ได้ส่ง");
-
+    // กำหนดให้ค้างอยู่ที่ขั้นตอนที่ 1 เสมอในหน้าอัปโหลดเอกสารนี้ 
+    // จนกว่าจะถึงหน้าสำเร็จ (isAllPassed)
     let currentStep = 1;
 
-    if (passedCount === 5 || isAllPassed) {
+    if (isAllPassed) {
       currentStep = 4;
-    } else if (isReadyToNext) {
-      currentStep = 3;
-    } else if (hasUploadedAny) {
-      currentStep = 2;
     }
 
     return [
@@ -186,7 +181,7 @@ function DocumentScanDashboard() {
       ...step,
       active: step.num <= currentStep,
     }));
-  }, [documents, isAllPassed, isReadyToNext]);
+  }, [isAllPassed]);
 
   const getAcceptFileType = () => {
     switch (fileType) {
@@ -240,8 +235,12 @@ function DocumentScanDashboard() {
   };
 
   const handleGoToSummary = () => {
-    if (isReadyToNext || isAllPassed) {
-      navigate("/student/scan-summary");
+      if (isAllPassed) {
+      // ถ้าผ่านครบ 5 ฉบับแล้ว ไปยังขั้นตอนที่ 2 (Dashboard ถัดไป)
+      navigate("/student/step2-dashboard");
+    } else {
+      // ถ้ายังไม่ผ่านครบ 5 ฉบับ ให้พาไปหน้า Summary ปกติ
+      navigate("/student/scan-summary"); // หรือหน้าที่ต้องการแสดงสรุปสถานะ
     }
   };
 
@@ -324,7 +323,7 @@ function DocumentScanDashboard() {
           boxSizing: "border-box",
         }}
       >
-        {/* แถบ Stepper แสดงขั้นตอน (ปรับ Layout ให้เท่ากับ DocumentSummary) */}
+        {/* แถบ Stepper แสดงขั้นตอน */}
         <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, bgcolor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 0.2, fontSize: "1.1rem" }}>
             ขั้นตอนการใช้งาน 4 ขั้นตอน
@@ -368,7 +367,7 @@ function DocumentScanDashboard() {
                     sx={{ 
                       flexGrow: 1, 
                       height: 2, 
-                      bgcolor: steps[idx + 1].active ? "#007a5e" : "#cbd5e1", 
+                      bgcolor: steps[idx].active && steps[idx + 1].active ? "#007a5e" : "#cbd5e1", 
                       mx: 2,
                       transition: "all 0.3s ease",
                     }} 
@@ -379,7 +378,7 @@ function DocumentScanDashboard() {
           </Box>
         </Paper>
 
-        {/* 🟢 กรณีเอกสารผ่านครบทั้ง 5 ฉบับ และอยู่โหมดแสดงความสำเร็จ */}
+        {/* กรณีเอกสารผ่านครบทั้ง 5 ฉบับ และอยู่โหมดแสดงความสำเร็จ */}
         {showSuccessView && isAllPassed ? (
           <Paper
             elevation={0}
@@ -473,7 +472,7 @@ function DocumentScanDashboard() {
             </Paper>
           </Paper>
         ) : (
-          /* 🔴 กรณีที่ยังไม่ผ่านครบ หรือกดสลับมาดูตารางอัปโหลดปกติ */
+          /* กรณีที่ยังไม่ผ่านครบ หรือกดสลับมาดูตารางอัปโหลดปกติ */
           <Paper
             elevation={0}
             sx={{
@@ -540,7 +539,7 @@ function DocumentScanDashboard() {
           </Paper>
         )}
 
-        {/* แถบปุ่มควบคุมด้านล่าง (ให้ระยะและฟอนต์ตรงกับ DocumentSummary) */}
+        {/* แถบปุ่มควบคุมด้านล่าง */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           {isAllPassed ? (
             <Button

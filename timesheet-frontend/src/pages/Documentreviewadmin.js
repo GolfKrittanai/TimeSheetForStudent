@@ -80,6 +80,9 @@ function DocumentReviewAdmin() {
   const [activeDoc, setActiveDoc] = useState(null);
   const [remark, setRemark] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State สำหรับเก็บสถานะปุ่มที่ถูกคลิก (passed, failed หรือ null เพื่อให้เป็นสีเทาทั้งคู่ตอนเริ่มต้น)
+  const [decisionStatus, setDecisionStatus] = useState(null);
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -142,15 +145,14 @@ function DocumentReviewAdmin() {
 
       let overallStatus = "pending";
 
-      // ปรับลำดับเงื่อนไขใหม่ให้เข้มงวดขึ้น (บังคับเช็กจำนวนที่ต้องส่งก่อนเสมอ)
       if (totalDocsSubmitted < REQUIRED_DOC_COUNT) {
-        overallStatus = "incomplete"; // ถ้ายังส่งไม่ครบ 5 ฉบับ ให้แสดงเป็น "ยังส่งไม่ครบ" เสมอ
+        overallStatus = "incomplete";
       } else if (hasFailedDoc) {
-        overallStatus = "failed";    // ถ้ามีเอกสารที่ต้องแก้ไข
+        overallStatus = "failed";
       } else if (passedDocsCount === REQUIRED_DOC_COUNT) {
-        overallStatus = "passed";    // ครบ 5 ฉบับ และผ่านทั้งหมด
+        overallStatus = "passed";
       } else if (hasPendingDoc) {
-        overallStatus = "pending";   // ครบ 5 ฉบับ แต่มีบางใบรอตรวจ
+        overallStatus = "pending";
       }
 
       return {
@@ -195,6 +197,7 @@ function DocumentReviewAdmin() {
       setActiveDoc(student.docs[0]);
       setRemark(student.docs[0].remark || "");
     }
+    setDecisionStatus(null); // รีเซ็ตปุ่มเป็นสีเทาเมื่อเปิด Modal
     setOpenStudentModal(true);
   };
 
@@ -204,12 +207,14 @@ function DocumentReviewAdmin() {
       setSelectedStudent(null);
       setActiveDoc(null);
       setRemark("");
+      setDecisionStatus(null);
     }
   };
 
   const handleSelectDocInModal = (doc) => {
     setActiveDoc(doc);
     setRemark(doc.remark || "");
+    setDecisionStatus(null); // รีเซ็ตปุ่มเป็นสีเทาเมื่อเปลี่ยนเอกสาร
   };
 
   const handleReview = async (decision) => {
@@ -218,7 +223,10 @@ function DocumentReviewAdmin() {
       alert("กรุณาระบุเหตุผลที่ต้องแก้ไข เพื่อแจ้งให้นักศึกษาทราบ");
       return;
     }
+    
+    setDecisionStatus(decision); // เปลี่ยนสีปุ่มตามที่คลิกทันทีก่อนส่งข้อมูล
     setIsSubmitting(true);
+    
     try {
       await reviewDocument(activeDoc.id, decision, remark.trim());
       await loadDocuments();
@@ -226,7 +234,6 @@ function DocumentReviewAdmin() {
     } catch (error) {
       console.error("Review Error:", error);
       alert("เกิดข้อผิดพลาดในการบันทึกผลการตรวจสอบ");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -524,9 +531,18 @@ function DocumentReviewAdmin() {
           onClose={handleCloseModal}
           maxWidth="lg"
           fullWidth
-          PaperProps={{ sx: { borderRadius: 4, p: 2, fontFamily: '"Kanit", sans-serif' } }}
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              p: 2,
+              fontFamily: '"Kanit", sans-serif',
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+            },
+          }}
         >
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, pt: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, pt: 1, flexShrink: 0 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: BRAND }}>
               เอกสารของ {selectedStudent?.studentName} ({selectedStudent?.studentCode})
             </Typography>
@@ -535,7 +551,7 @@ function DocumentReviewAdmin() {
             </IconButton>
           </Box>
 
-          <DialogContent sx={{ pt: 2 }}>
+          <DialogContent sx={{ pt: 2, overflowY: "auto", flexGrow: 1 }}>
             {selectedStudent && (
               <Grid container spacing={2}>
                 {/* ฝั่งซ้าย: รายการเอกสารทั้งหมดที่ส่งมา */}
@@ -544,7 +560,7 @@ function DocumentReviewAdmin() {
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 1, color: "#475569" }}>
                       รายการเอกสาร ({selectedStudent.docs.length}/{REQUIRED_DOC_COUNT})
                     </Typography>
-                    <List disablePadding>
+                    <List disablePadding sx={{ maxHeight: "50vh", overflowY: "auto" }}>
                       {selectedStudent.docs.map((doc, idx) => {
                         const isSelected = activeDoc?.id === doc.id;
                         return (
@@ -576,7 +592,7 @@ function DocumentReviewAdmin() {
                 {/* ฝั่งขวา: พรีวิวไฟล์เอกสารและปุ่มให้คะแนน */}
                 <Grid item xs={12} md={8}>
                   {activeDoc ? (
-                    <Box sx={{ border: "1px solid #e2e8f0", borderRadius: 3, p: 2, bgcolor: "#fff" }}>
+                    <Box sx={{ border: "1px solid #e2e8f0", borderRadius: 3, p: 1.5, bgcolor: "#fff" }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: BRAND, mb: 1 }}>
                         {activeDoc.docCategory}
                       </Typography>
@@ -586,12 +602,12 @@ function DocumentReviewAdmin() {
                           border: "1px solid #e2e8f0",
                           borderRadius: 2,
                           bgcolor: "#f8fafc",
-                          minHeight: 320,
+                          minHeight: 180,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           overflow: "hidden",
-                          mb: 2,
+                          mb: 1.5,
                         }}
                       >
                         {activeDoc.fileUrl ? (
@@ -600,14 +616,14 @@ function DocumentReviewAdmin() {
                               component="img"
                               src={activeDoc.fileUrl}
                               alt={activeDoc.docCategory}
-                              sx={{ maxWidth: "100%", maxHeight: 360, objectFit: "contain" }}
+                              sx={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain" }}
                             />
                           ) : isPdfFile(activeDoc.fileUrl) ? (
                             <Box
                               component="iframe"
                               src={activeDoc.fileUrl}
                               title={activeDoc.docCategory}
-                              sx={{ width: "100%", height: 360, border: "none" }}
+                              sx={{ width: "100%", height: 180, border: "none" }}
                             />
                           ) : (
                             <Button
@@ -656,19 +672,20 @@ function DocumentReviewAdmin() {
           </DialogContent>
 
           {activeDoc && activeDoc.status !== "passed" && (
-            <DialogActions sx={{ px: 3, pb: 2 }}>
+            <DialogActions sx={{ px: 3, pb: 2, flexShrink: 0 }}>
               <Button
                 onClick={() => handleReview("failed")}
                 disabled={isSubmitting}
                 sx={{
-                  bgcolor: "#e08a1f",
-                  color: "#fff",
+                  bgcolor: decisionStatus === "failed" ? "#e08a1f" : "#f1f5f9",
+                  color: decisionStatus === "failed" ? "#fff" : "#475569",
+                  border: decisionStatus === "failed" ? "none" : "1px solid #cbd5e1",
                   px: 3,
                   py: 1,
                   borderRadius: 2,
                   fontWeight: 600,
                   textTransform: "none",
-                  "&:hover": { bgcolor: "#b96f14" },
+                  "&:hover": { bgcolor: decisionStatus === "failed" ? "#b96f14" : "#e2e8f0" },
                 }}
               >
                 ต้องแก้ไขฉบับนี้
@@ -677,14 +694,15 @@ function DocumentReviewAdmin() {
                 onClick={() => handleReview("passed")}
                 disabled={isSubmitting}
                 sx={{
-                  bgcolor: "#1e8e5a",
-                  color: "#fff",
+                  bgcolor: decisionStatus === "passed" ? "#1e8e5a" : "#f1f5f9",
+                  color: decisionStatus === "passed" ? "#fff" : "#475569",
+                  border: decisionStatus === "passed" ? "none" : "1px solid #cbd5e1",
                   px: 3,
                   py: 1,
                   borderRadius: 2,
                   fontWeight: 600,
                   textTransform: "none",
-                  "&:hover": { bgcolor: "#166b44" },
+                  "&:hover": { bgcolor: decisionStatus === "passed" ? "#166b44" : "#e2e8f0" },
                 }}
               >
                 อนุมัติฉบับนี้

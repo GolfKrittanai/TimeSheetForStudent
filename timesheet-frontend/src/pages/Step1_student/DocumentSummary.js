@@ -183,7 +183,7 @@ function DocumentSummary() {
         setOpenConfirmModal(true);
       }
     } else if (activeStep === 4) {
-      navigate("/student/step2-upload");
+      navigate("/student/step2-dashboard");
     }
   };
 

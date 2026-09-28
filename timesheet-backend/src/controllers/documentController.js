@@ -442,32 +442,7 @@ exports.reviewDocument = async (req, res) => {
     if (status === 'ผ่าน' || status === 'approved') finalStatus = 'passed';
     if (status === 'ไม่ผ่าน' || status === 'rejected' || status === 'failed') finalStatus = 'failed';
 
-    // กรณีตรวจ "ไม่ผ่าน" ให้ลบไฟล์ออกจากเครื่อง และลบ Record ออกจากฐานข้อมูลทันที
-    if (finalStatus === 'failed') {
-      const doc = await prisma.document_scan.findUnique({ where: { id: id } });
-
-      if (!doc) {
-        return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการตรวจ' });
-      }
-
-      // 1. ลบไฟล์ออกจากโฟลเดอร์ uploads
-      if (doc.fileUrl) {
-        const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
-        const filePath = path.join(process.cwd(), 'uploads', cleanPath);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-
-      // 2. ลบ Record ออกจาก Database
-      await prisma.document_scan.delete({ where: { id: id } });
-
-      return res.json({ 
-        message: 'เอกสารไม่ผ่านการตรวจสอบ ระบบได้ทำการลบไฟล์และข้อมูลเดิมออกแล้ว เพื่อให้นักศึกษาสามารถอัปโหลดใหม่ได้' 
-      });
-    }
-
-    // กรณีปกติ (ผ่าน) ให้ทำการอัปเดตสถานะตามปกติ
+    // เปลี่ยนมาใช้การ update สถานะและบันทึก remark แทนการลบทิ้ง
     const updatedDoc = await prisma.document_scan.update({
       where: { id: id },
       data: { 

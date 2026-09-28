@@ -77,7 +77,7 @@ const DetailRow = ({ icon: Icon, value, label }) => (
   </Box>
 );
 
-function DocumentSummary() {
+function DocumentSummary2() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(2);
   const [documents, setDocuments] = useState([]);
@@ -833,4 +833,4 @@ function DocumentSummary() {
   );
 }
 
-export default DocumentSummary;
+export default DocumentSummary2;
