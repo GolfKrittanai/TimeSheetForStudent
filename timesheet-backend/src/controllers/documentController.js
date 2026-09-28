@@ -305,7 +305,7 @@ exports.scanAndSaveDocument = async (req, res) => {
         docCategory: docCategory || 'BA Co-op 01',
         fileUrl: publicUrl,
         extractedText: text,
-        extractedData: extractedData,
+        extractedData: extractedData || {},
         status: 'pending',
       },
     });
@@ -368,7 +368,7 @@ exports.cancelDocument = async (req, res) => {
   }
 };
 
-// 4. ดึงเอกสารทั้งหมด (สำหรับ Admin/อาจารย์) - รองรับ Filter & Search
+// 4. ดึงเอกสารทั้งหมด (สำหรับ Admin/อาจารย์)
 exports.getAllDocumentsForReview = async (req, res) => {
   try {
     const { status, search, docCategory } = req.query;
@@ -386,37 +386,99 @@ exports.getAllDocumentsForReview = async (req, res) => {
     if (search) {
       whereCondition.OR = [
         { docCategory: { contains: search } },
-        { extractedText: { contains: search } }
+        { extractedText: { contains: search } },
+        { user: { fullName: { contains: search } } },
+        { user: { studentId: { contains: search } } }
       ];
     }
 
     const documents = await prisma.document_scan.findMany({
       where: whereCondition,
+      include: {
+        user: {
+          select: {
+            id: true,
+            studentId: true,
+            fullName: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(documents);
+    const formattedDocs = documents.map(doc => {
+      const extracted = doc.extractedData || {};
+      
+      return {
+        id: doc.id,
+        userId: doc.userId,
+        studentCode: doc.user?.studentId || extracted.studentId || doc.userId,
+        studentName: doc.user?.fullName || extracted.fullName || 'ไม่ระบุชื่อ',
+        docCategory: doc.docCategory,
+        fileUrl: doc.fileUrl,
+        extractedText: doc.extractedText,
+        extractedData: doc.extractedData,
+        status: doc.status,
+        remark: doc.remark,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt
+      };
+    });
+
+    res.json(formattedDocs);
   } catch (error) {
+    console.error('Error fetching documents for review:', error);
     res.status(500).json({ message: 'ไม่สามารถดึงรายการเอกสารทั้งหมดได้', error: error.message });
   }
 };
 
-// 5. บันทึกผลการตรวจเอกสาร
+// 5. บันทึกผลการตรวจเอกสาร (Admin/อาจารย์)
 exports.reviewDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { status, remark } = req.body;
 
+    let finalStatus = status;
+    if (status === 'ผ่าน' || status === 'approved') finalStatus = 'passed';
+    if (status === 'ไม่ผ่าน' || status === 'rejected' || status === 'failed') finalStatus = 'failed';
+
+    // กรณีตรวจ "ไม่ผ่าน" ให้ลบไฟล์ออกจากเครื่อง และลบ Record ออกจากฐานข้อมูลทันที
+    if (finalStatus === 'failed') {
+      const doc = await prisma.document_scan.findUnique({ where: { id: id } });
+
+      if (!doc) {
+        return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการตรวจ' });
+      }
+
+      // 1. ลบไฟล์ออกจากโฟลเดอร์ uploads
+      if (doc.fileUrl) {
+        const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
+        const filePath = path.join(process.cwd(), 'uploads', cleanPath);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      // 2. ลบ Record ออกจาก Database
+      await prisma.document_scan.delete({ where: { id: id } });
+
+      return res.json({ 
+        message: 'เอกสารไม่ผ่านการตรวจสอบ ระบบได้ทำการลบไฟล์และข้อมูลเดิมออกแล้ว เพื่อให้นักศึกษาสามารถอัปโหลดใหม่ได้' 
+      });
+    }
+
+    // กรณีปกติ (ผ่าน) ให้ทำการอัปเดตสถานะตามปกติ
     const updatedDoc = await prisma.document_scan.update({
       where: { id: id },
       data: { 
-        status: status,
+        status: finalStatus,
         remark: remark || null 
       }
     });
 
     res.json({ message: 'อัปเดตสถานะเอกสารสำเร็จ', data: updatedDoc });
   } catch (error) {
+    console.error('Review Document Error:', error);
     res.status(500).json({ message: 'ไม่สามารถอัปเดตสถานะเอกสารได้', error: error.message });
   }
 };

@@ -19,7 +19,10 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -39,12 +42,14 @@ import {
 
 const PAGE_SIZE = 10;
 const BRAND = "#00423b";
+const REQUIRED_DOC_COUNT = 5; // กำหนดจำนวนเอกสารที่ต้องส่งให้ครบ
 
-// สถานะฝั่ง backend (pending/passed/failed) -> ป้ายที่แสดงในตาราง
-const STATUS_MAP = {
+// แผนผังสถานะระดับนักศึกษา
+const STUDENT_STATUS_MAP = {
   passed: { label: "ผ่าน", bg: "#e8f8ef", color: "#1e8e5a" },
   failed: { label: "ต้องแก้ไข", bg: "#fff3e0", color: "#e08a1f" },
   pending: { label: "รอตรวจสอบ", bg: "#eef0ff", color: "#5b5fe0" },
+  incomplete: { label: "ยังส่งไม่ครบ", bg: "#f1f5f9", color: "#64748b" },
 };
 
 const formatDate = (dateStr) => {
@@ -69,9 +74,10 @@ function DocumentReviewAdmin() {
   const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(1);
 
-  const [openReviewModal, setOpenReviewModal] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [readOnly, setReadOnly] = useState(false);
+  // State สำหรับ Modal ตรวจสอบ/ดูรายละเอียดของนักศึกษา
+  const [openStudentModal, setOpenStudentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [activeDoc, setActiveDoc] = useState(null);
   const [remark, setRemark] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -106,25 +112,70 @@ function DocumentReviewAdmin() {
     setPage(1);
   };
 
-  // สถิติด้านบน: จำนวนนักศึกษาไม่ซ้ำ และจำนวนเอกสารทั้งหมดที่พบ
-  const studentCount = useMemo(() => {
-    const ids = new Set(documents.map((d) => d.studentCode || d.userId));
-    return ids.size;
+  // Group ข้อมูลเอกสารตามตัวนักศึกษา
+  const studentGroupedData = useMemo(() => {
+    const groups = {};
+
+    documents.forEach((doc) => {
+      const studentId = doc.studentCode || doc.userId || "UNKNOWN";
+      if (!groups[studentId]) {
+        groups[studentId] = {
+          studentCode: studentId,
+          studentName: doc.studentName || "-",
+          docs: [],
+          latestDate: doc.createdAt,
+        };
+      }
+      groups[studentId].docs.push(doc);
+
+      // วันที่ส่งล่าสุด
+      if (new Date(doc.createdAt) > new Date(groups[studentId].latestDate)) {
+        groups[studentId].latestDate = doc.createdAt;
+      }
+    });
+
+    return Object.values(groups).map((student) => {
+      const totalDocsSubmitted = student.docs.length;
+      const passedDocsCount = student.docs.filter((d) => d.status === "passed").length;
+      const hasFailedDoc = student.docs.some((d) => d.status === "failed");
+      const hasPendingDoc = student.docs.some((d) => d.status === "pending" || !d.status);
+
+      let overallStatus = "pending";
+
+      // ปรับลำดับเงื่อนไขใหม่ให้เข้มงวดขึ้น (บังคับเช็กจำนวนที่ต้องส่งก่อนเสมอ)
+      if (totalDocsSubmitted < REQUIRED_DOC_COUNT) {
+        overallStatus = "incomplete"; // ถ้ายังส่งไม่ครบ 5 ฉบับ ให้แสดงเป็น "ยังส่งไม่ครบ" เสมอ
+      } else if (hasFailedDoc) {
+        overallStatus = "failed";    // ถ้ามีเอกสารที่ต้องแก้ไข
+      } else if (passedDocsCount === REQUIRED_DOC_COUNT) {
+        overallStatus = "passed";    // ครบ 5 ฉบับ และผ่านทั้งหมด
+      } else if (hasPendingDoc) {
+        overallStatus = "pending";   // ครบ 5 ฉบับ แต่มีบางใบรอตรวจ
+      }
+
+      return {
+        ...student,
+        docCount: totalDocsSubmitted,
+        overallStatus,
+      };
+    });
   }, [documents]);
 
+  const totalStudents = studentGroupedData.length;
   const totalDocs = documents.length;
 
-  const totalPages = Math.max(1, Math.ceil(totalDocs / PAGE_SIZE));
-  const pagedDocuments = useMemo(() => {
+  const totalPages = Math.max(1, Math.ceil(totalStudents / PAGE_SIZE));
+  const pagedStudents = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
-    return documents.slice(start, start + PAGE_SIZE);
-  }, [documents, page]);
+    return studentGroupedData.slice(start, start + PAGE_SIZE);
+  }, [studentGroupedData, page]);
 
   const allCurrentPageSelected =
-    pagedDocuments.length > 0 && pagedDocuments.every((d) => selected.includes(d.id));
+    pagedStudents.length > 0 &&
+    pagedStudents.every((s) => selected.includes(s.studentCode));
 
   const toggleSelectAll = () => {
-    const pageIds = pagedDocuments.map((d) => d.id);
+    const pageIds = pagedStudents.map((s) => s.studentCode);
     if (allCurrentPageSelected) {
       setSelected((prev) => prev.filter((id) => !pageIds.includes(id)));
     } else {
@@ -138,30 +189,38 @@ function DocumentReviewAdmin() {
     );
   };
 
-  const handleOpenModal = (doc) => {
-    setSelectedDoc(doc);
-    setRemark(doc.remark || "");
-    setReadOnly(doc.status === "passed");
-    setOpenReviewModal(true);
+  const handleOpenStudentModal = (student) => {
+    setSelectedStudent(student);
+    if (student.docs && student.docs.length > 0) {
+      setActiveDoc(student.docs[0]);
+      setRemark(student.docs[0].remark || "");
+    }
+    setOpenStudentModal(true);
   };
 
   const handleCloseModal = () => {
     if (!isSubmitting) {
-      setOpenReviewModal(false);
-      setSelectedDoc(null);
+      setOpenStudentModal(false);
+      setSelectedStudent(null);
+      setActiveDoc(null);
       setRemark("");
     }
   };
 
+  const handleSelectDocInModal = (doc) => {
+    setActiveDoc(doc);
+    setRemark(doc.remark || "");
+  };
+
   const handleReview = async (decision) => {
-    if (!selectedDoc) return;
+    if (!activeDoc) return;
     if (decision === "failed" && !remark.trim()) {
       alert("กรุณาระบุเหตุผลที่ต้องแก้ไข เพื่อแจ้งให้นักศึกษาทราบ");
       return;
     }
     setIsSubmitting(true);
     try {
-      await reviewDocument(selectedDoc.id, decision, remark.trim());
+      await reviewDocument(activeDoc.id, decision, remark.trim());
       await loadDocuments();
       handleCloseModal();
     } catch (error) {
@@ -172,7 +231,7 @@ function DocumentReviewAdmin() {
     }
   };
 
-  const isImageFile = (url = "") => /\.(jpg|jpeg|png)$/i.test(url);
+  const isImageFile = (url = "") => /\.(jpg|jpeg|png|webp|bmp)$/i.test(url);
   const isPdfFile = (url = "") => /\.pdf$/i.test(url);
 
   const StatCard = ({ icon, label, value }) => (
@@ -229,7 +288,7 @@ function DocumentReviewAdmin() {
             <StatCard
               icon={<GroupsIcon sx={{ fontSize: 28 }} />}
               label="จำนวนนักศึกษา"
-              value={studentCount}
+              value={totalStudents}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -308,13 +367,12 @@ function DocumentReviewAdmin() {
                   </TableCell>
                   <TableCell sx={{ fontWeight: 700, color: "#475569" }}>ชื่อ-นามสกุล</TableCell>
                   <TableCell sx={{ fontWeight: 700, color: "#475569" }}>รหัสนักศึกษา</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>ประเภทเอกสาร</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>วันที่ส่ง</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
+                    จำนวนเอกสาร
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "#475569" }}>วันที่ส่งล่าสุด</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
                     สถานะ
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
-                    AI OCR
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, color: "#475569" }}>
                     ดำเนินการ
@@ -324,41 +382,41 @@ function DocumentReviewAdmin() {
               <TableBody>
                 {pageLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                       <CircularProgress size={26} sx={{ color: BRAND }} />
                     </TableCell>
                   </TableRow>
-                ) : pagedDocuments.length === 0 ? (
+                ) : pagedStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 5, color: "#94a3b8" }}>
-                      ไม่พบรายการเอกสาร
+                    <TableCell colSpan={7} align="center" sx={{ py: 5, color: "#94a3b8" }}>
+                      ไม่พบรายการนักศึกษา
                     </TableCell>
                   </TableRow>
                 ) : (
-                  pagedDocuments.map((row, idx) => {
-                    const statusInfo = STATUS_MAP[row.status] || STATUS_MAP.pending;
-                    const dt = formatDate(row.createdAt);
-                    const isPassed = row.status === "passed";
+                  pagedStudents.map((row) => {
+                    const statusInfo =
+                      STUDENT_STATUS_MAP[row.overallStatus] || STUDENT_STATUS_MAP.pending;
+                    const dt = formatDate(row.latestDate);
+                    const isPassed = row.overallStatus === "passed";
+
                     return (
-                      <TableRow key={row.id} hover>
+                      <TableRow key={row.studentCode} hover>
                         <TableCell padding="checkbox">
                           <Checkbox
                             size="small"
-                            checked={selected.includes(row.id)}
-                            onChange={() => toggleSelectOne(row.id)}
+                            checked={selected.includes(row.studentCode)}
+                            onChange={() => toggleSelectOne(row.studentCode)}
                           />
                         </TableCell>
                         <TableCell sx={{ color: "#334155", fontWeight: 500 }}>
-                          {row.studentName || "-"}
+                          {row.studentName}
                         </TableCell>
-                        <TableCell sx={{ color: "#334155" }}>
-                          {row.studentCode || row.userId}
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <TableCell sx={{ color: "#334155" }}>{row.studentCode}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
                             <InsertDriveFileIcon sx={{ fontSize: 18, color: "#a855f7" }} />
-                            <Typography variant="body2" sx={{ color: "#334155" }}>
-                              {row.docCategory}
+                            <Typography variant="body2" sx={{ color: "#334155", fontWeight: 600 }}>
+                              {row.docCount} / {REQUIRED_DOC_COUNT} ฉบับ
                             </Typography>
                           </Box>
                         </TableCell>
@@ -379,13 +437,10 @@ function DocumentReviewAdmin() {
                             }}
                           />
                         </TableCell>
-                        <TableCell align="center" sx={{ color: "#334155", fontWeight: 600 }}>
-                          {row.ocrConfidence != null ? `${row.ocrConfidence} %` : "-"}
-                        </TableCell>
                         <TableCell align="center">
                           <Button
                             size="small"
-                            onClick={() => handleOpenModal(row)}
+                            onClick={() => handleOpenStudentModal(row)}
                             sx={{
                               textTransform: "none",
                               fontWeight: 600,
@@ -411,7 +466,7 @@ function DocumentReviewAdmin() {
           </TableContainer>
 
           {/* Pagination */}
-          {totalDocs > 0 && (
+          {totalStudents > 0 && (
             <Box
               sx={{
                 display: "flex",
@@ -423,7 +478,7 @@ function DocumentReviewAdmin() {
               }}
             >
               <Typography variant="body2" sx={{ color: "#64748b" }}>
-                {pagedDocuments.length} / {totalDocs} รายการ
+                {pagedStudents.length} / {totalStudents} รายการ
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <IconButton
@@ -463,99 +518,145 @@ function DocumentReviewAdmin() {
           )}
         </Paper>
 
-        {/* Modal ตรวจสอบ/ดูรายละเอียดเอกสาร */}
+        {/* Modal แสดงรายการเอกสารของนักศึกษาเพื่อตรวจสอบ */}
         <Dialog
-          open={openReviewModal}
+          open={openStudentModal}
           onClose={handleCloseModal}
-          maxWidth="md"
+          maxWidth="lg"
           fullWidth
           PaperProps={{ sx: { borderRadius: 4, p: 2, fontFamily: '"Kanit", sans-serif' } }}
         >
-          <Box sx={{ display: "flex", justifyContent: "flex-end", pr: 1, pt: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, pt: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: BRAND }}>
+              เอกสารของ {selectedStudent?.studentName} ({selectedStudent?.studentCode})
+            </Typography>
             <IconButton onClick={handleCloseModal} disabled={isSubmitting}>
               <CloseIcon />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 0 }}>
-            {selectedDoc && (
-              <>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: BRAND, mb: 0.5 }}>
-                  {selectedDoc.docCategory}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
-                  {selectedDoc.studentName || "-"}{" "}
-                  {selectedDoc.studentCode ? `(${selectedDoc.studentCode})` : ""}
-                </Typography>
 
-                <Box
-                  sx={{
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 3,
-                    bgcolor: "#f8fafc",
-                    minHeight: 380,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    mb: 3,
-                  }}
-                >
-                  {selectedDoc.fileUrl ? (
-                    isImageFile(selectedDoc.fileUrl) ? (
+          <DialogContent sx={{ pt: 2 }}>
+            {selectedStudent && (
+              <Grid container spacing={2}>
+                {/* ฝั่งซ้าย: รายการเอกสารทั้งหมดที่ส่งมา */}
+                <Grid item xs={12} md={4}>
+                  <Paper variant="outlined" sx={{ borderRadius: 2, p: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 1, color: "#475569" }}>
+                      รายการเอกสาร ({selectedStudent.docs.length}/{REQUIRED_DOC_COUNT})
+                    </Typography>
+                    <List disablePadding>
+                      {selectedStudent.docs.map((doc, idx) => {
+                        const isSelected = activeDoc?.id === doc.id;
+                        return (
+                          <React.Fragment key={doc.id}>
+                            {idx > 0 && <Divider />}
+                            <ListItem
+                              button
+                              onClick={() => handleSelectDocInModal(doc)}
+                              sx={{
+                                borderRadius: 1.5,
+                                bgcolor: isSelected ? "#eaf6f1" : "transparent",
+                                "&:hover": { bgcolor: "#f1f5f9" },
+                              }}
+                            >
+                              <ListItemText
+                                primary={doc.docCategory || `เอกสารที่ ${idx + 1}`}
+                                secondary={`สถานะ: ${doc.status === "passed" ? "ผ่าน" : doc.status === "failed" ? "ต้องแก้ไข" : "รอตรวจสอบ"}`}
+                                primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: isSelected ? 700 : 500 }}
+                                secondaryTypographyProps={{ fontSize: "0.8rem" }}
+                              />
+                            </ListItem>
+                          </React.Fragment>
+                        );
+                      })}
+                    </List>
+                  </Paper>
+                </Grid>
+
+                {/* ฝั่งขวา: พรีวิวไฟล์เอกสารและปุ่มให้คะแนน */}
+                <Grid item xs={12} md={8}>
+                  {activeDoc ? (
+                    <Box sx={{ border: "1px solid #e2e8f0", borderRadius: 3, p: 2, bgcolor: "#fff" }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: BRAND, mb: 1 }}>
+                        {activeDoc.docCategory}
+                      </Typography>
+
                       <Box
-                        component="img"
-                        src={selectedDoc.fileUrl}
-                        alt={selectedDoc.docCategory}
-                        sx={{ maxWidth: "100%", maxHeight: 420, objectFit: "contain" }}
-                      />
-                    ) : isPdfFile(selectedDoc.fileUrl) ? (
-                      <Box
-                        component="iframe"
-                        src={selectedDoc.fileUrl}
-                        title={selectedDoc.docCategory}
-                        sx={{ width: "100%", height: 420, border: "none" }}
-                      />
-                    ) : (
-                      <Button
-                        href={selectedDoc.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ textTransform: "none", color: BRAND }}
+                        sx={{
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 2,
+                          bgcolor: "#f8fafc",
+                          minHeight: 320,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          overflow: "hidden",
+                          mb: 2,
+                        }}
                       >
-                        เปิดไฟล์ในแท็บใหม่
-                      </Button>
-                    )
+                        {activeDoc.fileUrl ? (
+                          isImageFile(activeDoc.fileUrl) ? (
+                            <Box
+                              component="img"
+                              src={activeDoc.fileUrl}
+                              alt={activeDoc.docCategory}
+                              sx={{ maxWidth: "100%", maxHeight: 360, objectFit: "contain" }}
+                            />
+                          ) : isPdfFile(activeDoc.fileUrl) ? (
+                            <Box
+                              component="iframe"
+                              src={activeDoc.fileUrl}
+                              title={activeDoc.docCategory}
+                              sx={{ width: "100%", height: 360, border: "none" }}
+                            />
+                          ) : (
+                            <Button
+                              href={activeDoc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{ textTransform: "none", color: BRAND }}
+                            >
+                              เปิดไฟล์ในแท็บใหม่
+                            </Button>
+                          )
+                        ) : (
+                          <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                            ไม่พบไฟล์แนบ
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {activeDoc.status === "passed" ? (
+                        activeDoc.remark && (
+                          <Typography variant="body2" sx={{ color: "#64748b" }}>
+                            หมายเหตุ: {activeDoc.remark}
+                          </Typography>
+                        )
+                      ) : (
+                        <TextField
+                          fullWidth
+                          multiline
+                          minRows={2}
+                          label="หมายเหตุ (จำเป็นเมื่อต้องแก้ไข)"
+                          value={remark}
+                          onChange={(e) => setRemark(e.target.value)}
+                          disabled={isSubmitting}
+                          sx={{ mb: 1, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                        />
+                      )}
+                    </Box>
                   ) : (
-                    <Typography variant="body2" sx={{ color: "#94a3b8" }}>
-                      ไม่พบไฟล์แนบ
+                    <Typography variant="body2" sx={{ color: "#94a3b8", textAlign: "center", py: 5 }}>
+                      เลือกเอกสารทางซ้ายเพื่อตรวจสอบ
                     </Typography>
                   )}
-                </Box>
-
-                {readOnly ? (
-                  selectedDoc.remark && (
-                    <Typography variant="body2" sx={{ color: "#64748b" }}>
-                      หมายเหตุ: {selectedDoc.remark}
-                    </Typography>
-                  )
-                ) : (
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    label="หมายเหตุ (จำเป็นเมื่อต้องแก้ไข)"
-                    value={remark}
-                    onChange={(e) => setRemark(e.target.value)}
-                    disabled={isSubmitting}
-                    sx={{ mb: 1, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                  />
-                )}
-              </>
+                </Grid>
+              </Grid>
             )}
           </DialogContent>
 
-          {!readOnly && (
-            <DialogActions sx={{ px: 3, pb: 3 }}>
+          {activeDoc && activeDoc.status !== "passed" && (
+            <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button
                 onClick={() => handleReview("failed")}
                 disabled={isSubmitting}
@@ -570,7 +671,7 @@ function DocumentReviewAdmin() {
                   "&:hover": { bgcolor: "#b96f14" },
                 }}
               >
-                ต้องแก้ไข
+                ต้องแก้ไขฉบับนี้
               </Button>
               <Button
                 onClick={() => handleReview("passed")}
@@ -586,7 +687,7 @@ function DocumentReviewAdmin() {
                   "&:hover": { bgcolor: "#166b44" },
                 }}
               >
-                ผ่าน
+                อนุมัติฉบับนี้
               </Button>
             </DialogActions>
           )}
