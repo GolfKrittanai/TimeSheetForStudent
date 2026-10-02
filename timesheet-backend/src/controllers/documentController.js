@@ -5,22 +5,15 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
-// =============================================================
-// หลอก Node.js module cache เพื่อปิด Warning เรื่อง canvas ของ pdfjs-dist
-// =============================================================
+// หลอก Module cache สำหรับ canvas ของ pdfjs
 const Module = require('module');
 const originalRequire = Module.prototype.require;
 Module.prototype.require = function (element) {
-  if (element === 'canvas') {
-    return {}; // คืนค่า object ว่างเปล่าเมื่อ pdfjs ถามหา canvas
-  }
+  if (element === 'canvas') return {};
   return originalRequire.apply(this, arguments);
 };
 
-// นำเข้า pdfjs-dist หลังจาก mock canvas แล้ว
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-
-// ตั้งค่าระงับ Verbose Logs และปิด Worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = false;
 if (pdfjsLib.VerbosityLevel) {
   pdfjsLib.verbosity = pdfjsLib.VerbosityLevel.ERRORS;
@@ -41,13 +34,9 @@ async function uploadToLocalStorage(filePath, originalFilename) {
     const destinationPath = path.join(uploadFolder, fileName);
 
     fs.copyFileSync(filePath, destinationPath);
-
     const relativeUrl = `/uploads/${fileName}`;
 
-    return {
-      publicUrl: relativeUrl,
-      storagePath: relativeUrl
-    };
+    return { publicUrl: relativeUrl, storagePath: relativeUrl };
   } catch (err) {
     console.error('Error in uploadToLocalStorage:', err);
     throw err;
@@ -60,16 +49,9 @@ async function uploadToLocalStorage(filePath, originalFilename) {
 async function preprocessImage(inputPath) {
   try {
     const outputPath = inputPath.replace(/\.(png|jpg|jpeg|webp|bmp)$/i, '_processed.png');
-
-    await sharp(inputPath)
-      .grayscale()
-      .normalize()
-      .sharpen()
-      .toFile(outputPath);
-
+    await sharp(inputPath).grayscale().normalize().sharpen().toFile(outputPath);
     return outputPath;
   } catch (error) {
-    console.error('Image Preprocessing Error (Fallback to original):', error);
     return inputPath;
   }
 }
@@ -217,11 +199,54 @@ function parseExtractedText(text, docCategory) {
     if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
     if (gpaMatch) extracted.gpa = cleanValue(gpaMatch[1]);
   }
+  // 🟢 สกัดข้อมูลเอกสารตอบกลับ (รองรับทั้ง หน้า 1 และ หน้า 2)
+  else if (categoryLower.includes("ตอบกลับ") || categoryLower.includes("ตอบรับ") || categoryLower.includes("03")) {
+    if (categoryLower.includes("หน้า 1")) {
+      const studentMatch = cleanText.match(/1\.\s*(?:นาย|นาง|นางสาว)?\s*([ก-๙a-zA-Z\s]+?)(?=\s*รหัสนักศึกษา|\s*สาขาวิชา|$)/i) ||
+                           cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+)/i);
+      const studentIdMatch = cleanText.match(/รหัสนักศึกษา\s*[:\.]*\s*([0-9]{10})/i) || cleanText.match(/\b(6[0-9]{9})\b/);
+      const branchMatch = cleanText.match(/สาขาวิชา\s*[:\.]*\s*([ก-๙a-zA-Z\s.-]+?)(?=\s*2\.|\s*ส่วนที่|$)/i);
+
+      const companyMatch = cleanText.match(/ชื่อสถานประกอบการ\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i) ||
+                           cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i);
+      const coordinatorMatch = cleanText.match(/ชื่อผู้ประสานงาน\s*[:\.]*\s*([ก-๙a-zA-Z\.\s]+)/i);
+      const positionMatch = cleanText.match(/ตำแหน่ง\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?)(?=\s*โทรศัพท์|$)/i);
+      const phoneMatch = cleanText.match(/โทรศัพท์\s*[:\.]*\s*([0-9\s-]{9,12})/i);
+      const emailMatch = cleanText.match(/E-Mail\s*[:\.]*\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+
+      let statusResult = "ไม่ระบุ";
+      if (/สามารถรับนักศึกษา|รับจำนวน/i.test(cleanText)) {
+        statusResult = "รับ";
+      } else if (/ไม่สามารถรับนักศึกษา/i.test(cleanText)) {
+        statusResult = "ไม่รับ";
+      }
+
+      if (studentMatch) extracted.studentName = cleanValue(studentMatch[1]);
+      if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
+      if (branchMatch) extracted.branch = cleanValue(branchMatch[1]);
+      if (companyMatch) extracted.companyName = cleanValue(companyMatch[1] || companyMatch[0]);
+      if (coordinatorMatch) extracted.coordinatorName = cleanValue(coordinatorMatch[1]);
+      if (positionMatch) extracted.position = cleanValue(positionMatch[1]);
+      if (phoneMatch) extracted.phone = cleanValue(phoneMatch[1]);
+      if (emailMatch) extracted.email = cleanValue(emailMatch[1]);
+      extracted.responseStatus = statusResult;
+    } else if (categoryLower.includes("หน้า 2")) {
+      const qualificationMatch = cleanText.match(/รายละเอียดคุณสมบัตินักศึกษา.*?\s*[:\.]*\s*(.*?)(?=\s*4\.|\s*ข้อกำหนดอื่น|$)/i);
+      const jobPositionMatch = cleanText.match(/ตำแหน่งงานที่เสนอให้นักศึกษาปฏิบัติ\s*[:\.]*\s*([ก-๙a-zA-Z0-9\s.-]+?)(?=\s*ลักษณะงาน|$)/i);
+      const workDaysMatch = cleanText.match(/วันทำงาน\s*[:\.]*\s*(.*?)(?=\s*7\.|\s*สวัสดิการ|$)/i);
+
+      if (qualificationMatch) extracted.qualification = cleanValue(qualificationMatch[1]);
+      if (jobPositionMatch) extracted.jobPosition = cleanValue(jobPositionMatch[1]);
+      if (workDaysMatch) extracted.workDays = cleanValue(workDaysMatch[1]);
+    }
+  }
 
   return extracted;
 }
 
+// =============================================================
 // 1. อัปโหลดและสแกนเอกสาร
+// =============================================================
 exports.scanAndSaveDocument = async (req, res) => {
   try {
     const userId = req.user?.id ? parseInt(req.user.id) : parseInt(req.body.userId);
@@ -241,6 +266,7 @@ exports.scanAndSaveDocument = async (req, res) => {
     let text = '';
     let extractedData = {};
     let originalName = req.file.originalname;
+    const targetCategory = docCategory || 'เอกสารตอบกลับ (หน้า 1)';
 
     if (ext === '.pdf') {
       try {
@@ -259,13 +285,13 @@ exports.scanAndSaveDocument = async (req, res) => {
         text = fullText.join(' ').trim();
 
         if (text && text.length > 0) {
-          extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');
+          extractedData = parseExtractedText(text, targetCategory);
         } else {
           text = 'สแกนข้อความในไฟล์ PDF ไม่สมบูรณ์';
         }
       } catch (pdfError) {
-        console.error('PDF Conversion/OCR Error:', pdfError);
-        text = 'เกิดข้อผิดพลาดในการแปลงและสแกนไฟล์ PDF';
+        console.error('PDF OCR Error:', pdfError);
+        text = 'เกิดข้อผิดพลาดในการสแกนไฟล์ PDF';
       }
     } 
     else if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
@@ -279,7 +305,7 @@ exports.scanAndSaveDocument = async (req, res) => {
         }
 
         if (text && text.length > 0) {
-          extractedData = parseExtractedText(text, docCategory || 'BA Co-op 01');
+          extractedData = parseExtractedText(text, targetCategory);
         } else {
           text = 'ไม่พบข้อความในรูปภาพ';
         }
@@ -291,36 +317,73 @@ exports.scanAndSaveDocument = async (req, res) => {
       text = 'รูปแบบไฟล์ไม่รองรับการสแกน';
     }
 
-    // --- บันทึกไฟล์ลง Local Storage ---
+    // --- 1. บันทึกไฟล์ใหม่ลงโฟลเดอร์ uploads ---
     const { publicUrl } = await uploadToLocalStorage(absoluteFilePath, originalName);
 
-    // ลบไฟล์ Temp จาก Multer
     if (fs.existsSync(absoluteFilePath)) {
       fs.unlinkSync(absoluteFilePath);
     }
 
-    const newDoc = await prisma.document_scan.create({
-      data: {
+    // 🟢 2. ค้นหาเอกสารเฉพาะหมวดหมู่นั้นๆ ของนักศึกษา (เช่น "เอกสารตอบกลับ (หน้า 1)" หรือ "เอกสารตอบกลับ (หน้า 2)")
+    const existingDoc = await prisma.document_scan.findFirst({
+      where: {
         userId: userId,
-        docCategory: docCategory || 'BA Co-op 01',
-        fileUrl: publicUrl,
-        extractedText: text,
-        extractedData: extractedData || {},
-        status: 'pending',
+        docCategory: targetCategory,
       },
     });
 
-    res.status(201).json({
+    let savedDoc;
+
+    if (existingDoc) {
+      // 🟢 2.1 สั่งลบไฟล์เก่าออกจากดิสก์
+      if (existingDoc.fileUrl) {
+        const oldCleanPath = existingDoc.fileUrl.replace(/^\/?uploads\//, '');
+        const oldFilePath = path.join(process.cwd(), 'uploads', oldCleanPath);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+          } catch (unlinkErr) {
+            console.error('ไม่สามารถลบไฟล์เก่าได้:', unlinkErr);
+          }
+        }
+      }
+
+      // 🟢 2.2 อัปเดตข้อมูลทับ Record หมวดหมู่นั้นๆ ในฐานข้อมูล
+      savedDoc = await prisma.document_scan.update({
+        where: { id: existingDoc.id },
+        data: {
+          fileUrl: publicUrl,
+          extractedText: text,
+          extractedData: extractedData || {},
+          status: 'pending',
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // 🟢 2.3 หากยังไม่มี ให้สร้าง Record ใหม่
+      savedDoc = await prisma.document_scan.create({
+        data: {
+          userId: userId,
+          docCategory: targetCategory,
+          fileUrl: publicUrl,
+          extractedText: text,
+          extractedData: extractedData || {},
+          status: 'pending',
+        },
+      });
+    }
+
+    res.status(200).json({
       message: 'อัปโหลดและสแกนสำเร็จ',
       data: {
-        id: newDoc.id,
-        userId: newDoc.userId,
-        name: newDoc.docCategory,
-        status: newDoc.status,
-        date: newDoc.createdAt,
-        fileUrl: newDoc.fileUrl,
-        extractedText: newDoc.extractedText,
-        extractedData: newDoc.extractedData,
+        id: savedDoc.id,
+        userId: savedDoc.userId,
+        name: savedDoc.docCategory,
+        status: savedDoc.status,
+        date: savedDoc.createdAt,
+        fileUrl: savedDoc.fileUrl,
+        extractedText: savedDoc.extractedText,
+        extractedData: savedDoc.extractedData,
       },
     });
   } catch (error) {
@@ -329,7 +392,9 @@ exports.scanAndSaveDocument = async (req, res) => {
   }
 };
 
+// =============================================================
 // 2. ดึงประวัติการสแกนของนักศึกษาแต่ละคน
+// =============================================================
 exports.getUserDocumentHistory = async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
@@ -343,22 +408,20 @@ exports.getUserDocumentHistory = async (req, res) => {
   }
 };
 
+// =============================================================
 // 3. ยกเลิกและลบเอกสาร
+// =============================================================
 exports.cancelDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const doc = await prisma.document_scan.findUnique({ where: { id: id } });
 
-    if (!doc) {
-      return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
-    }
+    if (!doc) return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
 
     if (doc.fileUrl) {
       const cleanPath = doc.fileUrl.replace(/^\/?uploads\//, '');
       const filePath = path.join(process.cwd(), 'uploads', cleanPath);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
     await prisma.document_scan.delete({ where: { id: id } });
@@ -368,20 +431,16 @@ exports.cancelDocument = async (req, res) => {
   }
 };
 
+// =============================================================
 // 4. ดึงเอกสารทั้งหมด (สำหรับ Admin/อาจารย์)
+// =============================================================
 exports.getAllDocumentsForReview = async (req, res) => {
   try {
     const { status, search, docCategory } = req.query;
-
     const whereCondition = {};
 
-    if (status && status !== 'all') {
-      whereCondition.status = status;
-    }
-
-    if (docCategory) {
-      whereCondition.docCategory = docCategory;
-    }
+    if (status && status !== 'all') whereCondition.status = status;
+    if (docCategory) whereCondition.docCategory = docCategory;
 
     if (search) {
       whereCondition.OR = [
@@ -395,20 +454,13 @@ exports.getAllDocumentsForReview = async (req, res) => {
     const documents = await prisma.document_scan.findMany({
       where: whereCondition,
       include: {
-        user: {
-          select: {
-            id: true,
-            studentId: true,
-            fullName: true
-          }
-        }
+        user: { select: { id: true, studentId: true, fullName: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
 
     const formattedDocs = documents.map(doc => {
       const extracted = doc.extractedData || {};
-      
       return {
         id: doc.id,
         userId: doc.userId,
@@ -427,12 +479,13 @@ exports.getAllDocumentsForReview = async (req, res) => {
 
     res.json(formattedDocs);
   } catch (error) {
-    console.error('Error fetching documents for review:', error);
     res.status(500).json({ message: 'ไม่สามารถดึงรายการเอกสารทั้งหมดได้', error: error.message });
   }
 };
 
+// =============================================================
 // 5. บันทึกผลการตรวจเอกสาร (Admin/อาจารย์)
+// =============================================================
 exports.reviewDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -442,7 +495,6 @@ exports.reviewDocument = async (req, res) => {
     if (status === 'ผ่าน' || status === 'approved') finalStatus = 'passed';
     if (status === 'ไม่ผ่าน' || status === 'rejected' || status === 'failed') finalStatus = 'failed';
 
-    // เปลี่ยนมาใช้การ update สถานะและบันทึก remark แทนการลบทิ้ง
     const updatedDoc = await prisma.document_scan.update({
       where: { id: id },
       data: { 
@@ -453,7 +505,6 @@ exports.reviewDocument = async (req, res) => {
 
     res.json({ message: 'อัปเดตสถานะเอกสารสำเร็จ', data: updatedDoc });
   } catch (error) {
-    console.error('Review Document Error:', error);
     res.status(500).json({ message: 'ไม่สามารถอัปเดตสถานะเอกสารได้', error: error.message });
   }
 };
