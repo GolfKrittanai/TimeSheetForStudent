@@ -3,48 +3,45 @@ import {
   Box,
   Typography,
   Paper,
-  MenuItem,
-  Select,
-  FormControl,
   Button,
   Grid,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   Dialog,
   DialogContent,
   IconButton,
   useMediaQuery,
   useTheme,
+  Chip,
 } from "@mui/material";
 import {
   CloudUpload as CloudUploadIcon,
   Close as CloseIcon,
-  ErrorOutline as ErrorOutlineIcon,
-  AccessTime as AccessTimeIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
   NavigateNext as NavigateNextIcon,
-  Description as DescriptionIcon,
-  ArrowBack as ArrowBackIcon,
+  DescriptionOutlined as DescriptionIcon,
+  PersonOutlined as PersonIcon,
+  BusinessOutlined as BusinessIcon,
+  PhoneOutlined as PhoneIcon,
+  EmailOutlined as EmailIcon,
+  AssignmentIndOutlined as CardIcon,
+  SchoolOutlined as SchoolIcon,
+  WorkOutlined as WorkIcon,
+  CalendarTodayOutlined as CalendarIcon,
+  FactCheckOutlined as CheckStatusIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
-import { uploadAndScanDocument, getUserDocumentHistory, cancelUserDocument } from "../../services/documentScanService";
+import { uploadAndScanDocument, getUserDocumentHistory } from "../../services/documentScanService";
 
-const SHOW_STATUS_COLUMN = false;
+const RAW_API = process.env.REACT_APP_API || process.env.REACT_APP_API_URL || "http://localhost:5000";
+const SERVER_BASE_URL = RAW_API.replace(/\/api\/?$/, "");
 
-const INITIAL_DOCUMENTS = [
-  { id: 1, code: "1", name: "BA Co-op 01 เอกสารติดต่องานสหกิจศึกษา", status: "ยังไม่ได้ส่ง", date: "..." },
-  { id: 2, code: "2", name: "BA Co-op 02-1 เอกสารยินยอมจากผู้ปกครอง", status: "ยังไม่ได้ส่ง", date: "..." },
-  { id: 3, code: "3", name: "BA Co-op 02-2 ใบสมัครงานสหกิจศึกษา", status: "ยังไม่ได้ส่ง", date: "..." },
-  { id: 4, code: "4", name: "BA Co-op 04 เอกสารรายละเอียดที่พัก", status: "ยังไม่ได้ส่ง", date: "..." },
-  { id: 5, code: "5", name: "BA Co-op 05 ผลการศึกษาฉบับ (ชั่วคราว)", status: "ยังไม่ได้ส่ง", date: "..." },
+const BRAND_DARK = "#0b2b26";
+const BRAND_CARD = "#081f1c";
+const BRAND_GREEN = "#10b981";
+
+const INITIAL_STEP2_DOCS = [
+  { id: 1, code: "1", name: "เอกสารตอบกลับ (หน้า 1)", status: "ยังไม่ได้ส่ง", date: "...", fileUrl: null, extractedData: {} },
+  { id: 2, code: "2", name: "เอกสารตอบกลับ (หน้า 2)", status: "ยังไม่ได้ส่ง", date: "...", fileUrl: null, extractedData: {} },
 ];
 
 const STEPS = [
@@ -53,23 +50,35 @@ const STEPS = [
   { num: "3", title: "สำเร็จ", sub: "ผ่านการตรวจสอบ", active: false },
 ];
 
+const DetailRow = ({ icon: Icon, value, label }) => (
+  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.8 }}>
+    <Icon sx={{ color: BRAND_GREEN, fontSize: 22, mt: 0.2 }} />
+    <Box sx={{ flexGrow: 1, borderBottom: "1px solid rgba(255, 255, 255, 0.1)", pb: 0.6 }}>
+      <Typography variant="body2" sx={{ fontWeight: 700, color: "#ffffff", fontSize: "0.85rem" }}>
+        {value || "-"}
+      </Typography>
+      <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.72rem" }}>
+        {label}
+      </Typography>
+    </Box>
+  </Box>
+);
+
 function DocumentScanUpload2() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
 
-  const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
+  const [step2Docs, setStep2Docs] = useState(INITIAL_STEP2_DOCS);
   const [pageLoading, setPageLoading] = useState(true);
 
   const [openUploadModal, setOpenUploadModal] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [fileType, setFileType] = useState("PNG");
+  const [openPreviewModal, setOpenPreviewModal] = useState(false);
+  const [selectedDocTarget, setSelectedDocTarget] = useState(null);
+  const [selectedDocDetails, setSelectedDocDetails] = useState(null);
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const isAllUploaded =
-    documents.length === 5 &&
-    documents.every((doc) => doc.status !== "ยังไม่ได้ส่ง");
 
   const getCurrentUserId = () => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -84,16 +93,30 @@ function DocumentScanUpload2() {
       const historyData = Array.isArray(res) ? res : res?.data || res?.documents || [];
 
       if (historyData && Array.isArray(historyData)) {
-        setDocuments((prevDocs) =>
+        setStep2Docs((prevDocs) =>
           prevDocs.map((doc) => {
-            const matchedLogs = historyData.filter(
-              (item) => item.docCategory === doc.name
-            );
+            const matchedLogs = historyData.filter((item) => {
+              if (doc.name.includes("หน้า 1")) {
+                return item.docCategory === "เอกสารตอบกลับ (หน้า 1)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 1"));
+              } else if (doc.name.includes("หน้า 2")) {
+                return item.docCategory === "เอกสารตอบกลับ (หน้า 2)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 2"));
+              }
+              return item.docCategory === doc.name;
+            });
 
             if (matchedLogs.length > 0) {
               matchedLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
               const latest = matchedLogs[0];
-              
+
+              let parsedExtracted = latest.extractedData;
+              if (typeof latest.extractedData === "string") {
+                try {
+                  parsedExtracted = JSON.parse(latest.extractedData);
+                } catch (e) {
+                  parsedExtracted = {};
+                }
+              }
+
               let mappedStatus = "รอตรวจสอบ";
               if (latest.status === "passed") mappedStatus = "ผ่าน";
               else if (latest.status === "failed") mappedStatus = "ไม่ผ่าน";
@@ -113,16 +136,11 @@ function DocumentScanUpload2() {
                 ...doc,
                 status: mappedStatus,
                 date: formattedDate,
-                dbId: latest.id
+                fileUrl: latest.fileUrl,
+                extractedData: parsedExtracted || {},
               };
             }
-            
-            return {
-              ...doc,
-              status: "ยังไม่ได้ส่ง",
-              date: "...",
-              dbId: null
-            };
+            return doc;
           })
         );
       }
@@ -137,61 +155,22 @@ function DocumentScanUpload2() {
     loadLatestStatus();
   }, [loadLatestStatus]);
 
-  const getAcceptFileType = () => {
-    switch (fileType) {
-      case "JPG":
-        return ".jpg,.jpeg";
-      case "PNG":
-        return ".png";
-      case "PDF":
-      default:
-        return ".pdf";
-    }
+  const getFileFullUrl = (rawPath) => {
+    if (!rawPath) return null;
+    let cleanPath = String(rawPath).trim();
+    if (/^https?:\/\//i.test(cleanPath) || cleanPath.startsWith("data:")) return cleanPath;
+    cleanPath = cleanPath.replace(/\\/g, "/").replace(/^\/?(uploads\/)+/i, "");
+    return `${SERVER_BASE_URL}/uploads/${cleanPath}`;
   };
 
   const handleOpenUploadModal = (doc) => {
-    setSelectedDoc(doc);
+    setSelectedDocTarget(doc);
     setSelectedFile(null);
     setOpenUploadModal(true);
   };
 
-  const handleCloseModal = () => {
-    if (!isLoading) {
-      setOpenUploadModal(false);
-      setSelectedDoc(null);
-      setSelectedFile(null);
-    }
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
-  };
-
-  const validateAndSetFile = (file) => {
-    if (!file) return;
-    const maxSizeBytes = 10 * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      alert("ขนาดไฟล์เกิน 10 MB กรุณาเลือกไฟล์ใหม่");
-      return;
-    }
-    setSelectedFile(file);
-  };
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-      validateAndSetFile(event.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (event) => {
-    if (event.target.files && event.target.files[0]) {
-      validateAndSetFile(event.target.files[0]);
-    }
-  };
-
   const handleSaveDocument = async () => {
-    if (!selectedFile || !selectedDoc) {
+    if (!selectedFile || !selectedDocTarget) {
       alert("กรุณาเลือกไฟล์เอกสารก่อนบันทึกข้อมูล");
       return;
     }
@@ -199,9 +178,9 @@ function DocumentScanUpload2() {
     setIsLoading(true);
     try {
       const userId = getCurrentUserId();
-      await uploadAndScanDocument(selectedFile, selectedDoc.name, userId);
+      await uploadAndScanDocument(selectedFile, selectedDocTarget.name, userId);
       await loadLatestStatus();
-      handleCloseModal();
+      setOpenUploadModal(false);
     } catch (error) {
       console.error("Upload Error:", error);
       alert("เกิดข้อผิดพลาดในการอัปโหลดเอกสาร");
@@ -210,439 +189,187 @@ function DocumentScanUpload2() {
     }
   };
 
-  const handleGoToSummary = () => {
-    if (isAllUploaded) {
-      navigate("/student/scan-summary");
+  const renderDocDetails = (doc) => {
+    const data = doc?.extractedData || {};
+    const type = doc?.name || "";
+
+    if (type.includes("หน้า 1")) {
+      return (
+        <>
+          <DetailRow icon={PersonIcon} value={data.studentName} label="ชื่อนักศึกษา" />
+          <DetailRow icon={CardIcon} value={data.studentId} label="รหัสนักศึกษา" />
+          <DetailRow icon={SchoolIcon} value={data.branch} label="สาขาวิชา" />
+          <DetailRow icon={BusinessIcon} value={data.companyName} label="ชื่อสถานประกอบการ" />
+          <DetailRow icon={PersonIcon} value={data.coordinatorName} label="ชื่อผู้ประสานงาน" />
+          <DetailRow icon={WorkIcon} value={data.position} label="ตำแหน่ง" />
+          <DetailRow icon={PhoneIcon} value={data.phone} label="โทรศัพท์บริษัท" />
+          <DetailRow icon={EmailIcon} value={data.email} label="อีเมล" />
+          <DetailRow icon={CheckStatusIcon} value={data.responseStatus} label="ผลการตอบรับ (รับ/ไม่รับ)" />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <DetailRow icon={DescriptionIcon} value={data.qualification} label="รายละเอียดคุณสมบัตินักศึกษา" />
+          <DetailRow icon={WorkIcon} value={data.jobPosition} label="ตำแหน่งงาน" />
+          <DetailRow icon={CalendarIcon} value={data.workDays} label="วันที่ทำงาน" />
+        </>
+      );
     }
   };
+
+  const isAllUploaded = step2Docs.every((doc) => doc.status !== "ยังไม่ได้ส่ง");
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f8fafc", minHeight: "100vh" }}>
       <Sidebar />
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, md: 3 },
-          fontFamily: '"Kanit", sans-serif',
-          display: "flex",
-          flexDirection: "column",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* ส่วนหัวขั้นตอนการใช้งาน */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 3,
-            borderRadius: 3,
-            bgcolor: "#ffffff",
-            border: "1px solid #e2e8f0",
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 0.5, fontSize: "1.1rem" }}>
-            ขั้นตอนการใช้งาน
-          </Typography>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, fontFamily: '"Kanit", sans-serif' }}>
+        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b" }}>ขั้นตอนการใช้งาน</Typography>
           <Typography variant="caption" sx={{ color: "#64748b", mb: 3, display: "block" }}>
             เอกสารของท่านอยู่ระหว่างการตรวจสอบ
           </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              px: isSmallScreen ? 0 : 4,
-            }}
-          >
+          <Box sx={{ display: "flex", justifyContent: "space-between", px: isSmallScreen ? 0 : 4 }}>
             {STEPS.map((step, idx) => (
               <React.Fragment key={step.num}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      bgcolor: step.active ? "#facc15" : "#64748b",
-                      color: step.active ? "#000" : "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 700,
-                      fontSize: "0.85rem",
-                      mb: 0.5,
-                    }}
-                  >
+                <Box sx={{ textAlign: "center" }}>
+                  <Box sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: step.active ? "#facc15" : "#cbd5e1", color: step.active ? "#000" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, margin: "0 auto 4px" }}>
                     {step.num}
                   </Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.8rem" }}>
-                    {step.title}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.7rem" }}>
-                    {step.sub}
-                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, display: "block" }}>{step.title}</Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.7rem" }}>{step.sub}</Typography>
                 </Box>
-
-                {idx < STEPS.length - 1 && (
-                  <Box sx={{ flexGrow: 1, height: 2, bgcolor: "#64748b", mx: 3 }} />
-                )}
+                {idx < STEPS.length - 1 && <Box sx={{ flexGrow: 1, height: 2, bgcolor: "#cbd5e1", my: 2, mx: 2 }} />}
               </React.Fragment>
             ))}
           </Box>
         </Paper>
 
-        {/* ส่วนหัวข้อหัวข้อย่อย */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#00423b", fontSize: "1rem" }}>
-            ขั้นตอน : เอกสารตอบกลับจากสถานประกอบการ
-          </Typography>
-          <Typography variant="caption" sx={{ color: "#64748b" }}>
-            เมื่อสถานประกอบการพิจารณาแล้ว จะออกเอกสารตอบกลับ
-          </Typography>
-        </Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#00423b", mb: 2 }}>
+          ขั้นตอน : เอกสารตอบกลับจากสถานประกอบการ (อัปโหลดให้ครบทั้ง 2 หน้า)
+        </Typography>
 
-        {/* ส่วนเลือกประเภทเอกสารและฟอร์มกล่องอัปโหลด */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
-          <Typography variant="body2" sx={{ color: "#334155", fontWeight: 500 }}>
-            เลือกประเภทเอกสารที่ต้องส่ง
-          </Typography>
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
-              <MenuItem value="PDF">PDF</MenuItem>
-              <MenuItem value="JPG">JPG</MenuItem>
-              <MenuItem value="PNG">PNG</MenuItem>
-            </Select>
-          </FormControl>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {step2Docs.map((doc) => (
+            <Grid item xs={12} key={doc.id}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "2px dashed #94a3b8", bgcolor: "#fff" }}>
+                {pageLoading ? (
+                  <CircularProgress size={24} sx={{ color: "#00423b" }} />
+                ) : doc.status !== "ยังไม่ได้ส่ง" ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <DescriptionIcon sx={{ fontSize: 40, color: "#00423b" }} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{doc.name}</Typography>
+                      <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                        อัปโหลดเมื่อ {doc.date}
+                      </Typography>
+                      <Chip label={doc.status} size="small" sx={{ mt: 0.5, bgcolor: doc.status === "ผ่าน" ? "#dcfce7" : "#ffedd5", color: doc.status === "ผ่าน" ? "#166534" : "#9a3412" }} />
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      {/* เหลือเฉพาะปุ่มอัปโหลดใหม่ */}
+                      <Button variant="contained" size="small" onClick={() => handleOpenUploadModal(doc)} sx={{ bgcolor: "#007a5e" }}>
+                        อัปโหลดใหม่
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: "center", cursor: "pointer" }} onClick={() => handleOpenUploadModal(doc)}>
+                    <CloudUploadIcon sx={{ fontSize: 36, color: "#00423b" }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1 }}>{doc.name}</Typography>
+                    <Button variant="outlined" size="small" sx={{ mt: 1, color: "#00423b", borderColor: "#00423b" }}>เลือกไฟล์</Button>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
-          <Typography variant="body2" sx={{ color: "#334155", fontWeight: 500, ml: 2 }}>
-            เลือกประเภทเอกสาร
-          </Typography>
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <Select value="เอกสารตอบกลับ" disabled>
-              <MenuItem value="เอกสารตอบกลับ">เอกสารตอบกลับ</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        {/* พื้นที่กล่องอัปโหลดหรือแสดงสถานะสำเร็จ */}
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "2px dashed #94a3b8",
-            bgcolor: "#fff",
-            p: 6,
-            textAlign: "center",
-            mb: 3,
-          }}
-        >
-          {pageLoading ? (
-            <CircularProgress size={32} sx={{ color: "#00423b" }} />
-          ) : documents[0]?.status !== "ยังไม่ได้ส่ง" && documents[0]?.status !== "ไม่ผ่าน" ? (
-            /* กรณีอัปโหลดสำเร็จแล้ว แสดงหน้าตาตามภาพตัวอย่างที่ 2 */
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <Box sx={{ display: "flex", width: "100%", alignItems: "flex-start", textAlign: "left", gap: 3 }}>
-                <Box
-                  sx={{
-                    width: 60,
-                    height: 75,
-                    bgcolor: "#e2e8f0",
-                    borderRadius: 1.5,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                  }}
-                >
-                  <DescriptionIcon sx={{ fontSize: 40, color: "#64748b" }} />
-                </Box>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.95rem" }}>
-                    เอกสารตอบกลับ
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 1.5 }}>
-                    อัปโหลดเมื่อ {documents[0]?.date || "19 มกราคม 2569 เวลา 14.25 น."}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
-                    ประเภทเอกสาร
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#334155", fontWeight: 500, fontSize: "0.85rem" }}>
-                    เอกสารตอบกลับจากสถานประกอบการ
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    sx={{
-                      bgcolor: "#00423b",
-                      color: "#fff",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      px: 3,
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#002b26" },
-                    }}
-                  >
-                    ดูเอกสาร
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleOpenUploadModal(documents[0])}
-                    sx={{
-                      bgcolor: "#007a5e",
-                      color: "#fff",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      px: 3,
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#00423b" },
-                    }}
-                  >
-                    อัปโหลดใหม่
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          ) : (
-            /* กรณีเริ่มต้นยังไม่ได้อัปโหลดไฟล์ แสดงกล่องให้เลือกไฟล์ */
-            <Box
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              sx={{ cursor: "pointer" }}
-              onClick={() => handleOpenUploadModal(documents[0])}
-            >
-              <Box
-                sx={{
-                  width: 50,
-                  height: 50,
-                  bgcolor: "#00423b",
-                  borderRadius: "50%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 1.5,
-                }}
-              >
-                <CloudUploadIcon sx={{ fontSize: 30, color: "#fff" }} />
-              </Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#334155", mb: 0.5 }}>
-                ลากไฟล์มาวางที่นี่
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#94a3b8", mb: 1.5 }}>
-                หรือ
-              </Typography>
-              <Button
-                variant="outlined"
-                sx={{
-                  color: "#00423b",
-                  borderColor: "#00423b",
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  mb: 2,
-                  "&:hover": { borderColor: "#002b26", bgcolor: "#f0fdf4" },
-                }}
-              >
-                เลือกไฟล์
-              </Button>
-              <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
-                รองรับไฟล์ JPG, PNG (ขนาดไม่เกิน 10 MB)
-              </Typography>
-            </Box>
-          )}
-        </Paper>
-
-        {/* ปุ่มด้านล่าง (ย้อนกลับ / ติดตามสถานะ) */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
-            mt: "auto",
-          }}
-        >
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
-            sx={{
-              color: "#00423b",
-              borderColor: "#00423b",
-              borderRadius: 2,
-              px: 3,
-              py: 0.8,
-              textTransform: "none",
-              fontWeight: 600,
-              "&:hover": { borderColor: "#002b26", bgcolor: "#f0fdf4" },
-            }}
-          >
-            ย้อนกลับ
-          </Button>
-
-          <Button
-            variant="contained"
-            disableElevation
-            disabled={!isAllUploaded}
-            onClick={handleGoToSummary}
-            sx={{
-              bgcolor: isAllUploaded ? "#00423b" : "#00423b",
-              color: "#ffffff",
-              borderRadius: 2,
-              px: 3,
-              py: 0.8,
-              textTransform: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              "&:hover": {
-                bgcolor: "#002b26",
-              },
-            }}
-          >
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.2 }}>
-                ติดตามสถานะ
-              </Typography>
-              <Typography variant="caption" sx={{ fontSize: "0.7rem", opacity: 0.8, fontWeight: 400 }}>
-                เพื่อไปยังขั้นตอนถัดไป
-              </Typography>
-            </Box>
-            <NavigateNextIcon sx={{ fontSize: "1.6rem" }} />
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Button variant="outlined" onClick={() => navigate("/student/step2-dashboard")} sx={{ color: "#00423b", borderColor: "#00423b" }}>ย้อนกลับ</Button>
+          <Button variant="contained" disabled={!isAllUploaded} onClick={() => navigate("/student/step2-summary")} sx={{ bgcolor: isAllUploaded ? "#00423b" : "#94a3b8" }} endIcon={<NavigateNextIcon />}>
+            ติดตามสถานะ
           </Button>
         </Box>
 
-        {/* Modal สำหรับอัปโหลดไฟล์ */}
+        {/* Modal แสดงตัวอย่าง */}
         <Dialog
-          open={openUploadModal}
-          onClose={handleCloseModal}
+          open={openPreviewModal}
+          onClose={() => setOpenPreviewModal(false)}
           maxWidth="md"
           fullWidth
-          PaperProps={{ sx: { borderRadius: 4, p: 2 } }}
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              overflow: "hidden",
+              maxWidth: 820,
+              bgcolor: BRAND_DARK,
+              border: "1px solid rgba(16, 185, 129, 0.2)",
+            },
+          }}
         >
-          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <IconButton onClick={handleCloseModal} disabled={isLoading}>
+          <Box sx={{ p: 2, px: 3, display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: BRAND_DARK, borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <DescriptionIcon sx={{ color: BRAND_GREEN, fontSize: 28 }} />
+              <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff" }}>
+                รายละเอียดเอกสาร ({selectedDocDetails?.name})
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setOpenPreviewModal(false)} sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
               <CloseIcon />
             </IconButton>
           </Box>
-          <DialogContent sx={{ pt: 0 }}>
-            <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
-              <Grid item xs={12} sm="auto">
-                <Typography variant="body1" sx={{ color: "#334155", fontWeight: 500 }}>
-                  เลือกประเภทนามสกุลไฟล์
-                </Typography>
+
+          <DialogContent sx={{ p: 3, bgcolor: BRAND_DARK }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    bgcolor: BRAND_CARD,
+                    border: "1px solid rgba(16, 185, 129, 0.2)",
+                    borderRadius: 3,
+                    height: 460,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {getFileFullUrl(selectedDocDetails?.fileUrl)?.toLowerCase().includes(".pdf") ? (
+                    <iframe src={getFileFullUrl(selectedDocDetails?.fileUrl)} title="PDF Preview" width="100%" height="100%" style={{ border: "none" }} />
+                  ) : (
+                    <Box component="img" src={getFileFullUrl(selectedDocDetails?.fileUrl)} alt="Preview" sx={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 2 }} />
+                  )}
+                </Paper>
               </Grid>
-              <Grid item xs={6} sm={3}>
-                <FormControl fullWidth size="small">
-                  <Select value={fileType} onChange={(e) => setFileType(e.target.value)}>
-                    <MenuItem value="PDF">PDF</MenuItem>
-                    <MenuItem value="JPG">JPG</MenuItem>
-                    <MenuItem value="PNG">PNG</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm="auto">
-                <Typography variant="body1" sx={{ color: "#334155", fontWeight: 500 }}>
-                  เลือกหัวข้อเอกสาร
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth size="small" disabled>
-                  <Select value={selectedDoc?.code || "1"}>
-                    <MenuItem value={selectedDoc?.code || "1"}>{selectedDoc?.name}</MenuItem>
-                  </Select>
-                </FormControl>
+
+              <Grid item xs={12} md={6}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", mb: 2 }}>
+                    ข้อมูลที่สแกนได้
+                  </Typography>
+                  {renderDocDetails(selectedDocDetails)}
+                </Box>
               </Grid>
             </Grid>
+          </DialogContent>
+        </Dialog>
 
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#00423b", mb: 2 }}>
-              อัปโหลดและตรวจสอบเอกสาร
+        {/* Modal อัปโหลด */}
+        <Dialog open={openUploadModal} onClose={() => setOpenUploadModal(false)} maxWidth="sm" fullWidth>
+          <DialogContent>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: "#00423b" }}>
+              อัปโหลด: {selectedDocTarget?.name}
             </Typography>
-
-            <Box
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              sx={{
-                border: "2px dashed #cbd5e1",
-                borderRadius: 3,
-                p: 4,
-                textAlign: "center",
-                bgcolor: "#f8fafc",
-                cursor: "pointer",
-                "&:hover": { borderColor: "#00423b", bgcolor: "#f0fdf4" },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 50,
-                  height: 50,
-                  bgcolor: "#00423b",
-                  borderRadius: "50%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 1.5,
-                }}
-              >
-                <CloudUploadIcon sx={{ fontSize: 30, color: "#fff" }} />
-              </Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#334155", mb: 0.5 }}>
-                ลากไฟล์มาวางที่นี่
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#94a3b8", mb: 1.5 }}>
-                หรือ
-              </Typography>
-              <Button
-                variant="contained"
-                component="label"
-                disabled={isLoading}
-                sx={{ 
-                  bgcolor: "#007a5e", 
-                  color: "#fff",
-                  fontWeight: 600,
-                  "&:hover": { bgcolor: "#00423b" },
-                }}
-              >
-                เลือกไฟล์
-                <input type="file" hidden accept={getAcceptFileType()} onChange={handleFileChange} />
-              </Button>
-              {selectedFile && (
-                <Typography variant="body2" sx={{ color: "#007a5e", mt: 2, fontWeight: 600 }}>
-                  ไฟล์ที่เลือก: {selectedFile.name}
-                </Typography>
-              )}
-            </Box>
-
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
-              <Button
-                variant="contained"
-                onClick={handleSaveDocument}
-                disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
-                sx={{ 
-                  bgcolor: "#007a5e", 
-                  color: "#fff",
-                  fontWeight: 600,
-                  "&:hover": { bgcolor: "#00423b" },
-                  px: 4,
-                }}
-              >
-                {isLoading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
-              </Button>
-            </Box>
+            <Button variant="contained" component="label" fullWidth sx={{ bgcolor: "#007a5e", py: 1.5 }}>
+              เลือกไฟล์ (PDF/PNG/JPG)
+              <input type="file" hidden accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setSelectedFile(e.target.files[0])} />
+            </Button>
+            {selectedFile && <Typography variant="body2" sx={{ mt: 1, color: "#007a5e", fontWeight: 600 }}>ไฟล์: {selectedFile.name}</Typography>}
+            <Button variant="contained" fullWidth onClick={handleSaveDocument} disabled={isLoading} sx={{ mt: 2, bgcolor: "#00423b" }}>
+              {isLoading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+            </Button>
           </DialogContent>
         </Dialog>
       </Box>

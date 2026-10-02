@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -20,57 +20,46 @@ import {
 import {
   ArrowBackIosNew as ArrowBackIosNewIcon,
   NavigateNext as NavigateNextIcon,
-  CheckCircle as CheckCircleIcon,
-  AccessTime as AccessTimeIcon,
   Close as CloseIcon,
   DescriptionOutlined as DescriptionIcon,
   PersonOutlined as PersonIcon,
-  CalendarTodayOutlined as CalendarIcon,
   BusinessOutlined as BusinessIcon,
-  LocationOnOutlined as LocationIcon,
   PhoneOutlined as PhoneIcon,
+  EmailOutlined as EmailIcon,
   AssignmentIndOutlined as CardIcon,
-  CreateOutlined as SignatureIcon,
-  SchoolOutlined as GradeIcon,
-  Cancel as CancelIcon,
+  SchoolOutlined as SchoolIcon,
+  WorkOutlined as WorkIcon,
+  CalendarTodayOutlined as CalendarIcon,
+  FactCheckOutlined as CheckStatusIcon,
+  Check as CheckIcon,
+  NotificationsNoneOutlined as NotificationsIcon,
   PriorityHigh as PriorityHighIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import { getUserDocumentHistory } from "../../services/documentScanService";
 
-const MASTER_DOCS = [
-  { id: 1, name: "BA Co-op 01 เอกสารติดต่องานสหกิจศึกษา" },
-  { id: 2, name: "BA Co-op 02-1 เอกสารยินยอมจากผู้ปกครอง" },
-  { id: 3, name: "BA Co-op 02-2 ใบสมัครงานสหกิจศึกษา" },
-  { id: 4, name: "BA Co-op 04 เอกสารรายละเอียดที่พัก" },
-  { id: 5, name: "BA Co-op 05 ผลการศึกษาฉบับ (ชั่วคราว)" },
-];
-
 const RAW_API = process.env.REACT_APP_API || process.env.REACT_APP_API_URL || "http://localhost:5000";
 const SERVER_BASE_URL = RAW_API.replace(/\/api\/?$/, "");
 
 const STEPS = [
-  { num: 1, title: "อัปโหลดเอกสาร", sub: "เลือกเอกสารที่ต้องการ" },
-  { num: 2, title: "ตรวจสอบ", sub: "ตรวจสอบผล" },
-  { num: 3, title: "สถานะ", sub: "รอการตรวจสอบ" },
-  { num: 4, title: "สำเร็จ", sub: "ผ่านการตรวจสอบ" },
+  { num: 1, title: "เตรียมเอกสาร", sub: "เลือกเอกสารที่ต้องการ" },
+  { num: 2, title: "สถานะ", sub: "รอการตรวจสอบ" },
+  { num: 3, title: "สำเร็จ", sub: "ผ่านการตรวจสอบ" },
 ];
 
-// โทนสีเขียวเดียวกับ Sidebar
 const BRAND_DARK = "#0b2b26";
 const BRAND_CARD = "#081f1c";
 const BRAND_GREEN = "#10b981";
 
-// Custom DetailRow สไตล์ Dark Theme เข้ากับ Sidebar
 const DetailRow = ({ icon: Icon, value, label }) => (
-  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2 }}>
-    <Icon sx={{ color: BRAND_GREEN, fontSize: 24, mt: 0.2 }} />
-    <Box sx={{ flexGrow: 1, borderBottom: "1px solid rgba(255, 255, 255, 0.1)", pb: 0.8 }}>
-      <Typography variant="body2" sx={{ fontWeight: 700, color: "#ffffff" }}>
+  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
+    <Icon sx={{ color: BRAND_GREEN, fontSize: 22, mt: 0.2 }} />
+    <Box sx={{ flexGrow: 1, borderBottom: "1px solid rgba(255, 255, 255, 0.1)", pb: 0.5 }}>
+      <Typography variant="body2" sx={{ fontWeight: 700, color: "#ffffff", fontSize: "0.85rem" }}>
         {value || "-"}
       </Typography>
-      <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.75rem" }}>
+      <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.72rem" }}>
         {label}
       </Typography>
     </Box>
@@ -85,93 +74,94 @@ function DocumentSummary2() {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [imageError, setImageError] = useState(false);
-
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
 
-  const isAllPassed =
-    documents.length === 5 &&
-    documents.every((doc) => doc.status === "ผ่าน" || doc.status === "passed");
+  const getCurrentUserId = () => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    return storedUser.id || storedUser.userId || 1;
+  };
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const currentUserId = storedUser.id || storedUser.userId || 1;
-
-      const res = await getUserDocumentHistory(currentUserId);
+      const userId = getCurrentUserId();
+      const res = await getUserDocumentHistory(userId);
       const historyData = Array.isArray(res) ? res : res?.data || res?.documents || [];
 
       if (Array.isArray(historyData) && historyData.length > 0) {
-        const sortedHistory = [...historyData].sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        const targets = [
+          { code: "1", name: "เอกสารตอบกลับ (หน้า 1)" },
+          { code: "2", name: "เอกสารตอบกลับ (หน้า 2)" }
+        ];
 
-        const sortedDocs = MASTER_DOCS.map((masterItem) => {
-          const codeMatch = masterItem.name.match(/\d+([.-]\d+)?/);
-          const docCode = codeMatch ? codeMatch[0] : null;
-
-          const matched = sortedHistory.find((item) => {
-            if (!item.docCategory) return false;
-            if (item.docCategory === masterItem.name) return true;
-            if (docCode && item.docCategory.includes(docCode)) return true;
-            return false;
+        const mappedDocs = targets.map((target, index) => {
+          const matchedLogs = historyData.filter((item) => {
+            if (target.code === "1") {
+              return item.docCategory === "เอกสารตอบกลับ (หน้า 1)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 1"));
+            } else if (target.code === "2") {
+              return item.docCategory === "เอกสารตอบกลับ (หน้า 2)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 2"));
+            }
+            return item.docCategory === target.name;
           });
 
-          if (matched) {
-            let parsedExtracted = matched.extractedData;
-            if (typeof matched.extractedData === "string") {
-              try {
-                parsedExtracted = JSON.parse(matched.extractedData);
-              } catch (e) {
-                parsedExtracted = { rawText: matched.extractedData };
-              }
+          if (matchedLogs.length > 0) {
+            matchedLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const latestDoc = matchedLogs[0];
+
+            let parsedExtracted = latestDoc.extractedData;
+            if (typeof latestDoc.extractedData === "string") {
+              try { parsedExtracted = JSON.parse(latestDoc.extractedData); } catch (e) { parsedExtracted = {}; }
             }
 
-            let mappedStatus = "รอตรวจสอบ";
-            if (matched.status === "passed") mappedStatus = "ผ่าน";
-            else if (matched.status === "failed") mappedStatus = "ไม่ผ่าน";
-            else if (matched.status === "pending") mappedStatus = "รอตรวจสอบ";
-            else if (matched.status) mappedStatus = matched.status;
+            let mappedStatus = "รอการตรวจสอบ";
+            if (latestDoc.status === "passed") mappedStatus = "สำเร็จ";
+            else if (latestDoc.status === "failed") mappedStatus = "ไม่ผ่าน";
+            else if (latestDoc.status === "pending") mappedStatus = "รอการตรวจสอบ";
 
             return {
-              ...matched,
-              id: masterItem.id,
-              docCategory: masterItem.name,
+              id: index + 1,
+              code: target.code,
+              name: target.name,
               status: mappedStatus,
+              fileUrl: latestDoc.fileUrl,
               extractedData: parsedExtracted || {},
+              createdAt: latestDoc.createdAt,
             };
           }
 
           return {
-            id: masterItem.id,
-            docCategory: masterItem.name,
+            id: index + 1,
+            code: target.code,
+            name: target.name,
             status: "ยังไม่ได้ส่ง",
-            createdAt: null,
             fileUrl: null,
-            extractedData: null,
+            extractedData: {},
           };
         });
-        setDocuments(sortedDocs);
+
+        setDocuments(mappedDocs);
       } else {
-        setDocuments(MASTER_DOCS.map((d) => ({ ...d, status: "ยังไม่ได้ส่ง", fileUrl: null, extractedData: null })));
+        setDocuments([
+          { id: 1, code: "1", name: "เอกสารตอบกลับ (หน้า 1)", status: "ยังไม่ได้ส่ง", fileUrl: null, extractedData: {} },
+          { id: 2, code: "2", name: "เอกสารตอบกลับ (หน้า 2)", status: "ยังไม่ได้ส่ง", fileUrl: null, extractedData: {} }
+        ]);
       }
     } catch (err) {
       console.error("Failed to load documents:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [fetchDocuments]);
 
   const handleBack = () => {
     if (activeStep === 2) {
-      navigate("/student/scan-upload");
+      navigate("/student/step2-upload");
     } else {
-      setActiveStep((prev) => prev - 1);
+      setActiveStep(2);
     }
   };
 
@@ -179,171 +169,129 @@ function DocumentSummary2() {
     if (activeStep === 2) {
       setOpenConfirmModal(true);
     } else if (activeStep === 3) {
-      if (isAllPassed) {
-        setOpenConfirmModal(true);
-      }
-    } else if (activeStep === 4) {
-      navigate("/student/dashboard");
+      navigate("/student/step3-dashboard");
     }
   };
 
   const handleConfirmNext = () => {
     setOpenConfirmModal(false);
-    setActiveStep((prev) => prev + 1);
+    setActiveStep(3);
   };
 
   const getFileFullUrl = (doc) => {
     if (!doc) return null;
-    const rawPath = doc.fileUrl || doc.filePath || doc.file_path || doc.documentUrl || doc.url || doc.path;
+    const rawPath = doc.fileUrl;
     if (!rawPath) return null;
 
     let cleanPath = String(rawPath).trim();
-
-    if (/^https?:\/\//i.test(cleanPath) || cleanPath.startsWith("data:")) {
-      return cleanPath;
-    }
-
+    if (/^https?:\/\//i.test(cleanPath) || cleanPath.startsWith("data:")) return cleanPath;
     cleanPath = cleanPath.replace(/\\/g, "/").replace(/^\/?(uploads\/)+/i, "");
-    
     return `${SERVER_BASE_URL}/uploads/${cleanPath}`;
   };
 
-  const renderDocDetails = (doc) => {
-    const type = doc?.docCategory || doc?.name || "";
-    const data = doc?.extractedData || {};
+  // ✅ แก้ไขเงื่อนไข: ต้องมีเอกสาร และ ทุกใบต้องมีสถานะเป็น "สำเร็จ" เท่านั้น ปุ่มถึงจะกดได้
+  const isPassed = documents.length > 0 && documents.every(doc => doc.status === "สำเร็จ");
 
-    if (type.includes("01")) {
+  const renderDocDetails = (doc) => {
+    const data = doc?.extractedData || {};
+    const docName = doc?.name || "";
+
+    if (docName.includes("หน้า 2")) {
       return (
         <>
-          <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-          <DetailRow icon={PersonIcon} value={data.fullName || doc?.studentName} label="ชื่อ-นามสกุล " />
-          <DetailRow
-            icon={CalendarIcon}
-            value={data.signedDate || data.applyDate || (doc?.createdAt ? new Date(doc?.createdAt).toLocaleDateString("th-TH") : "-")}
-            label="วันที่สมัคร "
-          />
-        </>
-      );
-    } else if (type.includes("02-1")) {
-      return (
-        <>
-          <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-          <DetailRow icon={PersonIcon} value={data.fullName || doc?.studentName} label="ชื่อ-นามสกุล " />
-          <DetailRow icon={PersonIcon} value={data.parentName} label="ชื่อผู้ปกครอง " />
-          <DetailRow icon={BusinessIcon} value={data.companyName} label="สถานประกอบการ " />
-          <DetailRow icon={CalendarIcon} value={data.signedDate} label="วันที่ลงนาม " />
-        </>
-      );
-    } else if (type.includes("02-2")) {
-      return (
-        <>
-          <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-          <DetailRow icon={CardIcon} value={data.studentId} label="รหัสนักศึกษา " />
-          <DetailRow icon={PhoneIcon} value={data.phone || data.contact} label="ช่องทางการติดต่อ " />
-          <DetailRow icon={BusinessIcon} value={data.companyName} label="สถานประกอบการ " />
-          <DetailRow icon={PersonIcon} value={data.position} label="ตำแหน่ง " />
-          <DetailRow icon={SignatureIcon} value={data.signature || "--------------------"} label="ลงนาม " />
-          <DetailRow icon={CalendarIcon} value={data.signedDate} label="วันที่ลงนาม" />
-        </>
-      );
-    } else if (type.includes("04")) {
-      return (
-        <>
-          <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-          <DetailRow icon={BusinessIcon} value={data.companyName} label="สถานประกอบการ " />
-          <DetailRow icon={LocationIcon} value={data.address} label="ที่อยู่สถานที่ตั้ง " />
-          <DetailRow icon={PersonIcon} value={data.position} label="ตำแหน่ง " />
-          <DetailRow icon={CalendarIcon} value={data.period || data.duration} label="ระยะเวลา " />
-          <DetailRow icon={CalendarIcon} value={data.startDate} label="วันที่เริ่มงาน " />
-        </>
-      );
-    } else if (type.includes("05")) {
-      return (
-        <>
-          <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-          <DetailRow icon={PersonIcon} value={data.fullName || doc?.studentName} label="ชื่อ-นามสกุล " />
-          <DetailRow icon={PersonIcon} value={data.studentId} label="รหัสนักศึกษา" />
-          <DetailRow icon={GradeIcon} value={data.totalCredits || data.gpa} label="เกรดเฉลี่ยสะสม " />
+          <DetailRow icon={DescriptionIcon} value={data.qualification} label="รายละเอียดคุณสมบัตินักศึกษา" />
+          <DetailRow icon={WorkIcon} value={data.jobPosition} label="ตำแหน่งงาน" />
+          <DetailRow icon={CalendarIcon} value={data.workDays} label="วันที่ทำงาน" />
         </>
       );
     }
 
     return (
       <>
-        <DetailRow icon={DescriptionIcon} value={type} label="ชื่อเอกสาร" />
-        <DetailRow icon={PersonIcon} value={data.fullName || doc?.studentName} label="ชื่อ-นามสกุล" />
+        <DetailRow icon={PersonIcon} value={data.studentName} label="ชื่อนักศึกษา" />
+        <DetailRow icon={CardIcon} value={data.studentId} label="รหัสนักศึกษา" />
+        <DetailRow icon={SchoolIcon} value={data.branch} label="สาขาวิชา" />
+        <DetailRow icon={BusinessIcon} value={data.companyName} label="ชื่อสถานประกอบการ" />
+        <DetailRow icon={PersonIcon} value={data.coordinatorName} label="ชื่อผู้ประสานงาน" />
+        <DetailRow icon={WorkIcon} value={data.position || data.jobPosition} label="ตำแหน่ง" />
+        <DetailRow icon={PhoneIcon} value={data.phone} label="โทรศัพท์บริษัท" />
+        <DetailRow icon={EmailIcon} value={data.email} label="อีเมล" />
+        <DetailRow icon={CheckStatusIcon} value={data.responseStatus} label="ผลการตอบรับ (รับ/ไม่รับ)" />
       </>
     );
   };
 
   const renderStep2Content = () => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, color: "#00423b", mb: 1.5, fontSize: "1.05rem" }}>
-        ประวัติการตรวจสอบ
+      <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 1.5 }}>
+        ติดตามสถานะ
       </Typography>
-      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e2e8f0", flexGrow: 1, overflowY: "auto" }}>
-        <Table size="small" stickyHeader>
+      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #f1f5f9", flexGrow: 1 }}>
+        <Table size="small">
           <TableHead>
-            <TableRow>
-              <TableCell align="center" sx={{ fontWeight: 600, bgcolor: "#f8fafc" }}>ลำดับ</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: "#f8fafc" }}>เอกสาร</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, bgcolor: "#f8fafc" }}>วันที่</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, bgcolor: "#f8fafc" }}>ดำเนินการ</TableCell>
+            <TableRow sx={{ bgcolor: "#f8fafc" }}>
+              <TableCell align="center" sx={{ fontWeight: 600, color: "#475569", py: 1.5 }}>ลำดับ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, color: "#475569", py: 1.5 }}>Co-op</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, color: "#475569", py: 1.5 }}>สถานะ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, color: "#475569", py: 1.5 }}>ดำเนินการ</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {documents.map((doc, idx) => {
-              const fileUrl = getFileFullUrl(doc);
-              return (
-                <TableRow key={doc.id || idx} hover>
-                  <TableCell align="center">{idx + 1}</TableCell>
-                  <TableCell>{doc.docCategory}</TableCell>
-                  <TableCell align="center">
-                    {doc.createdAt 
-                    ? new Date(doc.createdAt).toLocaleDateString("th-TH", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                      }) 
-                    : "-"}
-                  </TableCell>
-                  <TableCell align="center">
-                    {fileUrl ? (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() => {
-                          setSelectedDoc(doc);
-                          setImageError(false);
-                          setOpenModal(true);
-                        }}
-                        sx={{
-                          bgcolor: "#d8e7e1",
-                          color: "#007a5e",
-                          borderRadius: "20px",
-                          px: 2.5,
-                          py: 0.5,
-                          fontWeight: 600,
-                          fontSize: "0.85rem",
-                          boxShadow: "none",
-                          textTransform: "none",
-                          "&:hover": {
-                            bgcolor: "#c2dcd3",
-                            boxShadow: "none",
-                          },
-                        }}
-                      >
-                        ดูรายละเอียด
-                      </Button>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: "#94a3b8" }}>
-                        ยังไม่ได้อัปโหลด
-                      </Typography>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {documents.map((doc) => (
+              <TableRow key={doc.id} hover>
+                <TableCell align="center" sx={{ color: "#334155", py: 1.5 }}>{doc.code}</TableCell>
+                <TableCell align="center" sx={{ color: "#334155", py: 1.5 }}>{doc.name}</TableCell>
+                <TableCell align="center" sx={{ py: 1.5 }}>
+                  {doc.status === "สำเร็จ" ? (
+                    <Chip
+                      label="สำเร็จ"
+                      size="small"
+                      sx={{ bgcolor: "#86efac", color: "#166534", fontWeight: 700, px: 1.5, borderRadius: "16px" }}
+                    />
+                  ) : doc.status === "รอการตรวจสอบ" ? (
+                    <Chip
+                      label="รอการตรวจสอบ"
+                      size="small"
+                      sx={{ bgcolor: "#fde047", color: "#854d0e", fontWeight: 700, px: 1.5, borderRadius: "16px" }}
+                    />
+                  ) : (
+                    <Chip
+                      label="ยังไม่ได้ส่ง"
+                      size="small"
+                      sx={{ bgcolor: "#e2e8f0", color: "#64748b", fontWeight: 700, px: 1.5, borderRadius: "16px" }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell align="center" sx={{ py: 1.5 }}>
+                  {doc.fileUrl ? (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => {
+                        setSelectedDoc(doc);
+                        setOpenModal(true);
+                      }}
+                      sx={{
+                        bgcolor: "#005a4e",
+                        color: "#fff",
+                        borderRadius: "20px",
+                        px: 2,
+                        py: 0.5,
+                        fontWeight: 600,
+                        textTransform: "none",
+                        "&:hover": { bgcolor: "#00423b" },
+                      }}
+                    >
+                      ดูรายละเอียด
+                    </Button>
+                  ) : (
+                    <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                      ไม่มีไฟล์
+                    </Typography>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -351,152 +299,78 @@ function DocumentSummary2() {
   );
 
   const renderStep3Content = () => (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, color: "#00423b", mb: 1.5, fontSize: "1.05rem" }}>
-        สถานะของเอกสาร
-      </Typography>
-      <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e2e8f0", flexGrow: 1, overflowY: "auto" }}>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell align="center" sx={{ bgcolor: "#f8fafc", fontWeight: 600 }}>ลำดับ</TableCell>
-              <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 600 }}>เอกสาร</TableCell>
-              <TableCell align="center" sx={{ bgcolor: "#f8fafc", fontWeight: 600 }}>วันที่</TableCell>
-              <TableCell align="center" sx={{ bgcolor: "#f8fafc", fontWeight: 600 }}>สถานะ</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {documents.map((doc, idx) => {
-              const isPassedDoc = doc.status === "ผ่าน" || doc.status === "passed";
-              const isFailedDoc = doc.status === "ไม่ผ่าน" || doc.status === "failed";
-
-              return (
-                <TableRow key={doc.id || idx} hover>
-                  <TableCell align="center">{idx + 1}</TableCell>
-                  <TableCell>{doc.docCategory}</TableCell>
-                  <TableCell align="center">
-                    {doc.createdAt 
-                    ? new Date(doc.createdAt).toLocaleDateString("th-TH", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                      }) 
-                    : "-"}
-                  </TableCell>
-                  <TableCell align="center">
-                    {isPassedDoc ? (
-                      <Chip
-                        icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#166534 !important" }} />}
-                        label="ผ่าน"
-                        size="small"
-                        sx={{
-                          bgcolor: "#dcfce7",
-                          color: "#166534",
-                          fontWeight: 600,
-                          px: 1,
-                          fontSize: "0.8125rem",
-                          height: 28,
-                          minWidth: 100,
-                        }}
-                      />
-                    ) : isFailedDoc ? (
-                      <Chip
-                        icon={<CancelIcon sx={{ fontSize: 16, color: "#991b1b !important" }} />}
-                        label="ไม่ผ่าน"
-                        size="small"
-                        sx={{
-                          bgcolor: "#fee2e2",
-                          color: "#991b1b",
-                          fontWeight: 600,
-                          px: 1,
-                          fontSize: "0.8125rem",
-                          height: 28,
-                          minWidth: 100,
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        icon={<AccessTimeIcon sx={{ fontSize: 16, color: "#9a3412 !important" }} />}
-                        label={doc.status || "รอการตรวจสอบ"}
-                        size="small"
-                        sx={{
-                          bgcolor: "#ffedd5",
-                          color: "#9a3412",
-                          fontWeight: 600,
-                          px: 1,
-                          fontSize: "0.8125rem",
-                          height: 28,
-                          minWidth: 100,
-                        }}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  );
-
-  const renderStep4Content = () => (
-    <Box sx={{ textAlign: "center", py: 3, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-      <Box
-        sx={{
-          width: 70,
-          height: 70,
-          borderRadius: "50%",
-          bgcolor: "#dcfce7",
-          color: "#166534",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          mb: 1.5,
-        }}
-      >
-        <CheckCircleIcon sx={{ fontSize: 50 }} />
-      </Box>
-      <Typography variant="h5" sx={{ fontWeight: 800, color: "#00423b", mb: 1 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", py: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 800, color: "#00423b", mb: 0.5, textAlign: "center" }}>
         ดำเนินการเสร็จสิ้น
       </Typography>
-      <Typography variant="body2" sx={{ color: "#64748b" }}>
-        ระบบตรวจสอบเรียบร้อยแล้ว ท่านสามารถตรวจสอบสถานะและผลการตรวจสอบได้ในภายหลัง
+      <Typography variant="body2" sx={{ color: "#64748b", mb: 2, textAlign: "center" }}>
+        ระบบตรวจสอบเสร็จเรียบร้อย
       </Typography>
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3, borderRadius: 4, border: "1px solid #e2e8f0", bgcolor: "#ffffff", textAlign: "center", maxWidth: 480, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.03)", mb: 2,
+        }}
+      >
+        <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "#f0fdf4", border: "3px solid #22c55e", color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", mb: 1.5 }}>
+          <CheckIcon sx={{ fontSize: 38, stroke: "#22c55e", strokeWidth: 1.5 }} />
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 0.5 }}>
+          อัปโหลดเอกสารสำเร็จ
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#64748b", lineHeight: 1.5, fontSize: "0.85rem" }}>
+          เอกสารของท่านถูกส่งเข้าสู่ระบบตรวจสอบเรียบร้อยแล้ว <br />
+          ท่านสามารถตรวจสอบสถานะและผลการตรวจสอบได้ในภายหลัง
+        </Typography>
+      </Paper>
+
+      <Paper
+        elevation={0}
+        sx={{ p: 1.5, px: 2.5, borderRadius: 3, bgcolor: "#fffbeb", border: "1px solid #fef3c7", maxWidth: 480, width: "100%", display: "flex", alignItems: "center", gap: 1.5 }}
+      >
+        <NotificationsIcon sx={{ color: "#d97706", fontSize: 24 }} />
+        <Box sx={{ textAlign: "left" }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#92400e", fontSize: "0.85rem" }}>
+            ประกาศ
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#b45309", fontSize: "0.78rem" }}>
+            กรุณาตรวจสอบเนื้อหาเอกสารและไฟล์ให้ถูกต้อง
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 
-  const fullUrl = getFileFullUrl(selectedDoc);
-  const isNextDisabled = activeStep === 3 && !isAllPassed;
-
   return (
-    <Box sx={{ display: "flex", bgcolor: "#f8fafc", height: "100vh", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", bgcolor: "#f8fafc", minHeight: "100vh" }}>
       <Sidebar />
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, md: 3 },
-          height: "100%",
+          p: { xs: 2, md: 2.5 },
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           boxSizing: "border-box",
         }}
       >
-        <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, bgcolor: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 0.2, fontSize: "1.1rem" }}>
-            ขั้นตอนการใช้งาน 4 ขั้นตอน
+        {/* Step Stepper Header */}
+        <Paper elevation={0} sx={{ p: 2, px: 3, mb: 2, borderRadius: 3, bgcolor: "#ffffff", border: "1px solid #e2e8f0" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#00423b", mb: 0.2 }}>
+            ขั้นตอนการใช้งาน
           </Typography>
           <Typography variant="caption" sx={{ color: "#64748b", mb: 2, display: "block" }}>
             เอกสารของท่านอยู่ระหว่างการตรวจสอบ
           </Typography>
 
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: { xs: 0, md: 3 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: { xs: 0, md: 4 } }}>
             {STEPS.map((step, idx) => {
               const isCurrent = step.num === activeStep;
-              const isPassed = step.num < activeStep;
+              const isDone = step.num < activeStep;
 
               return (
                 <React.Fragment key={step.num}>
@@ -506,7 +380,7 @@ function DocumentSummary2() {
                         width: 32,
                         height: 32,
                         borderRadius: "50%",
-                        bgcolor: isCurrent ? "#facc15" : isPassed ? "#007a5e" : "#cbd5e1",
+                        bgcolor: isCurrent ? "#facc15" : isDone ? "#007a5e" : "#94a3b8",
                         color: isCurrent ? "#000" : "#fff",
                         display: "flex",
                         alignItems: "center",
@@ -527,7 +401,7 @@ function DocumentSummary2() {
                   </Box>
 
                   {idx < STEPS.length - 1 && (
-                    <Box sx={{ flexGrow: 1, height: 2, bgcolor: isPassed ? "#007a5e" : "#cbd5e1", mx: 2 }} />
+                    <Box sx={{ flexGrow: 1, height: 3, bgcolor: isDone ? "#007a5e" : "#cbd5e1", mx: 2 }} />
                   )}
                 </React.Fragment>
               );
@@ -535,204 +409,106 @@ function DocumentSummary2() {
           </Box>
         </Paper>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2.5,
-            borderRadius: 3,
-            border: "1px solid #e2e8f0",
-            bgcolor: "#fff",
-            mb: 2,
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
+        {/* Dynamic Content */}
+        <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid #e2e8f0", bgcolor: "#fff", mb: 2, flexGrow: 1, display: "flex", flexDirection: "column" }}>
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-              <CircularProgress />
+              <CircularProgress color="success" />
             </Box>
           ) : (
             <>
               {activeStep === 2 && renderStep2Content()}
               {activeStep === 3 && renderStep3Content()}
-              {activeStep === 4 && renderStep4Content()}
             </>
           )}
         </Paper>
 
+        {/* Bottom Actions */}
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Button
             variant="outlined"
             onClick={handleBack}
-            startIcon={<ArrowBackIosNewIcon />}
-            sx={{ 
-              borderColor: "#00423b", 
-              color: "#00423b", 
-              fontWeight: 700, 
-              borderWidth: 2,
-              "&:hover": {
-                borderColor: "#002b26",
-                bgcolor: "#f0fdf4",
-              }
+            startIcon={<ArrowBackIosNewIcon sx={{ fontSize: "0.85rem !important" }} />}
+            sx={{
+              borderColor: "#00423b",
+              color: "#00423b",
+              fontWeight: 700,
+              borderRadius: 2,
+              px: 3,
+              py: 0.8,
+              "&:hover": { borderColor: "#002b26", bgcolor: "#f0fdf4" },
             }}
           >
-            ย้อนกลับ
+            {activeStep === 3 ? "กลับสถานะ" : "กลับหน้าแรก"}
           </Button>
 
           <Button
             variant="contained"
-            disabled={isNextDisabled}
+            disabled={activeStep === 2 && !isPassed}
             onClick={handleNext}
             endIcon={<NavigateNextIcon />}
-            sx={{ 
-              bgcolor: isNextDisabled ? "#94a3b8" : "#00423b", 
-              color: "#ffffff", 
-              fontWeight: 700, 
-              px: 3, 
-              py: 1,
-              cursor: isNextDisabled ? "not-allowed" : "pointer",
-              "&:hover": {
-                bgcolor: isNextDisabled ? "#94a3b8" : "#002b26",
-              },
-              "&.Mui-disabled": {
-                bgcolor: "#94a3b8",
-                color: "#ffffff",
-                opacity: 0.8,
-              },
+            sx={{
+              bgcolor: activeStep === 2 && !isPassed ? "#525252" : "#00423b",
+              color: "#ffffff",
+              fontWeight: 700,
+              borderRadius: 2,
+              px: 3,
+              py: 0.8,
+              "&:hover": { bgcolor: activeStep === 2 && !isPassed ? "#525252" : "#002b26" },
+              "&.Mui-disabled": { bgcolor: "#525252", color: "#d4d4d4" },
             }}
           >
-            {activeStep === 3 ? "ยืนยันสถานะ" : activeStep === 4 ? "กลับหน้าแรก" : "ส่งเอกสาร"}
+            <Box sx={{ textAlign: "right" }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+                {activeStep === 3 ? "ขั้นตอนถัดไป" : "ยืนยันเอกสาร"}
+              </Typography>
+              <Typography variant="caption" sx={{ fontSize: "0.65rem", opacity: 0.85, display: "block" }}>
+                {activeStep === 3 ? "(ไปยังขั้นตอนที่ 3)" : "(เมื่อเอกสารมีสถานะผ่านแล้ว)"}
+              </Typography>
+            </Box>
           </Button>
         </Box>
 
-        {/* 🟢 Modal ดูรายละเอียดเอกสาร (ดีไซน์ใหม่ โทนสีเดียวกับ Sidebar) */}
+        {/* Modal แสดงรายละเอียด */}
         <Dialog
           open={openModal}
           onClose={() => setOpenModal(false)}
           maxWidth="md"
           fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              overflow: "hidden",
-              maxWidth: 780,
-              bgcolor: BRAND_DARK, // ใช้สีเดียวกับ Sidebar
-              border: "1px solid rgba(16, 185, 129, 0.2)",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
-            },
-          }}
+          PaperProps={{ sx: { borderRadius: 4, overflow: "hidden", maxWidth: 800, bgcolor: BRAND_DARK, border: "1px solid rgba(16, 185, 129, 0.2)" } }}
         >
-          {/* Header Modal */}
-          <Box
-            sx={{
-              p: 2,
-              px: 3,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              bgcolor: BRAND_DARK,
-              borderBottom: "1px solid rgba(255, 255, 255, 0.08)"
-            }}
-          >
+          <Box sx={{ p: 2, px: 3, display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: BRAND_DARK, borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <DescriptionIcon sx={{ color: BRAND_GREEN, fontSize: 28 }} />
+              <DescriptionIcon sx={{ color: BRAND_GREEN, fontSize: 26 }} />
               <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff" }}>
-                รายละเอียดเอกสาร
+                รายละเอียดเอกสารตอบรับ ({selectedDoc?.name})
               </Typography>
             </Box>
-            <IconButton onClick={() => setOpenModal(false)} sx={{ color: "rgba(255, 255, 255, 0.7)", "&:hover": { color: "#fff" } }}>
-              <CloseIcon sx={{ fontSize: 24 }} />
+            <IconButton onClick={() => setOpenModal(false)} sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
+              <CloseIcon />
             </IconButton>
           </Box>
 
-          {/* Modal Content */}
           <DialogContent sx={{ p: 3, bgcolor: BRAND_DARK }}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Paper
                   elevation={0}
-                  sx={{
-                    p: 1.5,
-                    bgcolor: BRAND_CARD,
-                    border: "1px solid rgba(16, 185, 129, 0.2)",
-                    borderRadius: 3,
-                    height: 440,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
+                  sx={{ p: 1.5, bgcolor: BRAND_CARD, border: "1px solid rgba(16, 185, 129, 0.2)", borderRadius: 3, height: 420, display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  {!fullUrl || imageError ? (
-                    <Box sx={{ textAlign: "center", color: "rgba(255, 255, 255, 0.5)", my: "auto" }}>
-                      <DescriptionIcon sx={{ fontSize: 56, mb: 1, color: "rgba(255, 255, 255, 0.2)" }} />
-                      <Typography variant="body2">ไม่พบไฟล์ตัวอย่างเอกสาร</Typography>
-                    </Box>
-                  ) : fullUrl.toLowerCase().includes(".pdf") ? (
-                    <iframe
-                      src={fullUrl}
-                      title="Document Preview"
-                      width="100%"
-                      height="100%"
-                      style={{ border: "none", borderRadius: "8px" }}
-                    />
+                  {getFileFullUrl(selectedDoc)?.toLowerCase().includes(".pdf") ? (
+                    <iframe src={getFileFullUrl(selectedDoc)} title="PDF Preview" width="100%" height="100%" style={{ border: "none" }} />
                   ) : (
-                    <Box
-                      component="img"
-                      src={fullUrl}
-                      alt="เอกสารที่สแกน"
-                      onError={() => {
-                        console.error("Failed to load image at:", fullUrl);
-                        setImageError(true);
-                      }}
-                      onMouseMove={(e) => {
-                        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-                        const x = ((e.clientX - left) / width) * 100;
-                        const y = ((e.clientY - top) / height) * 100;
-                        e.currentTarget.style.transformOrigin = `${x}% ${y}%`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transformOrigin = "center center";
-                      }}
-                      sx={{
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        objectFit: "contain",
-                        borderRadius: 2,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                        cursor: "zoom-in",
-                        transition: "transform 0.2s ease-out",
-                        "&:hover": {
-                          transform: "scale(2.2)",
-                        },
-                      }}
-                    />
+                    <Box component="img" src={getFileFullUrl(selectedDoc)} alt="Preview" sx={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 2 }} />
                   )}
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} md={6} sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <Grid item xs={12} md={6}>
                 <Box>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", fontSize: "1.1rem" }}>
-                      รายละเอียด
-                    </Typography>
-                    <Chip
-                      label="ปริญญาตรี"
-                      size="small"
-                      sx={{
-                        bgcolor: "rgba(16, 185, 129, 0.15)",
-                        color: BRAND_GREEN,
-                        border: `1px solid rgba(16, 185, 129, 0.4)`,
-                        fontWeight: 700,
-                        borderRadius: 1.5,
-                      }}
-                    />
-                  </Box>
-
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", mb: 2 }}>
+                    รายละเอียดข้อมูลที่สแกนได้
+                  </Typography>
                   {renderDocDetails(selectedDoc)}
                 </Box>
               </Grid>
@@ -740,89 +516,23 @@ function DocumentSummary2() {
           </DialogContent>
         </Dialog>
 
-        {/* 🟢 Modal ยืนยันการส่งเอกสาร (โทนสีเดียวกับ Sidebar) */}
-        <Dialog
-          open={openConfirmModal}
-          onClose={() => setOpenConfirmModal(false)}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              p: 3,
-              textAlign: "center",
-              maxWidth: 380,
-              bgcolor: BRAND_DARK,
-              color: "#ffffff",
-              border: "1px solid rgba(16, 185, 129, 0.2)"
-            },
-          }}
-        >
+        {/* Modal ยืนยัน */}
+        <Dialog open={openConfirmModal} onClose={() => setOpenConfirmModal(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 3, textAlign: "center", maxWidth: 380, bgcolor: BRAND_DARK, color: "#ffffff" } }}>
           <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Box
-              sx={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                bgcolor: "rgba(16, 185, 129, 0.15)",
-                color: BRAND_GREEN,
-                border: `1.5px solid ${BRAND_GREEN}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mb: 2,
-              }}
-            >
-              <PriorityHighIcon sx={{ fontSize: 38 }} />
+            <Box sx={{ width: 60, height: 60, borderRadius: "50%", bgcolor: "rgba(16, 185, 129, 0.15)", color: BRAND_GREEN, border: `1.5px solid ${BRAND_GREEN}`, display: "flex", alignItems: "center", justifyContent: "center", mb: 2 }}>
+              <PriorityHighIcon sx={{ fontSize: 36 }} />
             </Box>
-
             <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", mb: 1 }}>
-              {activeStep === 2 ? "ยืนยันการส่งเอกสาร" : "ยืนยันสถานะข้อมูล"}
+              ยืนยันการส่งเอกสาร
             </Typography>
-
-            <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 3, px: 1, lineHeight: 1.4 }}>
-              {activeStep === 2
-                ? "กรุณาตรวจสอบข้อมูลและเอกสารก่อนยืนยันการส่ง"
-                : "กรุณาตรวจสอบข้อมูลและเอกสารให้ถูกต้องก่อนยืนยัน เมื่อส่งแล้วจะไม่สามารถแก้ไขข้อมูลได้"}
+            <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.7)", mb: 3 }}>
+              กรุณาตรวจสอบเอกสารให้ถูกต้องก่อนยืนยันขั้นตอน
             </Typography>
-
             <Box sx={{ display: "flex", gap: 1.5, width: "100%" }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => setOpenConfirmModal(false)}
-                sx={{
-                  borderColor: "rgba(255, 255, 255, 0.3)",
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  py: 1,
-                  "&:hover": {
-                    borderColor: BRAND_GREEN,
-                    bgcolor: "rgba(255, 255, 255, 0.05)",
-                  },
-                }}
-              >
-                แก้ไขต่อ
+              <Button fullWidth variant="outlined" onClick={() => setOpenConfirmModal(false)} sx={{ borderColor: "rgba(255, 255, 255, 0.3)", color: "#ffffff" }}>
+                ย้อนกลับ
               </Button>
-
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleConfirmNext}
-                sx={{
-                  bgcolor: BRAND_GREEN,
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  py: 1,
-                  boxShadow: "none",
-                  "&:hover": {
-                    bgcolor: "#0d9668",
-                    boxShadow: "none",
-                  },
-                }}
-              >
+              <Button fullWidth variant="contained" onClick={handleConfirmNext} sx={{ bgcolor: BRAND_GREEN, color: "#ffffff" }}>
                 ยืนยัน
               </Button>
             </Box>

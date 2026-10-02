@@ -67,9 +67,16 @@ function Sidebar() {
     "/student/scan-history"
   ].includes(location.pathname);
 
-  // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 2 หรือไม่
+  // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 2 หรือไม่ (ครอบคลุมทุกหน้าย่อย)
   const isStep2Active = [
-    "/student/step2-dashboard"
+    "/student/step2-dashboard",
+    "/student/step2-upload",
+    "/student/step2-summary"
+  ].includes(location.pathname);
+
+  // 🟢 เช็กว่า Path ปัจจุบันอยู่ในกลุ่มขั้นตอนที่ 3 หรือไม่
+  const isStep3Active = [
+    "/student/step3-dashboard"
   ].includes(location.pathname);
 
   const renderSidebarContent = (
@@ -300,19 +307,26 @@ function Sidebar() {
 
                 {/* ขั้นตอนที่ 3 */}
                 <ListItemButton
+                  selected={isStep3Active}
                   onClick={() => {
-                    navigate("/student/step3");
+                    navigate("/student/step3-dashboard");
                     if (isMobile) closeMobile();
                   }}
                   sx={{
                     borderRadius: 1.5,
                     mb: 0.5,
+                    bgcolor: isStep3Active ? ACTIVE_SUB_BG : "transparent",
+                    borderLeft: isStep3Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
                     "&:hover": { bgcolor: ACTIVE_SUB_BG },
                   }}
                 >
                   <ListItemText
                     primary="ขั้นตอนที่ 3 หนังสือส่งตัวและแพลตฟอร์มการประเมิน"
-                    primaryTypographyProps={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}
+                    primaryTypographyProps={{
+                      fontSize: "0.82rem",
+                      color: isStep3Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                      fontWeight: isStep3Active ? 700 : 400
+                    }}
                   />
                 </ListItemButton>
               </List>

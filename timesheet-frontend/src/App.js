@@ -29,6 +29,8 @@ import DocumentScanDashboard2 from "./pages/Step2_student/DocumentScanDashboard2
 import DocumentScanUpload2 from "./pages/Step2_student/DocumentScanUpload2";
 import DocumentSummary2 from "./pages/Step2_student/DocumentSummary2";
 
+import DocumentScanDashboard3 from "./pages/Step3_student/DocumentScanDashboard3";
+
 // 👈 1. เพิ่ม import หน้าจัดการเอกสารที่เพิ่งสร้าง
 import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
 
@@ -119,6 +121,7 @@ function App() {
             <Route path="/student/step2-dashboard" element={<DocumentScanDashboard2 />} />
             <Route path="/student/step2-upload" element={<DocumentScanUpload2 />} />
             <Route path="/student/step2-summary" element={<DocumentSummary2 />} />
+            <Route path="/student/step3-dashboard" element={<DocumentScanDashboard3 />} />
             <Route path="/student" element={<StudentDashboard />} />
             <Route
               path="/student/timesheet-history"
