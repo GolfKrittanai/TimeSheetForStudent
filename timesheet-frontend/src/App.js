@@ -5,7 +5,6 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AddAccount from './pages/Admin/AddAccount'; 
-// 💡 เพิ่ม import สำหรับ Teacher Dashboard
 import TeacherDashboard from "./pages/TeacherDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import ProfilePage from "./pages/ProfilePage";
@@ -15,14 +14,13 @@ import { CssBaseline } from "@mui/material";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TimesheetHistoryPage from "./pages/TimesheetHistoryPage"; 
-// 💡 เพิ่ม import สำหรับหน้าดู Timesheet ของนักศึกษาโดย Admin/Teacher
 import StudentTimesheetView from "./pages/StudentTimesheetView"; 
-// เพิ่ม หน้าสแกนเอกสาร
+
+// หน้าระบบสแกนเอกสาร
 import DocumentScanDashboard from "./pages/Step1_student/DocumentScanDashboard";
 import DocumentScanUpload from "./pages/Step1_student/DocumentScanUpload";
 import DocumentScanHistory from "./pages/Step1_student/DocumentScanHistory";
 import DocumentReviewAdmin from "./pages/Documentreviewadmin";
-// ➕ เพิ่ม Import หน้า DocumentSummary
 import DocumentSummary from "./pages/Step1_student/DocumentSummary";
 
 import DocumentScanDashboard2 from "./pages/Step2_student/DocumentScanDashboard2";
@@ -31,9 +29,10 @@ import DocumentSummary2 from "./pages/Step2_student/DocumentSummary2";
 
 import DocumentScanDashboard3 from "./pages/Step3_student/DocumentScanDashboard3";
 
-// 👈 1. เพิ่ม import หน้าจัดการเอกสารที่เพิ่งสร้าง
+// หน้าของ Admin
 import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
-
+import AdminStudentDocConfig from "./pages/Admin/AdminStudentDocConfig";
+import AdminStudentDocReviewList from "./pages/Admin/AdminStudentDocReviewList";
 
 function App() {
   const { user } = useAuth();
@@ -49,7 +48,7 @@ function App() {
               <LoginPage />
             ) : user.role === "admin" ? (
               <Navigate to="/admin" />
-            ) : user.role === "teacher" ? ( // 💡 เพิ่มเงื่อนไขสำหรับ Teacher
+            ) : user.role === "teacher" ? (
               <Navigate to="/teacher" />
             ) : (
               <Navigate to="/student/scan" />
@@ -63,12 +62,12 @@ function App() {
         {/* ---------------- Admin routes ---------------- */}
         {user?.role === "admin" && (
           <>
+            {/* 1. Dashboard (หน้าหลักของแอดมิน) */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/add-account" element={<AddAccount />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/report" element={<ReportExport user={user} />} />
             
-            {/* 💡 Route สำหรับดู Timesheet ของนักศึกษา (ใช้ร่วมกับ Teacher) */}
             <Route 
               path="/admin/student/:id/timesheets" 
               element={<StudentTimesheetView />} 
@@ -78,10 +77,22 @@ function App() {
               element={<DocumentReviewAdmin />} 
             />
 
-            {/* 👈 2. เพิ่ม Route สำหรับหน้าจัดการเอกสารนักศึกษาตรงนี้ */}
+            {/* 2. เมนูย่อยของ Document co-op: จัดการเอกสาร */}
             <Route 
               path="/admin/document-management" 
               element={<AdminDocumentManagement />} 
+            />
+
+            {/* 3. เมนูย่อยของ Document co-op: จัดการเอกสารสำหรับนักศึกษา */}
+            <Route 
+              path="/admin/student-docs" 
+              element={<AdminStudentDocConfig />} 
+            />
+
+            {/* 4. หน้ารายชื่อตรวจสอบเอกสารนักศึกษา (เชื่อมจากปุ่มตรวจสอบ) */}
+            <Route 
+              path="/admin/student-doc-reviews" 
+              element={<AdminStudentDocReviewList />} 
             />
 
             <Route path="*" element={<Navigate to="/admin" />} />
@@ -89,13 +100,12 @@ function App() {
         )}
 
         {/* ---------------- Teacher routes ---------------- */}
-        {user?.role === "teacher" && ( // 💡 เพิ่มเงื่อนไขสำหรับ Teacher
+        {user?.role === "teacher" && (
           <>
             <Route path="/teacher" element={<TeacherDashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/report" element={<ReportExport user={user} />} />
             
-            {/* 💡 Route สำหรับดู Timesheet ของนักศึกษา (ใช้ร่วมกับ Admin) */}
             <Route 
               path="/teacher/student/:id/timesheets" 
               element={<StudentTimesheetView />} 
@@ -115,7 +125,6 @@ function App() {
           <>
             <Route path="/student/scan" element={<DocumentScanDashboard />} />
             <Route path="/student/scan-upload" element={<DocumentScanUpload />} />
-            {/* ➕ เพิ่ม Route สำหรับหน้า DocumentSummary */}
             <Route path="/student/scan-summary" element={<DocumentSummary />} />
             <Route path="/student/scan-history" element={<DocumentScanHistory />} />
             <Route path="/student/step2-dashboard" element={<DocumentScanDashboard2 />} />
@@ -136,7 +145,7 @@ function App() {
           </>
         )}
 
-        {/* Fallback route สำหรับ non-logged-in users */}
+        {/* Fallback route สำหรับผู้ใช้ที่ยังไม่ได้ล็อกอิน */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
