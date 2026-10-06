@@ -4,19 +4,22 @@ const Tesseract = require('tesseract.js');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const { pdf } = require('pdf-to-img'); // ใช้ pdf-to-img Pure JS แทน Canvas/pdfjs
 
-// หลอก Module cache สำหรับ canvas ของ pdfjs
-const Module = require('module');
-const originalRequire = Module.prototype.require;
-Module.prototype.require = function (element) {
-  if (element === 'canvas') return {};
-  return originalRequire.apply(this, arguments);
-};
-
-const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
-pdfjsLib.GlobalWorkerOptions.workerSrc = false;
-if (pdfjsLib.VerbosityLevel) {
-  pdfjsLib.verbosity = pdfjsLib.VerbosityLevel.ERRORS;
+// =============================================================
+// ฟังก์ชัน Helper สำหรับแปลง PDF หน้าแรกเป็น Image Buffer สำหรับ OCR
+// =============================================================
+async function convertPdfToImageBuffer(pdfPath) {
+  try {
+    const document = await pdf(pdfPath, { scale: 2.0 });
+    for await (const imageBuffer of document) {
+      return imageBuffer; // คืนค่า Buffer ของรูปภาพหน้าแรก (PNG) ออกไปใช้ทำ OCR
+    }
+    return null;
+  } catch (err) {
+    console.error('convertPdfToImageBuffer Error:', err);
+    return null;
+  }
 }
 
 // =============================================================
@@ -86,10 +89,14 @@ function parseExtractedText(text, docCategory) {
     if (dateMatch) extracted.signedDate = cleanValue(dateMatch[1]);
   }
   else if (categoryLower.includes("02-1")) {
-    const parentMatch = cleanText.match(/ข้าพเจ้า\s+([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:พักอยู่|บ้านเลขที่|เกี่ยวข้องเป็น|ผู้ปกครอง|ของ|$))/i) ||
-                        cleanText.match(/ผู้ปกครอง\s*(?:ของ)?\s*([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา|สังกัด|ระดับ|$))/i);
-    const studentMatch = cleanText.match(/(?:ผู้ปกครอง\s*ของ|นักศึกษา|นาย|นาง|นางสาว)\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|เข้าฝึก|สังกัด|เรียน|คณบดี|สาขา|$))/i) ||
-                         cleanText.match(/((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัสนักศึกษา|ซึ่งเป็นนักศึกษา))/i);
+    // ปรับปรุง RegEx ให้จับชื่อผู้ปกครองหลังคำว่า "ข้าพเจ้า" โดยตัดคำฟุ่มเฟือยออก
+    const parentMatch = cleanText.match(/ข้าพเจ้า\s*(?:(?:นาย|นาง|นางสาว)\s*)?([ก-๙a-zA-Z\.\-]+(?:\s+[ก-๙a-zA-Z\.\-]+)*?)(?=\s*(?:พักอยู่|บ้านเลขที่|ที่อยู่|เกี่ยวข้องเป็น|ผู้ปกครอง|$))/i);
+    
+    // ปรับปรุง RegEx ให้จับชื่อนักศึกษาจากตำแหน่งคำว่า "ของ" หรือ "ซึ่งเป็นนักศึกษา" ให้ตรงตัว
+    const studentMatch = cleanText.match(/(?:เกี่ยวข้องเป็น.*?ของ|ผู้ปกครองของ|ของ)\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|รหัสนักศึกษา|ซึ่งเป็นนักศึกษา|เข้าฝึก|สังกัด|เรียน|คณบดี|สาขา|$))/i) ||
+                         cleanText.match(/ซึ่งเป็นนักศึกษา\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)(?=\s*(?:รหัส|รหัสนักศึกษา|คณะ|$))/i) ||
+                         cleanText.match(/นักศึกษา\s*((?:นาย|นาง|นางสาว)\s*[ก-๙a-zA-Z]+(?:\s+[ก-๙a-zA-Z]+)+?)/i);
+
     const companyMatch = cleanText.match(/(?:ณ|สถานประกอบการ|บริษัท)\s+([ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน|เฮ้าส์|เฮาส์)(?:\s+จำกัด|\s+จํากัด)?)/i) ||
                          cleanText.match(/(บริษัท\s+[ก-๙a-zA-Z0-9\s.-]+?(?:จำกัด|จํากัด|บจก\.|มหาชน)?)/i);  
     const dateMatch = cleanText.match(/วันที่\s*[:\.]*\s*([0-9]{1,2}[\s\/\.-]+(?:[0-9]{1,2}|[ก-๙]+)[\s\/\.-]+[0-9]{2,4})/i);
@@ -199,7 +206,6 @@ function parseExtractedText(text, docCategory) {
     if (studentIdMatch) extracted.studentId = cleanValue(studentIdMatch[1]);
     if (gpaMatch) extracted.gpa = cleanValue(gpaMatch[1]);
   }
-  // 🟢 สกัดข้อมูลเอกสารตอบกลับ (รองรับทั้ง หน้า 1 และ หน้า 2)
   else if (categoryLower.includes("ตอบกลับ") || categoryLower.includes("ตอบรับ") || categoryLower.includes("03")) {
     if (categoryLower.includes("หน้า 1")) {
       const studentMatch = cleanText.match(/1\.\s*(?:นาย|นาง|นางสาว)?\s*([ก-๙a-zA-Z\s]+?)(?=\s*รหัสนักศึกษา|\s*สาขาวิชา|$)/i) ||
@@ -248,6 +254,7 @@ function parseExtractedText(text, docCategory) {
 // 1. อัปโหลดและสแกนเอกสาร
 // =============================================================
 exports.scanAndSaveDocument = async (req, res) => {
+  const absoluteFilePath = req.file ? path.resolve(req.file.path) : null;
   try {
     const userId = req.user?.id ? parseInt(req.user.id) : parseInt(req.body.userId);
     const { docCategory } = req.body;
@@ -261,28 +268,29 @@ exports.scanAndSaveDocument = async (req, res) => {
     }
 
     const ext = path.extname(req.file.originalname).toLowerCase();
-    const absoluteFilePath = path.resolve(req.file.path);
 
     let text = '';
     let extractedData = {};
     let originalName = req.file.originalname;
-    const targetCategory = docCategory || 'เอกสารตอบกลับ (หน้า 1)';
+    const targetCategory = docCategory || 'BA Co-op 01 เอกสารติดต่องานสหกิจศึกษา';
 
     if (ext === '.pdf') {
       try {
-        const data = new Uint8Array(fs.readFileSync(absoluteFilePath));
-        const loadingTask = pdfjsLib.getDocument({ data });
-        const pdfDocument = await loadingTask.promise;
+        const tempImgBuffer = await convertPdfToImageBuffer(absoluteFilePath);
+        
+        if (tempImgBuffer) {
+          const tempImgPath = absoluteFilePath.replace(/\.pdf$/i, '_pdf_ocr_temp.png');
+          fs.writeFileSync(tempImgPath, tempImgBuffer);
 
-        let fullText = [];
-        for (let i = 1; i <= pdfDocument.numPages; i++) {
-          const page = await pdfDocument.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
-          fullText.push(pageText);
+          const processedImagePath = await preprocessImage(tempImgPath);
+          const { data: ocrResult } = await Tesseract.recognize(processedImagePath, 'tha+eng');
+          text = ocrResult.text ? ocrResult.text.trim() : '';
+
+          if (fs.existsSync(tempImgPath)) fs.unlinkSync(tempImgPath);
+          if (processedImagePath !== tempImgPath && fs.existsSync(processedImagePath)) {
+            fs.unlinkSync(processedImagePath);
+          }
         }
-
-        text = fullText.join(' ').trim();
 
         if (text && text.length > 0) {
           extractedData = parseExtractedText(text, targetCategory);
@@ -317,14 +325,8 @@ exports.scanAndSaveDocument = async (req, res) => {
       text = 'รูปแบบไฟล์ไม่รองรับการสแกน';
     }
 
-    // --- 1. บันทึกไฟล์ใหม่ลงโฟลเดอร์ uploads ---
     const { publicUrl } = await uploadToLocalStorage(absoluteFilePath, originalName);
 
-    if (fs.existsSync(absoluteFilePath)) {
-      fs.unlinkSync(absoluteFilePath);
-    }
-
-    // 🟢 2. ค้นหาเอกสารเฉพาะหมวดหมู่นั้นๆ ของนักศึกษา (เช่น "เอกสารตอบกลับ (หน้า 1)" หรือ "เอกสารตอบกลับ (หน้า 2)")
     const existingDoc = await prisma.document_scan.findFirst({
       where: {
         userId: userId,
@@ -335,7 +337,6 @@ exports.scanAndSaveDocument = async (req, res) => {
     let savedDoc;
 
     if (existingDoc) {
-      // 🟢 2.1 สั่งลบไฟล์เก่าออกจากดิสก์
       if (existingDoc.fileUrl) {
         const oldCleanPath = existingDoc.fileUrl.replace(/^\/?uploads\//, '');
         const oldFilePath = path.join(process.cwd(), 'uploads', oldCleanPath);
@@ -348,7 +349,6 @@ exports.scanAndSaveDocument = async (req, res) => {
         }
       }
 
-      // 🟢 2.2 อัปเดตข้อมูลทับ Record หมวดหมู่นั้นๆ ในฐานข้อมูล
       savedDoc = await prisma.document_scan.update({
         where: { id: existingDoc.id },
         data: {
@@ -360,7 +360,6 @@ exports.scanAndSaveDocument = async (req, res) => {
         },
       });
     } else {
-      // 🟢 2.3 หากยังไม่มี ให้สร้าง Record ใหม่
       savedDoc = await prisma.document_scan.create({
         data: {
           userId: userId,
@@ -389,6 +388,14 @@ exports.scanAndSaveDocument = async (req, res) => {
   } catch (error) {
     console.error('Scan Error:', error);
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในระบบ', error: error.message });
+  } finally {
+    if (absoluteFilePath && fs.existsSync(absoluteFilePath)) {
+      try {
+        fs.unlinkSync(absoluteFilePath);
+      } catch (err) {
+        console.error('Failed to cleanup temp upload file:', err);
+      }
+    }
   }
 };
 
@@ -398,6 +405,9 @@ exports.scanAndSaveDocument = async (req, res) => {
 exports.getUserDocumentHistory = async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: 'userId ไม่ถูกต้อง' });
+    }
     const documents = await prisma.document_scan.findMany({
       where: { userId: userId },
       orderBy: { createdAt: 'desc' }
@@ -414,6 +424,9 @@ exports.getUserDocumentHistory = async (req, res) => {
 exports.cancelDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'ID ไม่ถูกต้อง' });
+    }
     const doc = await prisma.document_scan.findUnique({ where: { id: id } });
 
     if (!doc) return res.status(404).json({ message: 'ไม่พบเอกสารที่ต้องการลบ' });
@@ -489,6 +502,9 @@ exports.getAllDocumentsForReview = async (req, res) => {
 exports.reviewDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'ID ไม่ถูกต้อง' });
+    }
     const { status, remark } = req.body;
 
     let finalStatus = status;
