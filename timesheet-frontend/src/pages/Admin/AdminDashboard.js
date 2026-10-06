@@ -34,10 +34,7 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Description as DescriptionIcon,
   Groups as GroupsIcon,
-  AccessTime as AccessTimeIcon,
-  Verified as VerifiedIcon,
   EditNote as EditNoteIcon,
 } from "@mui/icons-material";
 
@@ -161,20 +158,18 @@ function AdminDashboard() {
   });
   const [value, setValue] = useState(0);
 
-  // ✅ 2. State สำหรับ Pagination
+  // State สำหรับ Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const drawerWidth = 240;
 
   const mainTitle = value === 0 ? "Management data" : "User list information";
-  const subTitle = value === 0 ? "จัดการข้อมูล" : "ข้อมูลรายชื่อผู้ใช้";
+  const subTitle = value === 0 ? "จัดการข้อมูลรายชื่อนักศึกษา" : "ข้อมูลรายชื่อผู้ใช้";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [submittedSearchTerm, setSubmittedSearchTerm] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
   const [academicYearFilter, setAcademicYearFilter] = useState("");
 
@@ -219,19 +214,14 @@ function AdminDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // ✅ NEW: Handlers สำหรับ Pagination
+  // Handlers สำหรับ Pagination
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // รีเซ็ตหน้ากลับไปที่ 0 เมื่อเปลี่ยนจำนวนรายการต่อหน้า
-  };
-  // End Pagination Handlers
-
-  const handleAddUser = () => {
-    navigate("/admin/add-account");
+    setPage(0);
   };
 
   const handleChangeTab = (event, newValue) => {
@@ -240,7 +230,7 @@ function AdminDashboard() {
     setSearchTerm("");
     setSemesterFilter("");
     setAcademicYearFilter("");
-    setPage(0); // ✅ รีเซ็ตหน้าเมื่อเปลี่ยน Tab
+    setPage(0);
   };
 
   const handleEditOpen = (student) => {
@@ -306,10 +296,6 @@ function AdminDashboard() {
     }
   };
 
-  const handleViewTimesheet = (id) => {
-    navigate(`/admin/student/${id}/timesheets`);
-  };
-
   const handleDelete = async (id, role) => {
     const isDeletingAdmin = role === "admin";
     const adminCount = students.filter((s) => s.role === "admin").length;
@@ -358,17 +344,13 @@ function AdminDashboard() {
   };
 
   const totalStudents = summary?.totalStudents || 0;
-  const totalTimesheets = summary?.totalTimesheets || 0;
   const totalAdmins = students.filter((s) => s.role === "admin").length;
-  const totalTeachers = students.filter((s) => s.role === "teacher").length;
 
-  // 🔴 Logic สำหรับการค้นหา (ใช้ร่วมกันสำหรับ Tab 0 และ Tab 1)
   const handleSearch = () => {
     setSearchTerm(searchInput);
-    setPage(0); // ✅ รีเซ็ตหน้ากลับไปที่ 0 เมื่อค้นหา
+    setPage(0);
   };
 
-  // 🔴 Logic สำหรับการล้างค่า (ใช้ใน Tab 0)
   const handleClearFilters = () => {
     setSearchTerm("");
     setSearchInput("");
@@ -379,9 +361,7 @@ function AdminDashboard() {
     setPage(0);
   };
 
-  // =================================================================
-  // ✅ Filtering Logic for Student Tab (Index 0)
-  // =================================================================
+  // Filtering Logic for Student Tab (Index 0)
   const filteredStudents = React.useMemo(() => {
     const getSafeLowerString = (value) => (value ?? "").toLowerCase();
 
@@ -406,18 +386,15 @@ function AdminDashboard() {
       });
   }, [students, searchTerm, semesterFilter, academicYearFilter]);
 
-  // ✅ NEW: Slicing for Student Tab
   const studentDataForPage = filteredStudents.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
-  // =================================================================
-  // ✅ Filtering Logic for System User Tab (Index 1)
-  // =================================================================
+  // Filtering Logic for System User Tab (Index 1)
   const filteredSystemUsers = React.useMemo(() => {
     return students
-      .filter((s) => s.role !== "student") // Only Admin/Teacher in this tab
+      .filter((s) => s.role !== "student")
       .filter((user) => {
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch =
@@ -429,7 +406,6 @@ function AdminDashboard() {
       });
   }, [students, searchTerm]);
 
-  // ✅ NEW: Slicing for System User Tab
   const userDataForPage = filteredSystemUsers.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -462,6 +438,7 @@ function AdminDashboard() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {subTitle}
           </Typography>
+
           {/* ------------------ Tabs ------------------ */}
           <Paper
             elevation={2}
@@ -532,6 +509,7 @@ function AdminDashboard() {
               />
             </Tabs>
           </Paper>
+
           {/* ---------------- Tab Panel 1: Student Data (Index 0) ---------------- */}
           <TabPanel value={value} index={0}>
             {summary && (
@@ -541,108 +519,80 @@ function AdminDashboard() {
                 justifyContent="space-between"
                 sx={{ mb: 4 }}
               >
-                {/* Summary Card 1: จำนวนนักศึกษา */}
-                <Grid item xs={12} sm={6}>
+                {/* Summary Card: จำนวนนักศึกษา (ปรับปรุงรูปแบบการแสดงผลให้คล้าย AdminDocumentManagement) */}
+                <Grid item xs={12}>
                   <Paper
-                    elevation={2}
+                    elevation={0}
                     sx={{
-                      p: 3,
-                      bgcolor: "#fff",
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
+                      p: 2.5,
+                      borderRadius: 3,
+                      border: "1px solid #e2e8f0",
+                      bgcolor: "#ffffff",
                     }}
                   >
-                    <GroupsIcon
+                    <Box
                       sx={{
-                        color: "#00796b",
-                        fontSize: "4rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        p: 2,
+                        borderRadius: 3,
+                        bgcolor: "#f8fafc",
+                        border: "1px solid #f1f5f9",
                       }}
-                    />
-                    <Box sx={{ textAlign: "left" }}>
-                      <Typography
-                        variant="subtitle1"
-                        color="textSecondary"
+                    >
+                      <Box
                         sx={{
-                          mb: 0.5,
-                          fontWeight: "bold",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
+                          width: 52,
+                          height: 52,
+                          borderRadius: "50%",
+                          bgcolor: "#00796b",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        จำนวนนักศึกษา
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          color: "#333",
-                          fontWeight: "bold",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        {totalStudents}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Grid>
-                {/* Summary Card 2: Timesheets ทั้งหมด */}
-                <Grid item xs={12} sm={6}>
-                  <Paper
-                    elevation={2}
-                    sx={{
-                      p: 3,
-                      bgcolor: "#fff",
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <AccessTimeIcon
-                      sx={{
-                        color: "#00796b",
-                        fontSize: "4rem",
-                      }}
-                    />
-                    <Box sx={{ textAlign: "left" }}>
-                      <Typography
-                        variant="subtitle1"
-                        color="textSecondary"
-                        sx={{
-                          mb: 0.5,
-                          fontWeight: "bold",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                        }}
-                      >
-                        Timesheets ทั้งหมด
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          fontWeight: "bold",
-                          color: "#333",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        {totalTimesheets}
-                      </Typography>
+                        <GroupsIcon sx={{ fontSize: 32 }} />
+                      </Box>
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#1e293b",
+                            fontSize: "0.95rem",
+                            fontFamily: '"Kanit", sans-serif',
+                          }}
+                        >
+                          จำนวนนักศึกษา
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 800,
+                            color: "#0f172a",
+                            fontSize: "1.1rem",
+                            fontFamily: '"Kanit", sans-serif',
+                          }}
+                        >
+                          {totalStudents}{" "}
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ color: "#64748b", fontFamily: '"Kanit", sans-serif' }}
+                          >
+                            คน
+                          </Typography>
+                        </Typography>
+                      </Box>
                     </Box>
                   </Paper>
                 </Grid>
               </Grid>
             )}
 
-            {/* =================================================================
-            // Combined Search/Filter UI for Students
-            // ================================================================= */}
+            {/* Combined Search/Filter UI for Students */}
             <Paper
               elevation={1}
               sx={{
@@ -664,7 +614,6 @@ function AdminDashboard() {
               >
                 รายชื่อนักศึกษา
               </Typography>
-              {/* Row 1: Search Term (รหัสประจำตัว, ชื่อ-นามสกุล, สถานที่ประกอบการ) */}
               <Box
                 sx={{
                   display: "flex",
@@ -673,7 +622,6 @@ function AdminDashboard() {
                   mb: 0,
                 }}
               >
-                {/* Search Term Input (ขยายเพื่อกินพื้นที่ส่วนใหญ่) */}
                 <TextField
                   variant="outlined"
                   size="small"
@@ -684,7 +632,6 @@ function AdminDashboard() {
                   sx={{ flexGrow: 1, ...inputStyle }}
                 />
 
-                {/* Search Button */}
                 <Button
                   variant="contained"
                   sx={{
@@ -694,15 +641,14 @@ function AdminDashboard() {
                     borderRadius: 2,
                     "&:hover": { bgcolor: "#00695c" },
                   }}
-                  onClick={handleSearch} // ✅ ใช้ handleSearch
+                  onClick={handleSearch}
                 >
                   ค้นหา
                 </Button>
 
-                {/* Clear Button (ล้าง) */}
                 <Button
                   variant="outlined"
-                  onClick={handleClearFilters} // ✅ ใช้ handleClearFilters
+                  onClick={handleClearFilters}
                   sx={{
                     color: "#00796b",
                     borderColor: "#00796b",
@@ -720,7 +666,6 @@ function AdminDashboard() {
                 </Button>
               </Box>
 
-              {/* Row 1.1: คำอธิบายการค้นหา (Caption) */}
               <Typography
                 variant="caption"
                 color="textSecondary"
@@ -734,7 +679,7 @@ function AdminDashboard() {
                 ค้นหา: รหัสประจำตัว, ชื่อ-นามสกุล, สถานประกอบการ, ตำแหน่ง
               </Typography>
 
-              {/* Row 2: Filters (Semester, Academic Year) */}
+              {/* Filters (Semester, Academic Year) */}
               <Box
                 sx={{
                   display: "flex",
@@ -743,7 +688,6 @@ function AdminDashboard() {
                   flexWrap: "wrap",
                 }}
               >
-                {/* หมวดหมู่ - ภาคเรียน */}
                 <FormControl
                   sx={{ minWidth: 150 }}
                   size="small"
@@ -781,7 +725,7 @@ function AdminDashboard() {
                       setFilterValue("");
                       setSemesterFilter("");
                       setAcademicYearFilter("");
-                      setPage(0); // ✅ รีเซ็ตหน้าเมื่อเปลี่ยนหมวดหมู่หลัก
+                      setPage(0);
                     }}
                     sx={{
                       ...inputStyle,
@@ -806,7 +750,6 @@ function AdminDashboard() {
                   </Select>
                 </FormControl>
 
-                {/* Dropdown 2: แสดงตัวเลือกตามหมวดหมู่ที่เลือก */}
                 {filterType && (
                   <FormControl
                     sx={{ minWidth: 150 }}
@@ -862,7 +805,7 @@ function AdminDashboard() {
                           setAcademicYearFilter(filterValueForLogic);
                           setSemesterFilter("");
                         }
-                        setPage(0); // ✅ รีเซ็ตหน้าเมื่อเปลี่ยนค่า Filter
+                        setPage(0);
                       }}
                       sx={{
                         ...inputStyle,
@@ -965,21 +908,16 @@ function AdminDashboard() {
                       <TableCell sx={headerCellStyle} align="center">
                         ตำแหน่ง
                       </TableCell>
-                      <TableCell sx={headerCellStyle} align="center">
-                        จำนวน Timesheet
-                      </TableCell>
                       <TableCell sx={headerCellStyle}>ดำเนินการ</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/* ✅ ใช้ studentDataForPage */}
                     {studentDataForPage.map((student, index) => (
                       <TableRow key={student.id}>
                         <TableCell
                           sx={{ fontFamily: '"Kanit", sans-serif' }}
                           align="center"
                         >
-                          {/* ✅ ปรับการคำนวณลำดับ */}
                           {page * rowsPerPage + index + 1}
                         </TableCell>
                         <TableCell
@@ -1015,12 +953,6 @@ function AdminDashboard() {
                         >
                           {student.internPosition || "-"}
                         </TableCell>
-                        <TableCell
-                          sx={{ fontFamily: '"Kanit", sans-serif' }}
-                          align="center"
-                        >
-                          {student._count.timesheet}
-                        </TableCell>
                         <TableCell sx={{ whiteSpace: "nowrap" }}>
                           <Tooltip title="แก้ไขข้อมูล">
                             <IconButton
@@ -1031,15 +963,6 @@ function AdminDashboard() {
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
-                          {/* <Tooltip title="ดู Timesheet">
-                            <IconButton
-                              onClick={() => handleViewTimesheet(student.id)}
-                              sx={{ color: "#929292" }}
-                              size={isSmallScreen ? "small" : "medium"}
-                            >
-                              <DescriptionIcon />
-                            </IconButton>
-                          </Tooltip> */}
                           <Tooltip title="ลบผู้ใช้">
                             <IconButton
                               onClick={() =>
@@ -1056,19 +979,18 @@ function AdminDashboard() {
                     ))}
                   </TableBody>
                 </Table>
-                {/* ✅ เพิ่ม TablePagination สำหรับ Tab 0 */}
+                
+                {/* TablePagination สำหรับ Tab 0 */}
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between", // แยกซ้าย (Status) และขวา (Pagination)
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    py: 1, // Padding แนวตั้ง
-                    px: 2, // Padding แนวนอน
+                    py: 1,
+                    px: 2,
                     fontFamily: '"Kanit", sans-serif',
-                    // Note: เราจะใช้ rowsPerPage ที่ตั้งค่าไว้ก่อนหน้า (สมมติว่าเป็น 10)
                   }}
                 >
-                  {/* 1. ส่วนซ้าย: ข้อความสถานะ "1-10 จาก 11" */}
                   <TablePagination
                     rowsPerPageOptions={[5, 10, 25, 50]}
                     component="div"
@@ -1076,34 +998,26 @@ function AdminDashboard() {
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage} // 💡 ต้องมีตัวนี้ด้วย
-                    labelRowsPerPage="" // ✅ ซ่อน Label "รายการต่อหน้า:"
-                    labelDisplayedRows={() => ""} // ✅ ซ่อนข้อความสถานะ "1-10 จาก 11"
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage=""
+                    labelDisplayedRows={() => ""}
                     sx={{
-                      // กำหนดความกว้างให้พอดีกับเนื้อหา
                       width: "auto",
-                      overflow: "hidden", // ซ่อนส่วนที่อาจจะล้นออกไป
-
+                      overflow: "hidden",
                       "& .MuiTablePagination-toolbar": {
                         padding: 0,
-                        minHeight: "auto", // ลดความสูงไม่ให้กินพื้นที่มากเกินไป
-
-                        // ซ่อนส่วนประกอบที่ไม่ต้องการ
+                        minHeight: "auto",
                         "& .MuiTablePagination-actions": {
-                          display: "none", // ✅ ซ่อนปุ่มลูกศร (< >)
+                          display: "none",
                         },
                         "& .MuiTablePagination-spacer": {
-                          display: "none", // ✅ ซ่อน Spacer
+                          display: "none",
                         },
                         "& .MuiTablePagination-displayedRows": {
-                          display: "none", // ✅ ซ่อนข้อความสถานะ
+                          display: "none",
                         },
-
-                        // จัด Select ให้อยู่ชิดซ้าย
                         "& .MuiTablePagination-selectRoot": {
                           margin: 0,
-
-                          // Style Select Dropdown
                           "& .MuiTablePagination-select": {
                             fontFamily: '"Kanit", sans-serif',
                             fontSize: 14,
@@ -1113,13 +1027,12 @@ function AdminDashboard() {
                       },
                     }}
                   />
-                  {/* 2. ส่วนขวา: ปุ่มตัวเลข Pagination */}
                   <Pagination
-                    count={Math.ceil(filteredStudents.length / rowsPerPage)} // จำนวนหน้าทั้งหมด
-                    page={page + 1} // หน้าปัจจุบัน (ต้องเริ่มจาก 1 สำหรับ Pagination)
+                    count={Math.ceil(filteredStudents.length / rowsPerPage)}
+                    page={page + 1}
                     onChange={(event, value) =>
                       handleChangePage(event, value - 1)
-                    } // ปรับค่ากลับเป็น Index 0
+                    }
                     variant="outlined"
                     shape="rounded"
                     sx={{
@@ -1128,15 +1041,13 @@ function AdminDashboard() {
                         fontWeight: 500,
                         borderRadius: "50%",
                       },
-                      // ✅ เพิ่ม Style สำหรับปุ่มที่ถูกเลือก (Active Page)
                       "& .MuiPaginationItem-root.Mui-selected": {
-                        backgroundColor: "#00796b", // สีพื้นหลัง: เขียว
-                        color: "white", // สีตัวอักษร: ขาว
+                        backgroundColor: "#00796b",
+                        color: "white",
                         fontWeight: 700,
                         borderRadius: "50%",
-                        // ทำให้สีไม่เปลี่ยนกลับเมื่อชี้เม้าส์
                         "&:hover": {
-                          backgroundColor: "#024f46", // สีเข้มขึ้นเมื่อ hover (ตามสไตล์ที่คุณชอบ)
+                          backgroundColor: "#024f46",
                           color: "white",
                         },
                       },
@@ -1146,9 +1057,10 @@ function AdminDashboard() {
               </Paper>
             )}
           </TabPanel>
+
           {/* ---------------- Tab Panel 2: System User/Admin Data ---------------- */}
           <TabPanel value={value} index={1}>
-            {/* Summary Cards for Admins */}
+            {/* Summary Cards for Admins (ปรับปรุงรูปแบบการแสดงผลให้คล้าย AdminDocumentManagement) */}
             {summary && (
               <Grid
                 container
@@ -1156,99 +1068,73 @@ function AdminDashboard() {
                 justifyContent="space-between"
                 sx={{ mb: 4 }}
               >
-                {/* Summary Card 1: จำนวนอาจารย์ */}
-                <Grid item xs={12} sm={6}>
+                {/* Summary Card: จำนวน Admin */}
+                <Grid item xs={12}>
                   <Paper
-                    elevation={2}
+                    elevation={0}
                     sx={{
-                      p: 3,
-                      bgcolor: "#fff",
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
+                      p: 2.5,
+                      borderRadius: 3,
+                      border: "1px solid #e2e8f0",
+                      bgcolor: "#ffffff",
                     }}
                   >
-                    <GroupsIcon
+                    <Box
                       sx={{
-                        color: "#00796b",
-                        fontSize: "4rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        p: 2,
+                        borderRadius: 3,
+                        bgcolor: "#f8fafc",
+                        border: "1px solid #f1f5f9",
                       }}
-                    />
-                    <Box sx={{ textAlign: "left" }}>
-                      <Typography
-                        variant="subtitle1"
-                        color="textSecondary"
+                    >
+                      <Box
                         sx={{
-                          mb: 0.5,
-                          fontWeight: "bold",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
+                          width: 52,
+                          height: 52,
+                          borderRadius: "50%",
+                          bgcolor: "#00796b",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        จำนวนอาจารย์
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          fontWeight: "bold",
-                          color: "#333",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        {totalTeachers}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Grid>
-                {/* Summary Card 2: จำนวน Admin */}
-                <Grid item xs={12} sm={6}>
-                  <Paper
-                    elevation={2}
-                    sx={{
-                      p: 3,
-                      bgcolor: "#fff",
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <GroupsIcon
-                      sx={{
-                        color: "#00796b",
-                        fontSize: "4rem",
-                      }}
-                    />
-                    <Box sx={{ textAlign: "left" }}>
-                      <Typography
-                        variant="subtitle1"
-                        color="textSecondary"
-                        sx={{
-                          mb: 0.5,
-                          fontWeight: "bold",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                        }}
-                      >
-                        จำนวน Admin
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          fontWeight: "bold",
-                          color: "#333",
-                          fontFamily: '"Kanit", sans-serif',
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        {totalAdmins}
-                      </Typography>
+                        <GroupsIcon sx={{ fontSize: 32 }} />
+                      </Box>
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            color: "#1e293b",
+                            fontSize: "0.95rem",
+                            fontFamily: '"Kanit", sans-serif',
+                          }}
+                        >
+                          จำนวน Admin
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 800,
+                            color: "#0f172a",
+                            fontSize: "1.1rem",
+                            fontFamily: '"Kanit", sans-serif',
+                          }}
+                        >
+                          {totalAdmins}{" "}
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ color: "#64748b", fontFamily: '"Kanit", sans-serif' }}
+                          >
+                            คน
+                          </Typography>
+                        </Typography>
+                      </Box>
                     </Box>
                   </Paper>
                 </Grid>
@@ -1265,7 +1151,6 @@ function AdminDashboard() {
                 bgcolor: "#fff",
               }}
             >
-              {/* Admin/System User Search and Table */}
               <Typography
                 variant={isSmallScreen ? "h6" : "h5"}
                 gutterBottom
@@ -1318,7 +1203,7 @@ function AdminDashboard() {
                       minWidth: "120px",
                       "&:hover": { bgcolor: "#00695c" },
                     }}
-                    onClick={handleSearch} // ✅ ใช้ handleSearch
+                    onClick={handleSearch}
                   >
                     ค้นหา
                   </Button>
@@ -1339,7 +1224,7 @@ function AdminDashboard() {
                     onClick={() => {
                       setSearchTerm("");
                       setSearchInput("");
-                      setPage(0); // ✅ รีเซ็ตหน้าเมื่อล้างค่า
+                      setPage(0);
                     }}
                   >
                     ล้างค่า
@@ -1347,31 +1232,6 @@ function AdminDashboard() {
                 </Box>
               </Box>
             </Paper>
-            <Box
-              sx={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "flex-end",
-                mb: 2,
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={handleAddUser}
-                color="success"
-                sx={{
-                  bgcolor: "#00796b",
-                  textTransform: "none",
-                  borderRadius: 2,
-                  whiteSpace: "nowrap",
-                  minWidth: "120px",
-                  height: "40px",
-                  "&:hover": { bgcolor: "#00695c" },
-                }}
-              >
-                + เพิ่มอาจารย์
-              </Button>
-            </Box>
 
             {loading ? (
               <Box sx={{ textAlign: "center", mt: 6 }}>
@@ -1425,9 +1285,6 @@ function AdminDashboard() {
                         รหัสประจำตัว
                       </TableCell>
                       <TableCell sx={headerCellStyle}>ชื่อ-นามสกุล</TableCell>
-                      {/* <TableCell sx={headerCellStyle} align="center">
-                        สาขา
-                      </TableCell> */}
                       <TableCell sx={headerCellStyle} align="center">
                         อีเมล
                       </TableCell>
@@ -1441,14 +1298,12 @@ function AdminDashboard() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/* ✅ ใช้ userDataForPage */}
                     {userDataForPage.map((user, index) => (
                       <TableRow key={user.id}>
                         <TableCell
                           sx={{ fontFamily: '"Kanit", sans-serif' }}
                           align="left"
                         >
-                          {/* ✅ ปรับการคำนวณลำดับ */}
                           {page * rowsPerPage + index + 1}
                         </TableCell>
                         <TableCell
@@ -1460,12 +1315,6 @@ function AdminDashboard() {
                         <TableCell sx={{ fontFamily: '"Kanit", sans-serif' }}>
                           {user.fullName}
                         </TableCell>
-                        {/* <TableCell
-                          sx={{ fontFamily: '"Kanit", sans-serif' }}
-                          align="center"
-                        >
-                          {user.branch || "-"}
-                        </TableCell> */}
                         <TableCell
                           sx={{ fontFamily: '"Kanit", sans-serif' }}
                           align="left"
@@ -1515,19 +1364,18 @@ function AdminDashboard() {
                     ))}
                   </TableBody>
                 </Table>
-                {/* ✅ เพิ่ม TablePagination สำหรับ Tab 1 */}
+                
+                {/* TablePagination สำหรับ Tab 1 */}
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between", // แยกซ้าย (Status) และขวา (Pagination)
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    py: 1, // Padding แนวตั้ง
-                    px: 2, // Padding แนวนอน
+                    py: 1,
+                    px: 2,
                     fontFamily: '"Kanit", sans-serif',
-                    // Note: เราจะใช้ rowsPerPage ที่ตั้งค่าไว้ก่อนหน้า (สมมติว่าเป็น 10)
                   }}
                 >
-                  {/* 1. ส่วนซ้าย: ข้อความสถานะ "1-10 จาก 11" */}
                   <TablePagination
                     rowsPerPageOptions={[5, 10, 25, 50]}
                     component="div"
@@ -1535,34 +1383,26 @@ function AdminDashboard() {
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage} // 💡 ต้องมีตัวนี้ด้วย
-                    labelRowsPerPage="" // ✅ ซ่อน Label "รายการต่อหน้า:"
-                    labelDisplayedRows={() => ""} // ✅ ซ่อนข้อความสถานะ "1-10 จาก 11"
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage=""
+                    labelDisplayedRows={() => ""}
                     sx={{
-                      // กำหนดความกว้างให้พอดีกับเนื้อหา
                       width: "auto",
-                      overflow: "hidden", // ซ่อนส่วนที่อาจจะล้นออกไป
-
+                      overflow: "hidden",
                       "& .MuiTablePagination-toolbar": {
                         padding: 0,
-                        minHeight: "auto", // ลดความสูงไม่ให้กินพื้นที่มากเกินไป
-
-                        // ซ่อนส่วนประกอบที่ไม่ต้องการ
+                        minHeight: "auto",
                         "& .MuiTablePagination-actions": {
-                          display: "none", // ✅ ซ่อนปุ่มลูกศร (< >)
+                          display: "none",
                         },
                         "& .MuiTablePagination-spacer": {
-                          display: "none", // ✅ ซ่อน Spacer
+                          display: "none",
                         },
                         "& .MuiTablePagination-displayedRows": {
-                          display: "none", // ✅ ซ่อนข้อความสถานะ
+                          display: "none",
                         },
-
-                        // จัด Select ให้อยู่ชิดซ้าย
                         "& .MuiTablePagination-selectRoot": {
                           margin: 0,
-
-                          // Style Select Dropdown
                           "& .MuiTablePagination-select": {
                             fontFamily: '"Kanit", sans-serif',
                             fontSize: 14,
@@ -1572,13 +1412,12 @@ function AdminDashboard() {
                       },
                     }}
                   />
-                  {/* 2. ส่วนขวา: ปุ่มตัวเลข Pagination */}
                   <Pagination
-                    count={Math.ceil(filteredSystemUsers.length / rowsPerPage)} // จำนวนหน้าทั้งหมด
-                    page={page + 1} // หน้าปัจจุบัน (ต้องเริ่มจาก 1 สำหรับ Pagination)
+                    count={Math.ceil(filteredSystemUsers.length / rowsPerPage)}
+                    page={page + 1}
                     onChange={(event, value) =>
                       handleChangePage(event, value - 1)
-                    } // ปรับค่ากลับเป็น Index 0
+                    }
                     variant="outlined"
                     shape="rounded"
                     sx={{
@@ -1587,15 +1426,13 @@ function AdminDashboard() {
                         fontWeight: 500,
                         borderRadius: "50%",
                       },
-                      // ✅ เพิ่ม Style สำหรับปุ่มที่ถูกเลือก (Active Page)
                       "& .MuiPaginationItem-root.Mui-selected": {
-                        backgroundColor: "#00796b", // สีพื้นหลัง: เขียว
-                        color: "white", // สีตัวอักษร: ขาว
+                        backgroundColor: "#00796b",
+                        color: "white",
                         fontWeight: 700,
                         borderRadius: "50%",
-                        // ทำให้สีไม่เปลี่ยนกลับเมื่อชี้เม้าส์
                         "&:hover": {
-                          backgroundColor: "#024f46", // สีเข้มขึ้นเมื่อ hover (ตามสไตล์ที่คุณชอบ)
+                          backgroundColor: "#024f46",
                           color: "white",
                         },
                       },
@@ -1605,7 +1442,8 @@ function AdminDashboard() {
               </Paper>
             )}
           </TabPanel>
-          {/* ------------------ Edit Dialog (ส่วนที่เหลือไม่เปลี่ยนแปลง) ------------------ */}
+
+          {/* ------------------ Edit Dialog ------------------ */}
           <Dialog
             open={editOpen}
             onClose={handleEditClose}
@@ -1653,7 +1491,7 @@ function AdminDashboard() {
               {selectedStudent && (
                 <Box component="form" onSubmit={(e) => e.preventDefault()}>
                   <Grid container spacing={2}>
-                    {/* Row 1: Role (สิทธิ์การใช้งาน) & Student ID (รหัสประจำตัว) */}
+                    {/* Row 1: Role & Student ID */}
                     <Grid item xs={12} sm={value === 0 ? 6 : 12}>
                       <FormControl
                         fullWidth
@@ -1741,7 +1579,6 @@ function AdminDashboard() {
                     </Grid>
                     {value === 0 && (
                       <>
-                        {/* Row 4: Course */}
                         <Grid item xs={12} sm={12}>
                           <FormControl fullWidth size="small" sx={inputStyle}>
                             <InputLabel id="course-label">หลักสูตร</InputLabel>
@@ -1760,7 +1597,6 @@ function AdminDashboard() {
                             </Select>
                           </FormControl>
                         </Grid>
-                        {/* Row 5: Company Name & Position */}
                         <Grid item xs={12} sm={6}>
                           <TextField
                             label="ชื่อสถานประกอบการ"
@@ -1783,8 +1619,6 @@ function AdminDashboard() {
                             sx={inputStyle}
                           />
                         </Grid>
-
-                        {/* Row 6: Semester & Academic Year */}
                         <Grid item xs={12} sm={6}>
                           <FormControl fullWidth size="small" sx={inputStyle}>
                             <InputLabel id="semester-label">ภาคเรียน</InputLabel>

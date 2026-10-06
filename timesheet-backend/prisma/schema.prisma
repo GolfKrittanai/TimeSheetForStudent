@@ -29,7 +29,7 @@ model user {
   passwordHash        String
   role                user_role       @default(student)
   createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  updatedAt           DateTime        @default(now()) @updatedAt
   email               String?         @db.VarChar(255)
   phone               String?         @db.VarChar(20)
 
@@ -60,7 +60,7 @@ model document_scan {
   reviewedBy    Int?                        // userId ของ admin/อาจารย์ที่ตรวจ (ถ้ามี)
   reviewedAt    DateTime?                   // เวลาที่ตรวจสอบล่าสุด
   createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  updatedAt     DateTime   @default(now()) @updatedAt
 
   user          user       @relation(fields: [userId], references: [id], onDelete: Cascade)
 

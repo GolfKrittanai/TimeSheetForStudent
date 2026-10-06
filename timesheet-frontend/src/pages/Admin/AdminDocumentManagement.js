@@ -685,7 +685,7 @@ function AdminDocumentManagement() {
         {/* ตารางข้อมูลและการค้นหา */}
         <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "#ffffff", border: "1px solid #e2e8f0" }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: "#1e293b", mb: 2 }}>
-            เอกสาร รายชื่อนักศึกษา
+            เอกสารรายชื่อนักศึกษา
           </Typography>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center", mb: 3 }}>

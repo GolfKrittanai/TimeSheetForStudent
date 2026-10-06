@@ -22,7 +22,7 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  ArrowBackIosNew as ArrowBackIosNewIcon,
+  ArrowBack as ArrowBackIcon, // 🟢 เปลี่ยนมาใช้ ArrowBack แบบภาพฝั่งซ้าย
   FileDownloadOutlined as FileDownloadIcon,
 } from "@mui/icons-material";
 import { getMyTimeSheets } from "../services/timesheetService";
@@ -141,20 +141,42 @@ function TimesheetHistoryPage() {
           width: "100%",
         }}
       >
+        {/* 🟢 ปุ่มย้อนกลับแบบรูปฝั่งซ้าย (วางไว้บนสุด เหนือหัวข้อหลัก) */}
+        <Button
+          onClick={() => navigate("/student")}
+          startIcon={<ArrowBackIcon sx={{ fontSize: "1.1rem !important" }} />}
+          sx={{
+            color: BRAND_DARK,
+            fontWeight: 700,
+            fontSize: "0.95rem",
+            p: 0,
+            mb: 1.5,
+            textTransform: "none",
+            bgcolor: "transparent",
+            "&:hover": {
+              bgcolor: "transparent",
+              color: THEME_GREEN,
+              textDecoration: "underline",
+            },
+          }}
+        >
+          กลับไปหน้าบันทึกกิจกรรม
+        </Button>
+
         {/* หัวข้อด้านบน */}
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="h4"
             sx={{ fontWeight: 800, color: BRAND_DARK, letterSpacing: -0.5 }}
           >
-            ระบบสแกนเอกสารก่อนสหกิจศึกษา
+            รายละเอียดบันทึกกิจกรรมนักศึกษา
           </Typography>
-          <Typography variant="body2" sx={{ color: "#00796b", fontWeight: 600, mt: 0.5 }}>
-            ตรวจสอบข้อมูลของท่านให้ครบถ้วน ก่อนออกสหกิจ
+          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500, mt: 0.5 }}>
+            ตรวจสอบกิจกรรมรายวัน เวลาเข้า-ออก และข้อมูลการทำงานของนักศึกษา
           </Typography>
         </Box>
 
-        {/* แถบหัวข้อ ประวัติการกิจกรรม + ปุ่มย้อนกลับ & ปุ่ม Export */}
+        {/* แถบหัวข้อ ประวัติกิจกรรม + ปุ่ม Export */}
         <Box
           sx={{
             display: "flex",
@@ -167,59 +189,31 @@ function TimesheetHistoryPage() {
         >
           <Typography
             variant="h6"
-            sx={{ fontWeight: 800, color: BRAND_DARK, fontSize: "1.1rem" }}
+            sx={{ fontWeight: 800, color: BRAND_DARK, fontSize: "1.2rem" }}
           >
             ประวัติการกิจกรรม
           </Typography>
 
-          {/* 🟢 กลุ่มปุ่มด้านขวา: ปุ่มย้อนกลับ และ ปุ่ม Export */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            {/* ปุ่มย้อนกลับ */}
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/student")}
-              startIcon={<ArrowBackIosNewIcon sx={{ fontSize: "0.85rem !important" }} />}
-              sx={{
-                borderRadius: "8px",
-                borderColor: "#cbd5e1",
-                color: "#475569",
-                bgcolor: "#ffffff",
-                px: 2.5,
-                py: 0.7,
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                textTransform: "none",
-                "&:hover": {
-                  borderColor: THEME_GREEN,
-                  color: THEME_GREEN,
-                  bgcolor: "#f8fafc",
-                },
-              }}
-            >
-              ย้อนกลับ
-            </Button>
-
-            {/* ปุ่ม Export */}
-            <Button
-              variant="contained"
-              onClick={handleExport}
-              startIcon={<FileDownloadIcon sx={{ fontSize: "1.1rem !important" }} />}
-              sx={{
-                bgcolor: THEME_GREEN,
-                color: "#ffffff",
-                borderRadius: "8px",
-                px: 3.5,
-                py: 0.75,
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                textTransform: "none",
-                boxShadow: "none",
-                "&:hover": { bgcolor: THEME_HOVER, boxShadow: "none" },
-              }}
-            >
-              Export
-            </Button>
-          </Box>
+          {/* ปุ่ม Export */}
+          <Button
+            variant="contained"
+            onClick={handleExport}
+            startIcon={<FileDownloadIcon sx={{ fontSize: "1.1rem !important" }} />}
+            sx={{
+              bgcolor: THEME_GREEN,
+              color: "#ffffff",
+              borderRadius: "8px",
+              px: 3.5,
+              py: 0.75,
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              textTransform: "none",
+              boxShadow: "none",
+              "&:hover": { bgcolor: THEME_HOVER, boxShadow: "none" },
+            }}
+          >
+            Export
+          </Button>
         </Box>
 
         {/* ตารางแสดงข้อมูล */}

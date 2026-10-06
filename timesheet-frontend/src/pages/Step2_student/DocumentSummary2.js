@@ -76,6 +76,9 @@ function DocumentSummary2() {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
 
+  // ✅ 1. โหลดประเภทไฟล์จาก localStorage (ค่าเริ่มต้นเป็น 'pdf')
+  const fileType = localStorage.getItem("step2_file_type") || "pdf";
+
   const getCurrentUserId = () => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
     return storedUser.id || storedUser.userId || 1;
@@ -88,18 +91,39 @@ function DocumentSummary2() {
       const res = await getUserDocumentHistory(userId);
       const historyData = Array.isArray(res) ? res : res?.data || res?.documents || [];
 
-      if (Array.isArray(historyData) && historyData.length > 0) {
-        const targets = [
-          { code: "1", name: "เอกสารตอบกลับ (หน้า 1)" },
-          { code: "2", name: "เอกสารตอบกลับ (หน้า 2)" }
-        ];
+      // ✅ 2. กำหนดรายการเป้าหมายตามประเภทไฟล์ (PDF = 1 รายการ, Image = 2 รายการ)
+      const targets =
+        fileType === "pdf"
+          ? [{ code: "1", name: "เอกสารตอบกลับ (PDF)" }]
+          : [
+              { code: "1", name: "เอกสารตอบกลับ (หน้า 1)" },
+              { code: "2", name: "เอกสารตอบกลับ (หน้า 2)" },
+            ];
 
+      if (Array.isArray(historyData) && historyData.length > 0) {
         const mappedDocs = targets.map((target, index) => {
           const matchedLogs = historyData.filter((item) => {
+            const url = (item.fileUrl || "").toLowerCase();
+            const isPdfFile = url.endsWith(".pdf");
+
+            // กรองนามสกุลให้ตรงกับโหมด
+            if (fileType === "pdf" && !isPdfFile) return false;
+            if (fileType === "image" && isPdfFile) return false;
+
+            if (fileType === "pdf") {
+              return true; // โหมด PDF ดึงไฟล์ PDF ล่าสุดมาเลย
+            }
+
             if (target.code === "1") {
-              return item.docCategory === "เอกสารตอบกลับ (หน้า 1)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 1"));
+              return (
+                item.docCategory === "เอกสารตอบกลับ (หน้า 1)" ||
+                (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 1"))
+              );
             } else if (target.code === "2") {
-              return item.docCategory === "เอกสารตอบกลับ (หน้า 2)" || (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 2"));
+              return (
+                item.docCategory === "เอกสารตอบกลับ (หน้า 2)" ||
+                (item.docCategory?.includes("ตอบกลับ") && item.docCategory?.includes("หน้า 2"))
+              );
             }
             return item.docCategory === target.name;
           });
@@ -110,7 +134,11 @@ function DocumentSummary2() {
 
             let parsedExtracted = latestDoc.extractedData;
             if (typeof latestDoc.extractedData === "string") {
-              try { parsedExtracted = JSON.parse(latestDoc.extractedData); } catch (e) { parsedExtracted = {}; }
+              try {
+                parsedExtracted = JSON.parse(latestDoc.extractedData);
+              } catch (e) {
+                parsedExtracted = {};
+              }
             }
 
             let mappedStatus = "รอการตรวจสอบ";
@@ -141,17 +169,23 @@ function DocumentSummary2() {
 
         setDocuments(mappedDocs);
       } else {
-        setDocuments([
-          { id: 1, code: "1", name: "เอกสารตอบกลับ (หน้า 1)", status: "ยังไม่ได้ส่ง", fileUrl: null, extractedData: {} },
-          { id: 2, code: "2", name: "เอกสารตอบกลับ (หน้า 2)", status: "ยังไม่ได้ส่ง", fileUrl: null, extractedData: {} }
-        ]);
+        setDocuments(
+          targets.map((target, index) => ({
+            id: index + 1,
+            code: target.code,
+            name: target.name,
+            status: "ยังไม่ได้ส่ง",
+            fileUrl: null,
+            extractedData: {},
+          }))
+        );
       }
     } catch (err) {
       console.error("Failed to load documents:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fileType]);
 
   useEffect(() => {
     fetchDocuments();
@@ -169,7 +203,7 @@ function DocumentSummary2() {
     if (activeStep === 2) {
       setOpenConfirmModal(true);
     } else if (activeStep === 3) {
-      navigate("/student/step3-dashboard");
+      navigate("/student");
     }
   };
 
@@ -189,8 +223,7 @@ function DocumentSummary2() {
     return `${SERVER_BASE_URL}/uploads/${cleanPath}`;
   };
 
-  // ✅ แก้ไขเงื่อนไข: ต้องมีเอกสาร และ ทุกใบต้องมีสถานะเป็น "สำเร็จ" เท่านั้น ปุ่มถึงจะกดได้
-  const isPassed = documents.length > 0 && documents.every(doc => doc.status === "สำเร็จ");
+  const isPassed = documents.length > 0 && documents.every((doc) => doc.status === "สำเร็จ");
 
   const renderDocDetails = (doc) => {
     const data = doc?.extractedData || {};
@@ -224,7 +257,7 @@ function DocumentSummary2() {
   const renderStep2Content = () => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Typography variant="h6" sx={{ fontWeight: 800, color: "#00423b", mb: 1.5 }}>
-        ติดตามสถานะ
+        ติดตามสถานะ ({fileType === "pdf" ? "ไฟล์ PDF" : "ไฟล์รูปภาพ"})
       </Typography>
       <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #f1f5f9", flexGrow: 1 }}>
         <Table size="small">
@@ -380,8 +413,8 @@ function DocumentSummary2() {
                         width: 32,
                         height: 32,
                         borderRadius: "50%",
-                        bgcolor: isCurrent ? "#facc15" : isDone ? "#007a5e" : "#94a3b8",
-                        color: isCurrent ? "#000" : "#fff",
+                        bgcolor: isCurrent ? "#007a5e" : isDone ? "#007a5e" : "#94a3b8",
+                        color: isCurrent ? "#fff" : "#fff",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
