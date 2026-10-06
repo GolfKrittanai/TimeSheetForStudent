@@ -586,7 +586,7 @@ function AdminDocumentManagement() {
             Management data
           </Typography>
           <Typography variant="h4" sx={{ fontWeight: 800, color: "#134e4a" }}>
-            จัดการข้อมูล
+            จัดการเอกสารขั้นตอนที่ 1
           </Typography>
         </Box>
 

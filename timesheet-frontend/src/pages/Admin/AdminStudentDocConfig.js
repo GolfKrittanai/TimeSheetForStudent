@@ -135,7 +135,7 @@ function AdminStudentDocConfig() {
             variant="h4"
             sx={{ fontWeight: 800, color: BRAND_DARK, mt: 0.5, letterSpacing: -0.5 }}
           >
-            จัดการเอกสารสำหรับนักศึกษา
+            จัดการเอกสารขั้นตอนที่ 2
           </Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
             อัปโหลดและกำหนดเอกสารต้นแบบที่นักศึกษาต้องใช้ในขั้นตอนสหกิจศึกษา

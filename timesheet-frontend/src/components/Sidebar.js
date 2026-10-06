@@ -18,7 +18,7 @@ import {
   useMediaQuery,
   Collapse,
   Badge,
-  Chip
+  Chip,
 } from "@mui/material";
 import {
   Logout as LogoutIcon,
@@ -30,7 +30,7 @@ import {
   PersonOutline as PersonOutlineIcon,
   FolderSharedOutlined as FolderSharedIcon,
   Dashboard as DashboardIcon,
-  Storage as StorageIcon
+  DescriptionOutlined as DescriptionIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -49,6 +49,7 @@ function Sidebar() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scanMenuOpen, setScanMenuOpen] = useState(true);
+  const [docCoopMenuOpen, setDocCoopMenuOpen] = useState(true);
 
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
@@ -58,42 +59,64 @@ function Sidebar() {
     navigate("/");
   };
 
-  // 🟢 ตรวจสอบ Admin แบบปลอดภัย (ดึงจาก user context หรือ localStorage)
-  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const currentRole = (user?.role || storedUser?.role || "").toLowerCase();
-  const isAdmin = currentRole === "admin";
+  // 🟢 ดึงข้อมูลผู้ใช้จากทั้ง Context และ LocalStorage ป้องกันข้อมูล role หลุด
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch (e) {
+    storedUser = {};
+  }
 
-  // ตรวจสอบสถานะ Active ของแต่ละเมนู Admin
+  const roleFromAuth = user?.role || storedUser?.role || "";
+  const currentRole = String(roleFromAuth).trim().toLowerCase();
+  
+  // ตรวจสอบสถานะ Admin (เช็กทั้ง role หรือ pathname เริ่มต้นด้วย /admin)
+  const isAdmin = currentRole === "admin" || location.pathname.startsWith("/admin");
+
+  // ตรวจสอบ Active Status ของ Admin
   const isDashboardActive = location.pathname === "/admin";
-  const isDocCoopActive = location.pathname === "/admin/document-management";
-  const isManagementDataActive = [
+  const isDocStep1Active = location.pathname === "/admin/document-management";
+  const isDocStep2Active = [
     "/admin/student-docs",
     "/admin/student-docs/new",
     "/admin/student-docs/edit",
-    "/admin/student-doc-reviews"
+    "/admin/student-doc-reviews",
   ].includes(location.pathname);
+  const isDocCoopGroupActive = isDocStep1Active || isDocStep2Active;
+  const isActivityActive = location.pathname === "/admin/student-activities";
 
-  // 🟢 ตรวจสอบกลุ่มขั้นตอนของนักศึกษา
+  // ตรวจสอบ Active Status ของ Student
   const isStep1Active = [
     "/student/scan",
     "/student/scan-upload",
     "/student/scan-summary",
-    "/student/scan-history"
+    "/student/scan-history",
   ].includes(location.pathname);
 
   const isStep2Active = [
     "/student/step2-dashboard",
     "/student/step2-upload",
-    "/student/step2-summary"
+    "/student/step2-summary",
   ].includes(location.pathname);
 
-  const isStep3Active = [
-    "/student/step3-dashboard"
+  const isStudentTimesheetActive = [
+    "/student",
+    "/student/timesheet-history",
   ].includes(location.pathname);
 
   const renderSidebarContent = (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: BRAND_BG, color: "#fff", p: 2 }}>
-      
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        bgcolor: BRAND_BG,
+        color: "#fff",
+        p: 2,
+        boxSizing: "border-box",
+        minHeight: "100vh",
+      }}
+    >
       {/* 🟢 ส่วนที่ 1: Header (COOP SCAN) */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, my: 1, px: 1 }}>
         <Box
@@ -106,6 +129,7 @@ function Sidebar() {
             alignItems: "center",
             justifyContent: "center",
             bgcolor: "rgba(16, 185, 129, 0.08)",
+            flexShrink: 0,
           }}
         >
           <ScanLogoIcon sx={{ color: BRAND_ACTIVE, fontSize: 26 }} />
@@ -117,12 +141,12 @@ function Sidebar() {
       </Box>
 
       {/* 🟢 ส่วนที่ 2: Card Profile ของ Admin */}
-      {isAdmin ? (
+      {isAdmin && (
         <Box
           sx={{
             mt: 2,
             mb: 2,
-            p: 2.5,
+            p: 2,
             bgcolor: "rgba(255, 255, 255, 0.03)",
             borderRadius: "16px",
             border: "1px solid rgba(16, 185, 129, 0.2)",
@@ -145,7 +169,7 @@ function Sidebar() {
                 height: 12,
                 borderRadius: "50%",
                 right: 6,
-                bottom: 6
+                bottom: 6,
               },
             }}
           >
@@ -153,8 +177,8 @@ function Sidebar() {
               src={user?.profileImage || storedUser?.profileImage || ""}
               alt={user?.fullName || storedUser?.fullName || "Admin"}
               sx={{
-                width: 72,
-                height: 72,
+                width: 70,
+                height: 70,
                 bgcolor: "transparent",
                 border: `2px solid ${BRAND_ACTIVE}`,
                 fontSize: "1.8rem",
@@ -167,8 +191,8 @@ function Sidebar() {
             </Avatar>
           </Badge>
 
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem", color: "#fff" }}>
-            {user?.fullName || storedUser?.fullName || "adminPond"}
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, fontSize: "1rem", color: "#fff" }}>
+            {user?.fullName || storedUser?.fullName || "Admin"}
           </Typography>
 
           <Chip
@@ -187,15 +211,16 @@ function Sidebar() {
             }}
           />
         </Box>
-      ) : null}
+      )}
 
       <Divider sx={{ bgcolor: "rgba(255,255,255,0.08)", my: 1 }} />
 
-      {/* 🟢 ส่วนที่ 3: เมนูหลักฝั่ง Admin (แสดงครบ 3 เมนูหลัก ไม่มีเมนูย่อย) */}
+      {/* 🟢 ส่วนที่ 3: รายการเมนู */}
       <List component="nav" sx={{ flexGrow: 1, px: 0, mt: 1 }}>
         {isAdmin ? (
+          /* ================= เมนูสำหรับ ADMIN ================= */
           <>
-            {/* 1. Dashboard */}
+            {/* 1. จัดการข้อมูลรายชื่อ */}
             <ListItemButton
               selected={isDashboardActive}
               onClick={() => {
@@ -211,69 +236,124 @@ function Sidebar() {
                 "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
               }}
             >
-              <ListItemIcon sx={{ color: isDashboardActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
+              <ListItemIcon sx={{ color: isDashboardActive ? BRAND_ACTIVE : "inherit", minWidth: 38 }}>
                 <DashboardIcon />
               </ListItemIcon>
               <ListItemText
-                primary="Dashboard"
+                primary="จัดการข้อมูลรายชื่อ"
                 primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
               />
             </ListItemButton>
 
-            {/* 2. Document Co-op */}
-            <ListItemButton
-              selected={isDocCoopActive}
-              onClick={() => {
-                navigate("/admin/document-management");
-                if (isMobile) closeMobile();
-              }}
-              sx={{
-                borderRadius: "10px",
-                mb: 1,
-                py: 1.2,
-                bgcolor: isDocCoopActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
-                color: isDocCoopActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
-              }}
-            >
-              <ListItemIcon sx={{ color: isDocCoopActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
-                <FolderSharedIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Document Co-op"
-                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
-              />
-            </ListItemButton>
+            {/* 2. จัดการเอกสารสหกิจ (Dropdown เมนูย่อย 2 อัน) */}
+            <ListItem disablePadding sx={{ display: "block" }}>
+              <ListItemButton
+                onClick={() => setDocCoopMenuOpen(!docCoopMenuOpen)}
+                sx={{
+                  borderRadius: "10px",
+                  mb: 0.5,
+                  py: 1.2,
+                  color: isDocCoopGroupActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+                }}
+              >
+                <ListItemIcon sx={{ color: isDocCoopGroupActive ? BRAND_ACTIVE : "inherit", minWidth: 38 }}>
+                  <FolderSharedIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="จัดการเอกสารสหกิจ"
+                  primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+                />
+                {docCoopMenuOpen ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
 
-            {/* 3. Management data */}
+              {/* เมนูย่อยของ จัดการเอกสารสหกิจ */}
+              <Collapse in={docCoopMenuOpen} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding sx={{ pl: 2 }}>
+                  {/* เมนูย่อย 1: จัดการเอกสารขั้นตอนที่ 1 */}
+                  <ListItemButton
+                    selected={isDocStep1Active}
+                    onClick={() => {
+                      navigate("/admin/document-management");
+                      if (isMobile) closeMobile();
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      mb: 0.5,
+                      bgcolor: isDocStep1Active ? ACTIVE_SUB_BG : "transparent",
+                      borderLeft: isDocStep1Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                      "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                    }}
+                  >
+                    <ListItemText
+                      primary="จัดการเอกสารขั้นตอนที่ 1"
+                      primaryTypographyProps={{
+                        fontSize: "0.82rem",
+                        color: isDocStep1Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                        fontWeight: isDocStep1Active ? 700 : 400,
+                      }}
+                    />
+                  </ListItemButton>
+
+                  {/* เมนูย่อย 2: จัดการเอกสารขั้นตอนที่ 2 */}
+                  <ListItemButton
+                    selected={isDocStep2Active}
+                    onClick={() => {
+                      navigate("/admin/student-docs");
+                      if (isMobile) closeMobile();
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      mb: 0.5,
+                      bgcolor: isDocStep2Active ? ACTIVE_SUB_BG : "transparent",
+                      borderLeft: isDocStep2Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                      "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                    }}
+                  >
+                    <ListItemText
+                      primary="จัดการเอกสารขั้นตอนที่ 2"
+                      primaryTypographyProps={{
+                        fontSize: "0.82rem",
+                        color: isDocStep2Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                        fontWeight: isDocStep2Active ? 700 : 400,
+                      }}
+                    />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </ListItem>
+
+            {/* 3. กิจกรรมนักศึกษา */}
             <ListItemButton
-              selected={isManagementDataActive}
+              selected={isActivityActive}
               onClick={() => {
-                navigate("/admin/student-docs");
+                navigate("/admin/student-activities");
                 if (isMobile) closeMobile();
               }}
               sx={{
                 borderRadius: "10px",
+                mt: 1,
                 mb: 1,
                 py: 1.2,
-                bgcolor: isManagementDataActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
-                color: isManagementDataActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                bgcolor: isActivityActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: isActivityActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                borderLeft: isActivityActive ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
                 "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
               }}
             >
-              <ListItemIcon sx={{ color: isManagementDataActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
-                <StorageIcon />
+              <ListItemIcon sx={{ color: isActivityActive ? BRAND_ACTIVE : "inherit", minWidth: 38 }}>
+                <DescriptionIcon />
               </ListItemIcon>
               <ListItemText
-                primary="Management data"
+                primary="กิจกรรมนักศึกษา"
                 primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
               />
             </ListItemButton>
           </>
         ) : (
-          /* === เมนูสำหรับ STUDENT === */
+          /* ================= เมนูสำหรับ STUDENT ================= */
           <>
-            <ListItem disablePadding>
+            <ListItem disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 onClick={() => setScanMenuOpen(!scanMenuOpen)}
                 sx={{
@@ -286,93 +366,99 @@ function Sidebar() {
                 <ListItemIcon sx={{ color: "#fff", minWidth: 36 }}>
                   <GridViewIcon />
                 </ListItemIcon>
-                <ListItemText primary="ระบบสแกนเอกสาร" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem" }} />
+                <ListItemText
+                  primary="ระบบสแกนเอกสาร"
+                  primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem" }}
+                />
                 {scanMenuOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
+
+              <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding sx={{ pl: 2 }}>
+                  <ListItemButton
+                    selected={isStep1Active}
+                    onClick={() => {
+                      navigate("/student/scan");
+                      if (isMobile) closeMobile();
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      mb: 0.5,
+                      bgcolor: isStep1Active ? ACTIVE_SUB_BG : "transparent",
+                      borderLeft: isStep1Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                      "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                    }}
+                  >
+                    <ListItemText
+                      primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
+                      primaryTypographyProps={{
+                        fontSize: "0.82rem",
+                        color: isStep1Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                        fontWeight: isStep1Active ? 700 : 400,
+                      }}
+                    />
+                  </ListItemButton>
+
+                  <ListItemButton
+                    selected={isStep2Active}
+                    onClick={() => {
+                      navigate("/student/step2-dashboard");
+                      if (isMobile) closeMobile();
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      mb: 0.5,
+                      bgcolor: isStep2Active ? ACTIVE_SUB_BG : "transparent",
+                      borderLeft: isStep2Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                      "&:hover": { bgcolor: ACTIVE_SUB_BG },
+                    }}
+                  >
+                    <ListItemText
+                      primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
+                      primaryTypographyProps={{
+                        fontSize: "0.82rem",
+                        color: isStep2Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
+                        fontWeight: isStep2Active ? 700 : 400,
+                      }}
+                    />
+                  </ListItemButton>
+                </List>
+              </Collapse>
             </ListItem>
 
-            <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding sx={{ pl: 2 }}>
-                <ListItemButton
-                  selected={isStep1Active}
-                  onClick={() => {
-                    navigate("/student/scan");
-                    if (isMobile) closeMobile();
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    bgcolor: isStep1Active ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: isStep1Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
-                  }}
-                >
-                  <ListItemText
-                    primary="ขั้นตอนที่ 1 การแนบเอกสารสหกิจ"
-                    primaryTypographyProps={{
-                      fontSize: "0.82rem",
-                      color: isStep1Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
-                      fontWeight: isStep1Active ? 700 : 400
-                    }}
-                  />
-                </ListItemButton>
-
-                <ListItemButton
-                  selected={isStep2Active}
-                  onClick={() => {
-                    navigate("/student/step2-dashboard");
-                    if (isMobile) closeMobile();
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    bgcolor: isStep2Active ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: isStep2Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
-                  }}
-                >
-                  <ListItemText
-                    primary="ขั้นตอนที่ 2 จัดเตรียมเอกสารให้สถานประกอบการ"
-                    primaryTypographyProps={{
-                      fontSize: "0.82rem",
-                      color: isStep2Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
-                      fontWeight: isStep2Active ? 700 : 400
-                    }}
-                  />
-                </ListItemButton>
-
-                <ListItemButton
-                  selected={isStep3Active}
-                  onClick={() => {
-                    navigate("/student/step3-dashboard");
-                    if (isMobile) closeMobile();
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    bgcolor: isStep3Active ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: isStep3Active ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
-                  }}
-                >
-                  <ListItemText
-                    primary="ขั้นตอนที่ 3 หนังสือส่งตัวและแพลตฟอร์มการประเมิน"
-                    primaryTypographyProps={{
-                      fontSize: "0.82rem",
-                      color: isStep3Active ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
-                      fontWeight: isStep3Active ? 700 : 400
-                    }}
-                  />
-                </ListItemButton>
-              </List>
-            </Collapse>
+            {/* เมนูบันทึกกิจกรรม */}
+            <ListItemButton
+              selected={isStudentTimesheetActive}
+              onClick={() => {
+                navigate("/student");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: "10px",
+                mt: 1,
+                mb: 1,
+                py: 1.2,
+                bgcolor: isStudentTimesheetActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: isStudentTimesheetActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                borderLeft: isStudentTimesheetActive ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+              }}
+            >
+              <ListItemIcon sx={{ color: isStudentTimesheetActive ? BRAND_ACTIVE : "inherit", minWidth: 36 }}>
+                <DescriptionIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="บันทึกกิจกรรม"
+                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+              />
+            </ListItemButton>
           </>
         )}
       </List>
 
       <Divider sx={{ bgcolor: "rgba(255,255,255,0.08)", my: 1 }} />
 
-      {/* 🟢 ส่วนที่ 4: ด้านล่างสุด (My Account & Logout) */}
+      {/* 🟢 ส่วนที่ 4: ล่างสุด (My account & LOGOUT) */}
       <Box sx={{ pt: 1 }}>
         <ListItemButton
           onClick={() => {
@@ -386,7 +472,7 @@ function Sidebar() {
             "&:hover": { bgcolor: "rgba(255,255,255,0.05)", color: "#fff" },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}>
             <PersonOutlineIcon />
           </ListItemIcon>
           <ListItemText
@@ -403,7 +489,7 @@ function Sidebar() {
             "&:hover": { bgcolor: "rgba(248, 113, 113, 0.1)" },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 40, color: "#f87171" }}>
+          <ListItemIcon sx={{ minWidth: 38, color: "#f87171" }}>
             <LogoutIcon />
           </ListItemIcon>
           <ListItemText
@@ -418,7 +504,7 @@ function Sidebar() {
   if (isMobile) {
     return (
       <>
-        <AppBar position="fixed" elevation={0} sx={{ bgcolor: BRAND_BG }}>
+        <AppBar position="fixed" elevation={0} sx={{ bgcolor: BRAND_BG, zIndex: 1201 }}>
           <Toolbar sx={{ justifyContent: "space-between" }}>
             <IconButton onClick={toggleMobile} sx={{ color: "#fff" }}>
               <MenuIcon />
@@ -428,12 +514,17 @@ function Sidebar() {
             </Typography>
           </Toolbar>
         </AppBar>
-        <Toolbar />
         <Drawer
           anchor="left"
           open={mobileOpen}
           onClose={closeMobile}
-          sx={{ "& .MuiDrawer-paper": { width: drawerWidth, bgcolor: BRAND_BG, borderRight: "none" } }}
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              bgcolor: BRAND_BG,
+              borderRight: "none",
+            },
+          }}
         >
           {renderSidebarContent}
         </Drawer>
@@ -442,7 +533,17 @@ function Sidebar() {
   }
 
   return (
-    <Box component="nav" sx={{ width: drawerWidth, flexShrink: 0 }}>
+    <Box
+      component="nav"
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        height: "100vh",
+        position: "sticky",
+        top: 0,
+        alignSelf: "flex-start",
+      }}
+    >
       <Drawer
         variant="permanent"
         open
@@ -452,6 +553,8 @@ function Sidebar() {
             boxSizing: "border-box",
             borderRight: "none",
             bgcolor: BRAND_BG,
+            height: "100vh",
+            position: "static",
           },
         }}
       >

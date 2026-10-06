@@ -1,57 +1,41 @@
-
+// src/pages/StudentDashboard.js
 import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   Button,
-  CircularProgress,
   TextField,
   Paper,
+  Grid,
   useMediaQuery,
   useTheme,
-  styled,
 } from "@mui/material";
-
 import {
+  Description as DescriptionIcon,
   AccessTime as AccessTimeIcon,
 } from "@mui/icons-material";
-import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
+import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext";
 import {
   createTimeSheet,
   checkTimesheetExists,
 } from "../services/timesheetService";
-import { useAuth } from "../context/AuthContext";
-import Swal from "sweetalert2";
-import Sidebar from "../components/Sidebar";
 
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiInputBase-root": {
-    fontFamily: '"Kanit", sans-serif',
-    borderRadius: theme.spacing(2),
-    backgroundColor: "#fafafa",
-    "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#ccc",
-    },
-    "&:hover .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#00423b",
-    },
-    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: "#00423b",
-      boxShadow: "0 0 5px 0 #00423b",
-    },
-  },
-  "& .MuiInputLabel-root": {
-    "&.Mui-focused": {
-      color: "#00423b",
-    },
-  },
-}));
+const THEME_GREEN = "#1b6957";
+const THEME_HOVER = "#134e4a";
+const LIGHT_MINT = "#bfe3db";
 
 function StudentDashboard() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [loadingCreate, setLoadingCreate] = useState(false);
-  const [timesheetExists, setTimesheetExists] = useState(false); 
+  const [timesheetExists, setTimesheetExists] = useState(false);
 
   const [formData, setFormData] = useState({
     date: "",
@@ -61,34 +45,30 @@ function StudentDashboard() {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const drawerWidth = 240;
-
   useEffect(() => {
     const checkExistence = async () => {
-        if (!formData.date || !token) {
-            setTimesheetExists(false);
-            return;
-        }
+      if (!formData.date || !token) {
+        setTimesheetExists(false);
+        return;
+      }
 
-        try {
-            const exists = await checkTimesheetExists(formData.date, token);
-            setTimesheetExists(exists);
-        } catch (error) {
-            console.error("Error checking timesheet existence:", error);
-            setTimesheetExists(false); 
-        }
+      try {
+        const exists = await checkTimesheetExists(formData.date, token);
+        setTimesheetExists(exists);
+      } catch (error) {
+        console.error("Error checking timesheet existence:", error);
+        setTimesheetExists(false);
+      }
     };
     checkExistence();
   }, [formData.date, token]);
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.date) errors.date = "กรุณาเลือกวันที่";
-    if (!formData.checkInTime) errors.checkInTime = "กรุณากรอกเวลาเข้า";
-    if (!formData.checkOutTime) errors.checkOutTime = "กรุณากรอกเวลาออก";
-    if (!formData.activity) errors.activity = "กรุณากรอกกิจกรรม";
+    if (!formData.date) errors.date = "กรุณาระบุวันที่";
+    if (!formData.checkInTime) errors.checkInTime = "กรุณาระบุเวลาเข้า";
+    if (!formData.checkOutTime) errors.checkOutTime = "กรุณาระบุเวลาออก";
+    if (!formData.activity) errors.activity = "กรุณาระบุกิจกรรม";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -101,15 +81,15 @@ function StudentDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     if (timesheetExists) {
-        Swal.fire({
-            title: "ผิดพลาด",
-            text: "คุณได้บันทึก Timesheet สำหรับวันที่นี้ไปแล้ว",
-            icon: "warning",
-            confirmButtonColor: "#00423b",
-        });
-        return;
+      Swal.fire({
+        title: "แจ้งเตือน",
+        text: "คุณได้บันทึกกิจกรรมสำหรับวันที่นี้ไปแล้ว",
+        icon: "warning",
+        confirmButtonColor: THEME_GREEN,
+      });
+      return;
     }
 
     setLoadingCreate(true);
@@ -128,171 +108,267 @@ function StudentDashboard() {
         checkOutTime: "",
         activity: "",
       });
+
       Swal.fire({
         title: "สำเร็จ",
-        text: "เพิ่ม TimeSheet เรียบร้อยแล้ว",
+        text: "บันทึกกิจกรรมเรียบร้อยแล้ว",
         icon: "success",
-        confirmButtonColor: "#00423b",
+        confirmButtonColor: THEME_GREEN,
       });
-      setTimesheetExists(true); 
-
+      setTimesheetExists(true);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "ไม่สามารถเพิ่ม TimeSheet ได้";
-      
-      if (error.response && error.response.status === 409) {
-         Swal.fire({
-            title: "ไม่สามารถเพิ่ม TimeSheet ได้",
-            text: errorMessage,
-            icon: "warning",
-            confirmButtonColor: "#00423b",
-         });
-         setTimesheetExists(true);
-      } else {
-         Swal.fire({
-            title: "ไม่สามารถเพิ่ม TimeSheet ได้",
-            text: errorMessage,
-            icon: "error",
-            confirmButtonColor: "#00423b",
-         });
-      }
+      const errorMessage =
+        error.response?.data?.message || "ไม่สามารถบันทึกกิจกรรมได้";
+
+      Swal.fire({
+        title: "เกิดข้อผิดพลาด",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: THEME_GREEN,
+      });
     } finally {
       setLoadingCreate(false);
     }
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex", bgcolor: "#f4f6f8", minHeight: "100vh", fontFamily: '"Kanit", sans-serif' }}>
       <Sidebar />
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: isSmallScreen ? 2 : 4,
           mt: isSmallScreen ? 5 : 0,
-          minHeight: "100vh",
-          backgroundColor: "#f5f7fa",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          fontFamily: '"Kanit", sans-serif',
+          maxWidth: 1400,
+          mx: "auto",
+          width: "100%",
         }}
       >
-        <Typography
-          variant={isSmallScreen ? "h5" : "h3"}
+        {/* หัวข้อด้านบน */}
+        <Box sx={{ mb: 3 }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 800, color: "#134e4a", letterSpacing: -0.5 }}
+          >
+            ระบบบันทึกกิจกรรมนักศึกษา
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#00796b", fontWeight: 600, mt: 0.5 }}>
+            ระบบบันทึกกิจกรรมระหว่างสหกิจศึกษา
+          </Typography>
+        </Box>
+
+        {/* แบนเนอร์: บันทึกกิจกรรมนักศึกษา */}
+        <Paper
+          elevation={0}
           sx={{
-            fontWeight: "700",
-            color: "#00796b",
-            mt: 4,
+            p: { xs: 2, sm: 2.8 },
             mb: 4,
-            textAlign: "center",
-            letterSpacing: 1,
-            fontFamily: '"Kanit", sans-serif',
+            borderRadius: "20px",
+            bgcolor: "#e8f5e9",
+            border: "1px solid #c8e6c9",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2.5,
           }}
         >
-        TIMESHEET
+          <Box
+            sx={{
+              width: 50,
+              height: 50,
+              borderRadius: "14px",
+              bgcolor: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}
+          >
+            <DescriptionIcon sx={{ fontSize: 32, color: THEME_GREEN }} />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#134e4a", fontSize: "1.05rem" }}>
+              บันทึกกิจกรรมนักศึกษา
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#52796f", fontSize: "0.82rem", fontWeight: 600 }}>
+              เพิ่มกิจกรรมระหว่างสหกิจ
+            </Typography>
+          </Box>
+        </Paper>
+
+        {/* หัวข้อก่อนถึงฟอร์ม */}
+        <Typography variant="h6" sx={{ fontWeight: 800, color: "#134e4a", mb: 2 }}>
+          บันทึกกิจกรรมระหว่างสหกิจ
         </Typography>
 
+        {/* การ์ดฟอร์ม CREATE NEW */}
         <Paper
-          elevation={4}
+          elevation={0}
           sx={{
-            width: "100%",
-            mb: 5,
-            p: isSmallScreen ? 2 : 4,
-            borderRadius: 3,
-            backgroundColor: "#fff",
-            boxShadow: "0 8px 24px rgba(0,102,204,0.15)",
-            fontFamily: '"Kanit", sans-serif',
+            p: { xs: 2.5, sm: 4 },
+            borderRadius: "24px",
+            bgcolor: "#ffffff",
+            border: "1px solid #e2e8f0",
           }}
         >
           <Typography
-            variant="h6"
-            sx={{ mb: 3, fontWeight: 600, color: "#737070" }}
+            variant="h5"
+            sx={{
+              textAlign: "center",
+              fontWeight: 900,
+              color: THEME_GREEN,
+              letterSpacing: 0.5,
+              mb: 3.5,
+            }}
           >
-            เพิ่ม Timesheet ใหม่
+            CREATE NEW
           </Typography>
-          <form onSubmit={handleSubmit} noValidate>
-            <StyledTextField
-              label="วันที่"
-              name="date"
-              type="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              error={Boolean(formErrors.date)}
-              helperText={formErrors.date}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ mb: 2 }}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: isSmallScreen ? "column" : "row",
-                gap: 2,
-                mb: 2,
-              }}
-            >
-              <StyledTextField
-                label="เวลาเข้า"
-                name="checkInTime"
-                type="time"
-                value={formData.checkInTime}
-                onChange={handleInputChange}
-                error={Boolean(formErrors.checkInTime)}
-                helperText={formErrors.checkInTime}
+
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+              {/* โปรดระบุวันที่ */}
+              <Grid item xs={12} md={4}>
+                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700, mb: 0.6, display: "block" }}>
+                  โปรดระบุวันที่
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  error={Boolean(formErrors.date)}
+                  helperText={formErrors.date}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: "#ffffff",
+                    },
+                  }}
+                />
+              </Grid>
+
+              {/* โปรดระบุ : เวลาเข้า */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700, mb: 0.6, display: "block" }}>
+                  โปรดระบุ : เวลาเข้า
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="time"
+                  name="checkInTime"
+                  value={formData.checkInTime}
+                  onChange={handleInputChange}
+                  error={Boolean(formErrors.checkInTime)}
+                  helperText={formErrors.checkInTime}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: "#ffffff",
+                    },
+                  }}
+                />
+              </Grid>
+
+              {/* โปรดระบุ : เวลาออก */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700, mb: 0.6, display: "block" }}>
+                  โปรดระบุ : เวลาออก
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="time"
+                  name="checkOutTime"
+                  value={formData.checkOutTime}
+                  onChange={handleInputChange}
+                  error={Boolean(formErrors.checkOutTime)}
+                  helperText={formErrors.checkOutTime}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      bgcolor: "#ffffff",
+                    },
+                  }}
+                />
+              </Grid>
+            </Grid>
+
+            {/* โปรดระบุกิจกรรมหรืองานที่ได้รับมอบหมาย */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700, mb: 0.6, display: "block" }}>
+                โปรดระบุกิจกรรมหรืองานที่ได้รับมอบหมาย
+              </Typography>
+              <TextField
                 fullWidth
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ step: 300 }}
-              />
-              
-              <StyledTextField
-                label="เวลาออก"
-                name="checkOutTime"
-                type="time"
-                value={formData.checkOutTime}
+                multiline
+                rows={5}
+                name="activity"
+                placeholder="กิจกรรม"
+                value={formData.activity}
                 onChange={handleInputChange}
-                error={Boolean(formErrors.checkOutTime)}
-                helperText={formErrors.checkOutTime}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ step: 300 }}
+                error={Boolean(formErrors.activity)}
+                helperText={formErrors.activity}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "14px",
+                    bgcolor: "#ffffff",
+                  },
+                }}
               />
             </Box>
-            <StyledTextField
-              label="กิจกรรม"
-              name="activity"
-              fullWidth
-              multiline
-              rows={6}
-              value={formData.activity}
-              onChange={handleInputChange}
-              error={Boolean(formErrors.activity)}
-              helperText={formErrors.activity}
-              sx={{ mb: 2 }}
-            />
+
+            {/* ปุ่มบันทึก */}
             <Button
-              variant="contained"
               type="submit"
               fullWidth
-              disabled={loadingCreate || timesheetExists} 
+              variant="contained"
+              disabled={loadingCreate || timesheetExists}
               sx={{
+                bgcolor: THEME_GREEN,
+                color: "#ffffff",
+                py: 1.2,
+                borderRadius: "12px",
+                fontWeight: 800,
+                fontSize: "0.95rem",
                 textTransform: "none",
-                backgroundColor: "#01645a",
-                "&:hover": {
-                  backgroundColor: "#00796b",
-                  boxShadow: "0 6px 20px rgba(103, 116, 129, 0.3)",
-                },
-                py: 1.5,
-                fontWeight: "700",
-                fontSize: 16,
+                boxShadow: "none",
+                mb: 1.5,
+                "&:hover": { bgcolor: THEME_HOVER, boxShadow: "none" },
               }}
-              startIcon={<AccessTimeIcon />}
             >
-              {timesheetExists 
-                ? "มีรายการบันทึกแล้ววันนี้" 
-                : (loadingCreate ? "กำลังบันทึก..." : "บันทึก TimeSheet")
-              }
+              {timesheetExists
+                ? "บันทึกเรียบร้อยแล้ววันนี้"
+                : loadingCreate
+                ? "กำลังบันทึก..."
+                : "บันทึก"}
             </Button>
-          </form>
+
+            {/* ปุ่มประวัติการบันทึก */}
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AccessTimeIcon sx={{ fontSize: 18 }} />}
+              onClick={() => navigate("/student/timesheet-history")}
+              sx={{
+                bgcolor: LIGHT_MINT,
+                color: "#134e4a",
+                py: 1.1,
+                borderRadius: "12px",
+                fontWeight: 700,
+                fontSize: "0.92rem",
+                textTransform: "none",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#a7d7cd", boxShadow: "none" },
+              }}
+            >
+              ประวัติการบันทึก
+            </Button>
+          </Box>
         </Paper>
       </Box>
     </Box>
