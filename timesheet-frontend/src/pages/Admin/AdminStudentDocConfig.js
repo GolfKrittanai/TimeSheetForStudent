@@ -14,13 +14,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
@@ -28,7 +21,6 @@ import {
   Description as DescriptionIcon,
   Add as AddIcon,
   PictureAsPdf as PdfIcon,
-  Close as CloseIcon,
 } from "@mui/icons-material";
 
 import Sidebar from "../../components/Sidebar";
@@ -82,84 +74,14 @@ function AdminStudentDocConfig() {
     },
   ]);
 
-  // Modal เพิ่ม/แก้ไข เอกสาร
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    fileName: "",
-    format: "PDF/JPG/PNG",
-    maxSize: "10 MB",
-    status: "เปิดใช้งาน",
-  });
-
+  // 🟢 เมื่อกดปุ่ม "+ เพิ่มเอกสาร" ให้เด้งไปหน้า AdminStudentDocForm
   const handleOpenAdd = () => {
-    setEditItem(null);
-    setFormData({
-      name: "",
-      fileName: "",
-      format: "PDF/JPG/PNG",
-      maxSize: "10 MB",
-      status: "เปิดใช้งาน",
-    });
-    setModalOpen(true);
+    navigate("/admin/student-docs/new");
   };
 
+  // 🟢 เมื่อกดปุ่ม "แก้ไข" ให้เด้งไปหน้า AdminStudentDocForm พร้อมส่งข้อมูลเอกสารไปด้วย
   const handleOpenEdit = (item) => {
-    setEditItem(item);
-    setFormData({
-      name: item.name,
-      fileName: item.fileName,
-      format: item.format,
-      maxSize: item.maxSize,
-      status: item.status,
-    });
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditItem(null);
-  };
-
-  const handleSave = () => {
-    if (!formData.name.trim() || !formData.fileName.trim()) {
-      Swal.fire({
-        title: "กรุณากรอกข้อมูลให้ครบถ้วน",
-        text: "ชื่อเอกสาร และชื่อไฟล์ต้นฉบับต้องไม่เป็นค่าว่าง",
-        icon: "warning",
-        confirmButtonColor: THEME_GREEN,
-      });
-      return;
-    }
-
-    if (editItem) {
-      setDocList((prev) =>
-        prev.map((doc) => (doc.id === editItem.id ? { ...doc, ...formData } : doc))
-      );
-      Swal.fire({
-        title: "แก้ไขสำเร็จ",
-        icon: "success",
-        confirmButtonColor: THEME_GREEN,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } else {
-      const newDoc = {
-        id: Date.now(),
-        ...formData,
-        fileUrl: "#",
-      };
-      setDocList((prev) => [...prev, newDoc]);
-      Swal.fire({
-        title: "เพิ่มเอกสารสำเร็จ",
-        icon: "success",
-        confirmButtonColor: THEME_GREEN,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    }
-    handleCloseModal();
+    navigate("/admin/student-docs/edit", { state: { doc: item } });
   };
 
   const handleDelete = (id, name) => {
@@ -261,7 +183,6 @@ function AdminStudentDocConfig() {
             </Box>
           </Box>
 
-          {/* 🟢 เมื่อกดปุ่มนี้ ให้เด้งไปหน้า AdminStudentDocReviewList */}
           <Button
             variant="contained"
             onClick={() => navigate("/admin/student-doc-reviews")}
@@ -292,7 +213,7 @@ function AdminStudentDocConfig() {
             border: "1px solid #e2e8f0",
           }}
         >
-          {/* Header รายการเอกสาร + ปุ่มเพิ่ม */}
+          {/* Header รายการเอกสาร + ปุ่มเพิ่มเอกสาร */}
           <Box
             sx={{
               display: "flex",
@@ -312,6 +233,7 @@ function AdminStudentDocConfig() {
               </Typography>
             </Box>
 
+            {/* 🟢 กดเพื่อไปหน้าฟอร์มเพิ่มเอกสารใหม่ */}
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -333,7 +255,7 @@ function AdminStudentDocConfig() {
             </Button>
           </Box>
 
-          {/* ตารางแสดงข้อมูล */}
+          {/* ตารางแสดงรายการเอกสาร */}
           <TableContainer sx={{ border: "1px solid #f1f5f9", borderRadius: "12px", overflowX: "auto" }}>
             <Table size="medium">
               <TableHead sx={{ bgcolor: "#f8fafc" }}>
@@ -428,6 +350,7 @@ function AdminStudentDocConfig() {
 
                     <TableCell align="center">
                       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1.5 }}>
+                        {/* 🟢 กดเพื่อไปหน้าฟอร์มแก้ไขเอกสาร */}
                         <Typography
                           component="button"
                           onClick={() => handleOpenEdit(row)}
@@ -468,81 +391,6 @@ function AdminStudentDocConfig() {
             </Table>
           </TableContainer>
         </Paper>
-
-        {/* Modal เพิ่ม/แก้ไข */}
-        <Dialog
-          open={modalOpen}
-          onClose={handleCloseModal}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
-        >
-          <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: BRAND_DARK }}>
-              {editItem ? "แก้ไขเอกสาร" : "เพิ่มเอกสารต้นแบบ"}
-            </Typography>
-            <IconButton onClick={handleCloseModal} size="small">
-              <CloseIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </DialogTitle>
-
-          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-            <TextField
-              label="ชื่อเอกสาร"
-              fullWidth
-              size="small"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="เช่น เอกสาร BA Co-op 01"
-            />
-            <TextField
-              label="ชื่อไฟล์ต้นฉบับ"
-              fullWidth
-              size="small"
-              value={formData.fileName}
-              onChange={(e) => setFormData({ ...formData, fileName: e.target.value })}
-              placeholder="เช่น template.pdf"
-            />
-            <TextField
-              label="รูปแบบไฟล์ที่รับ"
-              fullWidth
-              size="small"
-              value={formData.format}
-              onChange={(e) => setFormData({ ...formData, format: e.target.value })}
-            />
-            <TextField
-              label="ขนาดสูงสุด"
-              fullWidth
-              size="small"
-              value={formData.maxSize}
-              onChange={(e) => setFormData({ ...formData, maxSize: e.target.value })}
-            />
-            <TextField
-              select
-              label="สถานะ"
-              fullWidth
-              size="small"
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            >
-              <MenuItem value="เปิดใช้งาน">เปิดใช้งาน</MenuItem>
-              <MenuItem value="ปิดใช้งาน">ปิดใช้งาน</MenuItem>
-            </TextField>
-          </DialogContent>
-
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={handleCloseModal} sx={{ color: "#64748b" }}>
-              ยกเลิก
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              sx={{ bgcolor: THEME_GREEN, borderRadius: "8px", "&:hover": { bgcolor: THEME_HOVER } }}
-            >
-              บันทึก
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     </Box>
   );

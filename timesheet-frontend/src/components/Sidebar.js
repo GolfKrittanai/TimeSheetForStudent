@@ -26,19 +26,18 @@ import {
   ExpandLess,
   ExpandMore,
   GridView as GridViewIcon,
-  Description as DescriptionIcon,
   CropFree as ScanLogoIcon,
   PersonOutline as PersonOutlineIcon,
   FolderSharedOutlined as FolderSharedIcon,
   Dashboard as DashboardIcon,
-  PostAdd as PostAddIcon
+  Storage as StorageIcon
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const drawerWidth = 260;
-const BRAND_BG = "#0b2b26"; // สีเขียวเข้มพื้นหลัง
-const BRAND_ACTIVE = "#10b981"; // สีเขียวนีออนหลัก
+const BRAND_BG = "#0b2b26";
+const BRAND_ACTIVE = "#10b981";
 const ACTIVE_SUB_BG = "rgba(255, 255, 255, 0.08)";
 
 function Sidebar() {
@@ -50,7 +49,6 @@ function Sidebar() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scanMenuOpen, setScanMenuOpen] = useState(true);
-  const [docCoopMenuOpen, setDocCoopMenuOpen] = useState(true); // พับ/กางเมนูย่อย Document Co-op
 
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
@@ -60,13 +58,20 @@ function Sidebar() {
     navigate("/");
   };
 
-  const isAdmin = user?.role === "admin";
+  // 🟢 ตรวจสอบ Admin แบบปลอดภัย (ดึงจาก user context หรือ localStorage)
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentRole = (user?.role || storedUser?.role || "").toLowerCase();
+  const isAdmin = currentRole === "admin";
 
-  // ตรวจสอบ Active Status ของ Admin
+  // ตรวจสอบสถานะ Active ของแต่ละเมนู Admin
   const isDashboardActive = location.pathname === "/admin";
-  const isDocManagementActive = location.pathname === "/admin/document-management";
-  const isStudentDocConfigActive = location.pathname === "/admin/student-docs";
-  const isDocCoopGroupActive = isDocManagementActive || isStudentDocConfigActive;
+  const isDocCoopActive = location.pathname === "/admin/document-management";
+  const isManagementDataActive = [
+    "/admin/student-docs",
+    "/admin/student-docs/new",
+    "/admin/student-docs/edit",
+    "/admin/student-doc-reviews"
+  ].includes(location.pathname);
 
   // 🟢 ตรวจสอบกลุ่มขั้นตอนของนักศึกษา
   const isStep1Active = [
@@ -145,8 +150,8 @@ function Sidebar() {
             }}
           >
             <Avatar
-              src={user?.profileImage || ""}
-              alt={user?.fullName || "Admin"}
+              src={user?.profileImage || storedUser?.profileImage || ""}
+              alt={user?.fullName || storedUser?.fullName || "Admin"}
               sx={{
                 width: 72,
                 height: 72,
@@ -158,12 +163,12 @@ function Sidebar() {
                 boxShadow: "0 0 15px rgba(16, 185, 129, 0.3)",
               }}
             >
-              {user?.fullName ? user.fullName.charAt(0).toUpperCase() : "A"}
+              {(user?.fullName || storedUser?.fullName || "A").charAt(0).toUpperCase()}
             </Avatar>
           </Badge>
 
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem", color: "#fff" }}>
-            {user?.fullName || "adminPond"}
+            {user?.fullName || storedUser?.fullName || "adminPond"}
           </Typography>
 
           <Chip
@@ -186,12 +191,11 @@ function Sidebar() {
 
       <Divider sx={{ bgcolor: "rgba(255,255,255,0.08)", my: 1 }} />
 
-      {/* 🟢 ส่วนที่ 3: เมนูหลัก */}
+      {/* 🟢 ส่วนที่ 3: เมนูหลักฝั่ง Admin (แสดงครบ 3 เมนูหลัก ไม่มีเมนูย่อย) */}
       <List component="nav" sx={{ flexGrow: 1, px: 0, mt: 1 }}>
         {isAdmin ? (
-          /* === เมนูสำหรับ ADMIN === */
           <>
-            {/* 1. เมนูหลัก Dashboard */}
+            {/* 1. Dashboard */}
             <ListItemButton
               selected={isDashboardActive}
               onClick={() => {
@@ -216,91 +220,55 @@ function Sidebar() {
               />
             </ListItemButton>
 
-            {/* 2. เมนูหลัก Document co-op (กดเพื่อพับ/กางเมนูย่อย) */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => setDocCoopMenuOpen(!docCoopMenuOpen)}
-                sx={{
-                  borderRadius: "10px",
-                  mb: 0.5,
-                  py: 1.2,
-                  color: isDocCoopGroupActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
-                }}
-              >
-                <ListItemIcon sx={{ color: isDocCoopGroupActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
-                  <DescriptionIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Document co-op"
-                  primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
-                />
-                {docCoopMenuOpen ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-            </ListItem>
+            {/* 2. Document Co-op */}
+            <ListItemButton
+              selected={isDocCoopActive}
+              onClick={() => {
+                navigate("/admin/document-management");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: "10px",
+                mb: 1,
+                py: 1.2,
+                bgcolor: isDocCoopActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: isDocCoopActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+              }}
+            >
+              <ListItemIcon sx={{ color: isDocCoopActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
+                <FolderSharedIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Document Co-op"
+                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+              />
+            </ListItemButton>
 
-            {/* เมนูย่อยของ Document co-op */}
-            <Collapse in={docCoopMenuOpen} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding sx={{ pl: 2 }}>
-                
-                {/* เมนูย่อย 1: จัดการเอกสาร */}
-                <ListItemButton
-                  selected={isDocManagementActive}
-                  onClick={() => {
-                    navigate("/admin/document-management");
-                    if (isMobile) closeMobile();
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    bgcolor: isDocManagementActive ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: isDocManagementActive ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: isDocManagementActive ? BRAND_ACTIVE : "inherit", minWidth: 32 }}>
-                    <FolderSharedIcon sx={{ fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="จัดการเอกสาร"
-                    primaryTypographyProps={{
-                      fontSize: "0.85rem",
-                      color: isDocManagementActive ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
-                      fontWeight: isDocManagementActive ? 700 : 500,
-                    }}
-                  />
-                </ListItemButton>
-
-                {/* เมนูย่อย 2: จัดการเอกสารสำหรับนักศึกษา */}
-                <ListItemButton
-                  selected={isStudentDocConfigActive}
-                  onClick={() => {
-                    navigate("/admin/student-docs");
-                    if (isMobile) closeMobile();
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    bgcolor: isStudentDocConfigActive ? ACTIVE_SUB_BG : "transparent",
-                    borderLeft: isStudentDocConfigActive ? `3px solid ${BRAND_ACTIVE}` : "3px solid transparent",
-                    "&:hover": { bgcolor: ACTIVE_SUB_BG },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: isStudentDocConfigActive ? BRAND_ACTIVE : "inherit", minWidth: 32 }}>
-                    <PostAddIcon sx={{ fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="จัดการเอกสารสำหรับนักศึกษา"
-                    primaryTypographyProps={{
-                      fontSize: "0.85rem",
-                      color: isStudentDocConfigActive ? BRAND_ACTIVE : "rgba(255,255,255,0.8)",
-                      fontWeight: isStudentDocConfigActive ? 700 : 500,
-                    }}
-                  />
-                </ListItemButton>
-
-              </List>
-            </Collapse>
+            {/* 3. Management data */}
+            <ListItemButton
+              selected={isManagementDataActive}
+              onClick={() => {
+                navigate("/admin/student-docs");
+                if (isMobile) closeMobile();
+              }}
+              sx={{
+                borderRadius: "10px",
+                mb: 1,
+                py: 1.2,
+                bgcolor: isManagementDataActive ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                color: isManagementDataActive ? BRAND_ACTIVE : "rgba(255, 255, 255, 0.85)",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.05)" },
+              }}
+            >
+              <ListItemIcon sx={{ color: isManagementDataActive ? BRAND_ACTIVE : "inherit", minWidth: 40 }}>
+                <StorageIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Management data"
+                primaryTypographyProps={{ fontWeight: 700, fontSize: "0.95rem" }}
+              />
+            </ListItemButton>
           </>
         ) : (
           /* === เมนูสำหรับ STUDENT === */
@@ -325,7 +293,6 @@ function Sidebar() {
 
             <Collapse in={scanMenuOpen} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ pl: 2 }}>
-                {/* ขั้นตอนที่ 1 */}
                 <ListItemButton
                   selected={isStep1Active}
                   onClick={() => {
@@ -350,7 +317,6 @@ function Sidebar() {
                   />
                 </ListItemButton>
 
-                {/* ขั้นตอนที่ 2 */}
                 <ListItemButton
                   selected={isStep2Active}
                   onClick={() => {
@@ -375,7 +341,6 @@ function Sidebar() {
                   />
                 </ListItemButton>
 
-                {/* ขั้นตอนที่ 3 */}
                 <ListItemButton
                   selected={isStep3Active}
                   onClick={() => {

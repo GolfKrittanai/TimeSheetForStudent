@@ -32,6 +32,7 @@ import DocumentScanDashboard3 from "./pages/Step3_student/DocumentScanDashboard3
 // หน้าของ Admin
 import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
 import AdminStudentDocConfig from "./pages/Admin/AdminStudentDocConfig";
+import AdminStudentDocForm from "./pages/Admin/AdminStudentDocForm"; // 👈 หน้านี้ที่สร้างใหม่
 import AdminStudentDocReviewList from "./pages/Admin/AdminStudentDocReviewList";
 
 function App() {
@@ -89,7 +90,17 @@ function App() {
               element={<AdminStudentDocConfig />} 
             />
 
-            {/* 4. หน้ารายชื่อตรวจสอบเอกสารนักศึกษา (เชื่อมจากปุ่มตรวจสอบ) */}
+            {/* 🟢 หน้าฟอร์มเพิ่ม/แก้ไขเอกสารสำหรับนักศึกษา (ตามภาพใหม่) */}
+            <Route 
+              path="/admin/student-docs/new" 
+              element={<AdminStudentDocForm />} 
+            />
+            <Route 
+              path="/admin/student-docs/edit" 
+              element={<AdminStudentDocForm />} 
+            />
+
+            {/* 4. หน้ารายชื่อตรวจสอบเอกสารนักศึกษา */}
             <Route 
               path="/admin/student-doc-reviews" 
               element={<AdminStudentDocReviewList />} 
