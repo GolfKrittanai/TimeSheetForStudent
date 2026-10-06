@@ -32,8 +32,9 @@ import DocumentScanDashboard3 from "./pages/Step3_student/DocumentScanDashboard3
 // หน้าของ Admin
 import AdminDocumentManagement from "./pages/Admin/AdminDocumentManagement";
 import AdminStudentDocConfig from "./pages/Admin/AdminStudentDocConfig";
-import AdminStudentDocForm from "./pages/Admin/AdminStudentDocForm"; // 👈 หน้านี้ที่สร้างใหม่
+import AdminStudentDocForm from "./pages/Admin/AdminStudentDocForm";
 import AdminStudentDocReviewList from "./pages/Admin/AdminStudentDocReviewList";
+import AdminStudentActivityList from "./pages/Admin/AdminStudentActivityList"; // 👈 หน้านี้ที่เพิ่มขึ้นมาใหม่
 
 function App() {
   const { user } = useAuth();
@@ -63,7 +64,7 @@ function App() {
         {/* ---------------- Admin routes ---------------- */}
         {user?.role === "admin" && (
           <>
-            {/* 1. Dashboard (หน้าหลักของแอดมิน) */}
+            {/* 1. จัดการข้อมูลรายชื่อ (Dashboard) */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/add-account" element={<AddAccount />} />
             <Route path="/profile" element={<ProfilePage />} />
@@ -78,19 +79,15 @@ function App() {
               element={<DocumentReviewAdmin />} 
             />
 
-            {/* 2. เมนูย่อยของ Document co-op: จัดการเอกสาร */}
+            {/* 2. จัดการเอกสารสหกิจ (ขั้นตอนที่ 1 และ 2) */}
             <Route 
               path="/admin/document-management" 
               element={<AdminDocumentManagement />} 
             />
-
-            {/* 3. เมนูย่อยของ Document co-op: จัดการเอกสารสำหรับนักศึกษา */}
             <Route 
               path="/admin/student-docs" 
               element={<AdminStudentDocConfig />} 
             />
-
-            {/* 🟢 หน้าฟอร์มเพิ่ม/แก้ไขเอกสารสำหรับนักศึกษา (ตามภาพใหม่) */}
             <Route 
               path="/admin/student-docs/new" 
               element={<AdminStudentDocForm />} 
@@ -99,11 +96,15 @@ function App() {
               path="/admin/student-docs/edit" 
               element={<AdminStudentDocForm />} 
             />
-
-            {/* 4. หน้ารายชื่อตรวจสอบเอกสารนักศึกษา */}
             <Route 
               path="/admin/student-doc-reviews" 
               element={<AdminStudentDocReviewList />} 
+            />
+
+            {/* 3. 🟢 กิจกรรมนักศึกษา */}
+            <Route 
+              path="/admin/student-activities" 
+              element={<AdminStudentActivityList />} 
             />
 
             <Route path="*" element={<Navigate to="/admin" />} />
